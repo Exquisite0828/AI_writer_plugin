@@ -1,0 +1,6 @@
+case_id,title,requirement_id,status,evidence,notes
+TC-001,Export markdown report,REQ-EXPORT-001,PASS,log-001,Exported markdown final report file generated
+TC-002,Preserve source citations,REQ-CITE-001,PASS,log-002,Citation ids preserved in generated report text
+TC-003,Reject missing source input,REQ-GAP-001,FAIL,log-003,Missing required source was not blocked in one trial
+TC-004,Handle unsupported attachment,REQ-GAP-002,BLOCKED,log-004,Pending converted sample input
+TC-005,Generate delivery summary,REQ-DELIVERY-001,PASS,log-005,Delivery summary artifact exists

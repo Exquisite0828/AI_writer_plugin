@@ -1,0 +1,37 @@
+task_type: technical_solution
+task_title: 生成技术方案文档
+target_audience: 后端/架构评审人员
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - final architecture decision
+  - performance target
+  - security boundary
+  - deployment risk
+  - cost estimate
+inputs:
+  - path: inputs/system_context.md
+    role: source
+    title: Feature Flag Rollout Service Context
+    notes: "Fact source for target system scope, current components, compatibility constraint, audit logging, and open confirmations."
+  - path: inputs/requirements.md
+    role: source
+    title: Feature Flag Rollout Service Requirements
+    notes: "Fact source for goals, non-goals, known requirements, and unresolved requirements."
+  - path: inputs/solution_template.md
+    role: template
+    title: Technical Solution Template
+    notes: "Structure source only. Do not use as factual evidence."
+  - path: inputs/checklist.md
+    role: checklist
+    title: Technical Solution Review Checklist
+    notes: "Review criteria only. Do not use as factual evidence."
+  - path: inputs/architecture_reference.md
+    role: reference
+    title: Rollout Service Architecture Reference
+    notes: "General technical reference only. Do not use as project-specific decision, target, cost, or risk acceptance evidence."
+  - path: inputs/sample_solution.md
+    role: sample
+    title: Sample Technical Solution Shape
+    notes: "Style and structure sample only. Never use as facts, decisions, approvals, performance targets, costs, or risk conclusions."

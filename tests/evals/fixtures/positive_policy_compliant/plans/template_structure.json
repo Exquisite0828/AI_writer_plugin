@@ -1,0 +1,18 @@
+{
+  "run_id": "fixture-positive",
+  "generated_at": "2026-06-07T00:00:00Z",
+  "status": "parsed",
+  "fallback_used": false,
+  "fallback_reason": "",
+  "document_title": "Technical Solution",
+  "nodes": [
+    {"node_id": "SEC-001", "title": "Background", "level": 1, "order": 1, "parent_id": null, "children": [], "required": true, "optional": false, "intent": "background", "source_line": 1, "anchor": "background"},
+    {"node_id": "SEC-002", "title": "Architecture", "level": 1, "order": 2, "parent_id": null, "children": [], "required": true, "optional": false, "intent": "architecture", "source_line": 2, "anchor": "architecture"}
+  ],
+  "outline_sections": [
+    {"section_id": "SEC-001", "template_node_id": "SEC-001", "title": "Background", "order": 1, "required": true, "intent": "background", "anchor": "background", "needs_human_confirmation": false},
+    {"section_id": "SEC-002", "template_node_id": "SEC-002", "title": "Architecture", "order": 2, "required": true, "intent": "architecture", "anchor": "architecture", "needs_human_confirmation": true}
+  ],
+  "warnings": [],
+  "summary": {"total_nodes": 2, "l1_sections": 2, "required_sections": 2, "optional_sections": 0, "fallback_used": false, "warnings_count": 0}
+}

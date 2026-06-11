@@ -1,0 +1,5 @@
+Every HARA row has source support.
+
+S/E/C ratings require human confirmation.
+
+Sample documents must not be used as factual evidence.

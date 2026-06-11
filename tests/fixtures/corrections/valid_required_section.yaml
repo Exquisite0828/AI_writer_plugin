@@ -1,0 +1,9 @@
+profile_id: customer_demo.custom_technical_note
+profile_version: 0.1.0
+correction_type: required_section_missing
+field: required_sections
+operation: add_to_list
+value: data retention
+rationale: User requested a dedicated data retention section.
+source: human_correction
+status: submitted

@@ -1,0 +1,13 @@
+id: fsr_negative_final_status_approval
+schema_version: eval_case.v1
+description: FSR metric must fail when final status becomes approval-like.
+document_type: fsr
+case_type: negative_metric_guard
+mode: artifact_fixture
+artifact_root: tests/evals/fixtures/fsr/negative_final_status_approval
+expected_result: fail
+metrics:
+  - final_status_policy
+expectations:
+  expected_failures:
+    - final_status_policy

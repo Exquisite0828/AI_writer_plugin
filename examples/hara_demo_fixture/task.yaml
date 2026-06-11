@@ -1,0 +1,37 @@
+task_type: hara
+task_title: 基于 EPS Demo 输入生成 HARA 危害分析报告
+target_audience: 功能安全工程师
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - hazard identification
+  - hazardous event definition
+  - severity/exposure/controllability rating
+  - ASIL or risk level conclusion
+  - safety goal wording
+inputs:
+  - path: inputs/item_definition.md
+    role: source
+    title: EPS Demo Item Definition
+    notes: "Fact source for item boundary, intended function, interfaces, assumptions, and exclusions."
+  - path: inputs/system_notes.md
+    role: source
+    title: EPS Demo System Notes
+    notes: "Fact source for EPS component context, operating modes, interface signals, and degraded behavior."
+  - path: inputs/hara_template.md
+    role: template
+    title: HARA Demo Report Template
+    notes: "Structure source only. Do not use as factual evidence."
+  - path: inputs/checklist.md
+    role: checklist
+    title: HARA Demo Review Checklist
+    notes: "Review criteria only. Do not use as factual evidence."
+  - path: inputs/method_reference.md
+    role: reference
+    title: HARA Demo Method Reference
+    notes: "Methodology reference only. Do not use as project-specific EPS facts."
+  - path: inputs/sample_hara.md
+    role: sample
+    title: HARA Demo Sample Shape
+    notes: "Style and table-shape sample only. Never use as facts, ratings, ASIL, safety goals, or conclusions."

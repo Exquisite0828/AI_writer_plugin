@@ -1,0 +1,35 @@
+{
+  "run_id": "fixture-positive",
+  "generated_at": "2026-06-07T00:00:00Z",
+  "questions": [
+    {
+      "question_id": "Q-001",
+      "section_id": "SEC-002",
+      "section_title": "Architecture",
+      "question": "What architecture is proposed?",
+      "status": "supported",
+      "requires_human_confirmation": false,
+      "evidence_candidates": [
+        {
+          "evidence_id": "EVD-001",
+          "source_id": "SRC-001",
+          "file_id": "FILE-SRC",
+          "source_role": "source",
+          "is_fact_source": true,
+          "source_tier": "T1_PROJECT_SOURCE",
+          "evidence_status": "project_source_supported",
+          "can_support_project_fact": true,
+          "can_support_critical_claim": true,
+          "human_confirmation_status": "not_required",
+          "provenance_support_type": "project_fact",
+          "support_type": "direct",
+          "confidence": 0.9,
+          "snippet": "The proposed design uses an event queue.",
+          "matched_terms": ["architecture"]
+        }
+      ]
+    }
+  ],
+  "summary": {"total_questions": 1},
+  "warnings": []
+}

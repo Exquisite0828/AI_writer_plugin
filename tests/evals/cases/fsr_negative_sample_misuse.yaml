@@ -1,0 +1,14 @@
+id: fsr_negative_sample_misuse
+schema_version: eval_case.v1
+description: FSR metric must fail when a sample/T4 input supports a project requirement fact.
+document_type: fsr
+case_type: negative_metric_guard
+mode: artifact_fixture
+artifact_root: tests/evals/fixtures/fsr/negative_sample_misuse
+expected_result: fail
+metrics:
+  - sample_misuse
+  - source_tier_policy
+expectations:
+  expected_failures:
+    - sample_misuse

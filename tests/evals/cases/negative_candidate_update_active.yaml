@@ -1,0 +1,13 @@
+id: negative_candidate_update_active
+schema_version: eval_case.v1
+description: Metric must fail when candidate updates are active or auto-applied.
+document_type: generic_document
+case_type: negative_metric_guard
+mode: artifact_fixture
+artifact_root: tests/evals/fixtures/negative_candidate_update_active
+expected_result: fail
+metrics:
+  - candidate_update_inactive
+expectations:
+  expected_failures:
+    - candidate_update_inactive

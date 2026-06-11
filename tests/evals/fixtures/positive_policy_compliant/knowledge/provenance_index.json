@@ -1,0 +1,65 @@
+{
+  "schema_version": "n4.provenance_index.v1",
+  "run_id": "fixture-positive",
+  "generated_at": "2026-06-07T00:00:00Z",
+  "task_type": "technical_solution",
+  "document_type_display_name": "Technical Solution",
+  "profile_id": null,
+  "profile_version": null,
+  "profile_source": null,
+  "source_tier_policy": {
+    "T0_HITL": "Human confirmation.",
+    "T1_PROJECT_SOURCE": "Project source that may support project facts.",
+    "T2_TEMPLATE_CHECKLIST": "Template/checklist constraint.",
+    "T3_REFERENCE_METHODOLOGY": "Reference methodology.",
+    "T4_SAMPLE_STYLE_ONLY": "Sample style only.",
+    "T5_AI_INFERENCE": "Generated or unsupported inference."
+  },
+  "sources": [
+    {
+      "source_id": "SRC-001",
+      "file_id": "FILE-SRC",
+      "path": "inputs/source.md",
+      "role": "source",
+      "source_tier": "T1_PROJECT_SOURCE",
+      "can_support_project_fact": true,
+      "can_support_critical_claim": true
+    },
+    {
+      "source_id": "FILE-TPL",
+      "file_id": "FILE-TPL",
+      "path": "inputs/template.md",
+      "role": "template",
+      "source_tier": "T2_TEMPLATE_CHECKLIST",
+      "can_support_project_fact": false,
+      "can_support_critical_claim": false
+    },
+    {
+      "source_id": "FILE-CHK",
+      "file_id": "FILE-CHK",
+      "path": "inputs/checklist.md",
+      "role": "checklist",
+      "source_tier": "T2_TEMPLATE_CHECKLIST",
+      "can_support_project_fact": false,
+      "can_support_critical_claim": false
+    },
+    {
+      "source_id": "REF-001",
+      "file_id": "FILE-REF",
+      "path": "inputs/reference.md",
+      "role": "reference",
+      "source_tier": "T3_REFERENCE_METHODOLOGY",
+      "can_support_project_fact": false,
+      "can_support_critical_claim": false
+    },
+    {
+      "source_id": "FILE-SAMPLE",
+      "file_id": "FILE-SAMPLE",
+      "path": "inputs/sample.md",
+      "role": "sample",
+      "source_tier": "T4_SAMPLE_STYLE_ONLY",
+      "can_support_project_fact": false,
+      "can_support_critical_claim": false
+    }
+  ]
+}

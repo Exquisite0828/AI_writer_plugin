@@ -1,0 +1,9 @@
+{
+  "method": "HARA",
+  "concepts": [
+    "HARA considers hazard, operational situation, severity, exposure, and controllability.",
+    "Severity, exposure, and controllability ratings require human confirmation.",
+    "ASIL candidates should not be finalized without review."
+  ],
+  "scope": "methodology reference only"
+}

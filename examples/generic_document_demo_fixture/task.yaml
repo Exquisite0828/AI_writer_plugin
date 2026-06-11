@@ -1,0 +1,33 @@
+task_type: generic_document
+task_title: Generate migration decision memo demo
+display_name: Migration Decision Memo
+target_audience: Engineering leadership review group
+output_format: markdown
+strict_template: true
+allow_inference: false
+critical_claims:
+  - final decision recommendation
+  - release readiness conclusion
+  - compliance conclusion
+  - cost or schedule commitment
+requires_human_confirmation:
+  - final decision recommendation
+  - release readiness conclusion
+  - compliance conclusion
+  - cost or schedule commitment
+inputs:
+  - path: inputs/source.md
+    role: source
+    notes: Confirmed project source material for the migration memo.
+  - path: inputs/template.md
+    role: template
+    notes: Required memo section structure.
+  - path: inputs/checklist.md
+    role: checklist
+    notes: Review checklist for memo acceptance.
+  - path: inputs/reference.md
+    role: reference
+    notes: General memo writing guidance, not project evidence.
+  - path: inputs/sample.md
+    role: sample
+    notes: Example memo style only, not project evidence.

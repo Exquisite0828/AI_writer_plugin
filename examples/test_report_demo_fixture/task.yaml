@@ -1,0 +1,46 @@
+task_type: test_report
+task_title: 生成测试报告
+target_audience: QA lead / development team / release review
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - final pass/fail conclusion
+  - release readiness or acceptance recommendation
+  - defect severity acceptance
+  - coverage sufficiency conclusion
+  - unresolved issue acceptance
+  - test sufficiency conclusion
+inputs:
+  - path: inputs/system_under_test.md
+    role: source
+    title: Markdown Export Service Test Object
+    notes: "Fact source for the system under test, version, test target, and known scope limits."
+  - path: inputs/test_plan.md
+    role: source
+    title: Markdown Export Service Test Plan
+    notes: "Fact source for test scope, strategy, environment, entry criteria, exit criteria, and non-goals."
+  - path: inputs/test_results.csv
+    role: source
+    title: Markdown Export Service Test Results
+    notes: "Fact source for test case execution status and evidence ids."
+  - path: inputs/defect_summary.md
+    role: source
+    title: Markdown Export Service Defect Summary
+    notes: "Fact source for known defects and unresolved anomalies. Does not approve release acceptance."
+  - path: inputs/test_report_template.md
+    role: template
+    title: Test Report Template
+    notes: "Structure source only. Do not use as factual evidence."
+  - path: inputs/checklist.md
+    role: checklist
+    title: Test Report Review Checklist
+    notes: "Review criteria only. Do not use as factual evidence."
+  - path: inputs/test_methodology_reference.md
+    role: reference
+    title: Test Reporting Methodology Reference
+    notes: "General testing methodology reference only. Do not use as project-specific result, pass/fail, defect, coverage, or release readiness evidence."
+  - path: inputs/sample_test_report.md
+    role: sample
+    title: Sample Test Report Shape
+    notes: "Style and structure sample only. Never use as facts, test results, defect status, coverage status, pass/fail status, or final conclusions."

@@ -1,0 +1,18 @@
+id: fsr_negative_tsc_leakage
+schema_version: eval_case.v1
+description: FSR metric must fail if TSC deliverable content leaks into FSR artifacts.
+document_type: fsr
+case_type: negative_metric_guard
+mode: artifact_fixture
+artifact_root: tests/evals/fixtures/fsr/negative_tsc_leakage
+expected_result: fail
+metrics:
+  - cross_document_leakage
+expectations:
+  expected_failures:
+    - cross_document_leakage
+  forbidden_terms:
+    - Technical Safety Concept final report
+    - Technical Safety Requirement table
+    - TSC approval statement
+    - technical safety mechanism completeness

@@ -1,0 +1,41 @@
+task_type: hara
+task_title: 生成 HARA 危害分析报告
+target_audience: 功能安全工程师
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - hazard identification
+  - severity/exposure/controllability rating
+  - ASIL or risk level conclusion
+inputs:
+  - path: inputs/item_definition.md
+    role: source
+    title: Item Definition
+  - path: inputs/system_notes.txt
+    role: source
+    title: System Notes
+  - path: inputs/safety_requirements.csv
+    role: source
+    title: Safety Requirements Table
+  - path: inputs/method_reference.json
+    role: reference
+    title: HARA Method Reference
+  - path: inputs/hara_template.md
+    role: template
+    title: HARA Template
+  - path: inputs/checklist.txt
+    role: checklist
+    title: HARA Checklist
+  - path: inputs/sample_hara.md
+    role: sample
+    title: Sample HARA Report
+  - path: inputs/expected_output_shape.md
+    role: expected_output_shape
+    title: Expected Output Shape
+  - path: inputs/unsupported_reference.pdf
+    role: reference
+    title: Unsupported PDF Reference
+  - path: inputs/missing_item_definition.md
+    role: source
+    title: Missing Source Example

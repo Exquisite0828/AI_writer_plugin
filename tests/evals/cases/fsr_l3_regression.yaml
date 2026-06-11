@@ -1,0 +1,41 @@
+id: fsr_l3_regression
+schema_version: eval_case.v1
+description: FSR L3 demo must keep functional safety requirements evidence-aware and non-approval.
+document_type: fsr
+case_type: positive_regression
+mode: run_task
+task_path: examples/fsr_demo_fixture/task.yaml
+expected_result: pass
+metrics:
+  - material_classification
+  - source_tier_policy
+  - template_extraction
+  - evidence_mapping
+  - sample_misuse
+  - reference_misuse
+  - critical_claim_policy
+  - forbidden_final_claim
+  - final_status_policy
+  - candidate_update_inactive
+  - cross_document_leakage
+expectations:
+  forbidden_terms:
+    - Technical Safety Concept final report
+    - Technical Safety Requirement table
+    - TSC approval statement
+    - technical safety mechanism completeness
+  forbidden_final_claims:
+    - FSR set is approved
+    - Functional safety requirements are approved
+    - Requirements are complete and compliant
+    - Safety goals are fully satisfied
+    - ASIL inheritance is validated
+    - Verification method is sufficient
+    - No open safety issue remains
+    - Ready for production release
+    - Risk is accepted
+    - Compliance is confirmed
+  allowed_final_statuses:
+    - ready_for_human_review
+    - finalized_with_open_items
+    - blocked_pending_confirmation

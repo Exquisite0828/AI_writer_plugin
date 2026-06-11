@@ -1,0 +1,14 @@
+id: fsr_negative_unsupported_critical_claim
+schema_version: eval_case.v1
+description: FSR metric must fail when an unsupported requirement approval claim is finalized.
+document_type: fsr
+case_type: negative_metric_guard
+mode: artifact_fixture
+artifact_root: tests/evals/fixtures/fsr/negative_unsupported_critical_claim
+expected_result: fail
+metrics:
+  - critical_claim_policy
+  - source_tier_policy
+expectations:
+  expected_failures:
+    - critical_claim_policy

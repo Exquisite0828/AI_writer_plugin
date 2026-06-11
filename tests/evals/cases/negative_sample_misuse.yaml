@@ -1,0 +1,14 @@
+id: negative_sample_misuse
+schema_version: eval_case.v1
+description: Metric must fail when sample/T4 supports a project fact.
+document_type: generic_document
+case_type: negative_metric_guard
+mode: artifact_fixture
+artifact_root: tests/evals/fixtures/negative_sample_misuse
+expected_result: fail
+metrics:
+  - sample_misuse
+  - source_tier_policy
+expectations:
+  expected_failures:
+    - sample_misuse

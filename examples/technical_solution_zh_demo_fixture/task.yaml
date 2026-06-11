@@ -1,0 +1,37 @@
+task_type: technical_solution
+task_title: 中文技术方案文档示例
+target_audience: 后端研发、架构评审人员和项目负责人
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - final architecture decision
+  - performance target
+  - security boundary
+  - deployment risk
+  - cost estimate
+inputs:
+  - path: inputs/system_context.md
+    role: source
+    title: 功能开关灰度发布服务系统上下文
+    notes: "项目事实来源：系统范围、现有组件、部署环境、兼容性约束、审计要求和未确认事项。"
+  - path: inputs/requirements.md
+    role: source
+    title: 功能开关灰度发布服务需求
+    notes: "项目事实来源：目标、非目标、已确认需求和待确认需求。"
+  - path: inputs/solution_template.md
+    role: template
+    title: 技术方案模板
+    notes: "仅提供结构，不作为事实证据。"
+  - path: inputs/checklist.md
+    role: checklist
+    title: 技术方案评审清单
+    notes: "仅提供评审标准，不作为事实证据。"
+  - path: inputs/architecture_reference.md
+    role: reference
+    title: 灰度发布服务架构参考
+    notes: "通用技术参考，不作为项目特定决策、性能目标、成本或风险接受证据。"
+  - path: inputs/sample_solution.md
+    role: sample
+    title: 技术方案样例形态
+    notes: "仅用于风格和结构参考，不能作为事实、决策、批准、性能目标、成本或风险结论。"

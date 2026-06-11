@@ -1,0 +1,14 @@
+{
+  "schema_version": "n4.provenance_index.v1",
+  "sources": [
+    {
+      "source_id": "SAMPLE-001",
+      "file_id": "FILE-SAMPLE",
+      "path": "inputs/sample.md",
+      "role": "sample",
+      "source_tier": "T4_SAMPLE_STYLE_ONLY",
+      "can_support_project_fact": true,
+      "can_support_critical_claim": true
+    }
+  ]
+}

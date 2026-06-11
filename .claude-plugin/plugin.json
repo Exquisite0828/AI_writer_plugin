@@ -1,0 +1,21 @@
+{
+  "name": "ai-writing-plugin",
+  "version": "0.1.0",
+  "description": "面向 Claude Code 的证据边界专业文档写作插件；technical preview supports HARA, technical solution, test report, and FSR workflows.",
+  "author": {
+    "name": "AI Writing Plugin Team"
+  },
+  "commands": [
+    "./commands/write.md"
+  ],
+  "keywords": [
+    "writing",
+    "hara",
+    "technical-solution",
+    "test-report",
+    "document-types",
+    "functional-safety",
+    "evidence",
+    "review"
+  ]
+}

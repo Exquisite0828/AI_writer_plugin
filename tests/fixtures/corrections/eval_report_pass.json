@@ -1,0 +1,12 @@
+{
+  "schema_version": "eval_report.v1",
+  "repository_phase": "N6",
+  "overall_status": "pass",
+  "regression_status": "pass",
+  "case_count": 1,
+  "passed_case_count": 1,
+  "failed_case_count": 0,
+  "expectation_mismatch_count": 0,
+  "case_results": [],
+  "non_approval_notice": "Eval pass only means deterministic engineering policy checks passed. It is not professional approval, not compliance approval, not risk acceptance, and not production readiness approval."
+}

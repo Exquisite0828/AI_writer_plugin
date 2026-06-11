@@ -1,0 +1,17 @@
+id: negative_cross_document_leakage
+schema_version: eval_case.v1
+description: Metric must fail when technical_solution artifacts contain HARA terminology.
+document_type: technical_solution
+case_type: negative_metric_guard
+mode: artifact_fixture
+artifact_root: tests/evals/fixtures/negative_cross_document_leakage
+expected_result: fail
+metrics:
+  - cross_document_leakage
+expectations:
+  expected_failures:
+    - cross_document_leakage
+  forbidden_terms:
+    - ASIL
+    - severity rating
+    - safety goal

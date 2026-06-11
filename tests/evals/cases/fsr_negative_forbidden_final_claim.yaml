@@ -1,0 +1,17 @@
+id: fsr_negative_forbidden_final_claim
+schema_version: eval_case.v1
+description: FSR metric must fail on unguarded approval-like final claims.
+document_type: fsr
+case_type: negative_metric_guard
+mode: artifact_fixture
+artifact_root: tests/evals/fixtures/fsr/negative_forbidden_final_claim
+expected_result: fail
+metrics:
+  - forbidden_final_claim
+expectations:
+  expected_failures:
+    - forbidden_final_claim
+  forbidden_final_claims:
+    - FSR set is approved
+    - Functional safety requirements are approved
+    - Requirements are complete and compliant

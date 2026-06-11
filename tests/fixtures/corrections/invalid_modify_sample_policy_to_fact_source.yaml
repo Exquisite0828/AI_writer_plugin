@@ -1,0 +1,9 @@
+profile_id: customer_demo.custom_technical_note
+profile_version: 0.1.0
+correction_type: sample_policy_guard
+field: sample_policy
+operation: replace_policy_text
+value: Sample documents may be used as project fact sources.
+rationale: This must not become an auto-applicable profile patch.
+source: human_correction
+status: submitted

@@ -1,0 +1,5 @@
+Vehicle mode: normal driving mode with EPS assist enabled.
+
+Driver override assumption: the driver can apply steering torque to override unintended assist behavior.
+
+Degraded mode note: if assist is unavailable, manual steering remains possible with increased steering effort.

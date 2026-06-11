@@ -1,0 +1,3 @@
+requirement_id,description,source
+REQ-001,EPS assist shall not command steering torque without driver steering input,item definition
+REQ-002,EPS assist shall transition to degraded mode when assist motor feedback is unavailable,system notes

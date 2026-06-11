@@ -1,0 +1,28 @@
+task_type: custom_technical_note
+task_title: Generate a customer technical note from an external profile
+target_audience: Engineering reviewer
+output_format: markdown
+strict_template: true
+allow_inference: false
+document_profile_path: profiles/document_types/customer_demo/custom_technical_note.yaml
+requires_human_confirmation:
+  - final deployment decision
+  - compatibility claim
+  - deployment risk
+  - cost or schedule commitment
+inputs:
+  - path: inputs/source.md
+    role: source
+    notes: Confirmed source material for the customer technical note.
+  - path: inputs/template.md
+    role: template
+    notes: Required technical note section structure.
+  - path: inputs/checklist.md
+    role: checklist
+    notes: Review checklist for the technical note.
+  - path: inputs/reference.md
+    role: reference
+    notes: General reference guidance, not project evidence.
+  - path: inputs/sample.md
+    role: sample
+    notes: Example style only, not project evidence.

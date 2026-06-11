@@ -1,0 +1,23 @@
+{
+  "schema_version": "n4.claim_support_matrix.v1",
+  "claims": [
+    {
+      "claim_category": "functional safety requirement wording",
+      "required_human_confirmation": true,
+      "claim_status": "supported",
+      "evidence_status": "sample_style_only",
+      "human_confirmation_status": "pending",
+      "source_support": [
+        {
+          "source_id": "FSR-SAMPLE-001",
+          "source_tier": "T4_SAMPLE_STYLE_ONLY",
+          "evidence_id": "EVD-FSR-SAMPLE",
+          "support_type": "project_fact",
+          "support_strength": "strong"
+        }
+      ],
+      "blocking_reason": "",
+      "notes": []
+    }
+  ]
+}

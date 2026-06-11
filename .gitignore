@@ -1,0 +1,87 @@
+# Python
+
+**pycache**/
+
+__pycache__/
+
+*.pyc
+
+*.py[cod]
+
+*.pyo
+
+*.pyd
+
+.pytest_cache/
+
+.mypy_cache/
+
+.ruff_cache/
+
+.coverage
+
+htmlcov/
+
+# Virtual environments
+
+.venv/
+
+venv/
+
+env/
+
+# Build outputs
+
+dist/
+
+build/
+
+*.egg-info/
+
+# Runtime outputs
+
+runs/
+
+outputs/
+
+# Local historical/process archives
+
+docs/archive/
+
+local_archive/
+
+# Local trial fixtures
+
+examples/hara_eps_trial_fixture/
+
+# Optional local reference material
+
+superpowers本体架构/
+
+HARA报告生成参考资料集_EPS/
+
+# Local logs
+
+*.log
+
+.codex-log/
+
+# OS files
+
+.DS_Store
+
+Thumbs.db
+
+# IDE/editor
+
+.vscode/
+
+.idea/
+
+# Temporary files
+
+*.tmp
+
+*.temp
+
+*.bak

@@ -1,0 +1,23 @@
+{
+  "run_id": "fixture-positive",
+  "generated_at": "2026-06-07T00:00:00Z",
+  "tasks": [
+    {
+      "task_id": "TASK-001",
+      "section_id": "SEC-001",
+      "section_title": "Background",
+      "order": 1,
+      "allowed_evidence": ["EVD-001"],
+      "forbidden_sources": ["sample", "expected_output_shape", "template", "checklist"]
+    },
+    {
+      "task_id": "TASK-002",
+      "section_id": "SEC-002",
+      "section_title": "Architecture",
+      "order": 2,
+      "allowed_evidence": ["EVD-001"],
+      "forbidden_sources": ["sample", "expected_output_shape", "template", "checklist"]
+    }
+  ],
+  "summary": {"total_tasks": 2}
+}

@@ -1,0 +1,50 @@
+{
+  "run_id": "fixture-positive",
+  "generated_at": "2026-06-07T00:00:00Z",
+  "sources": [
+    {
+      "source_id": "SRC-001",
+      "file_id": "FILE-SRC",
+      "path": "inputs/source.md",
+      "title": "Source",
+      "section": "Architecture",
+      "anchor": "source-architecture",
+      "text": "The proposed design uses an event queue.",
+      "keywords": ["architecture"],
+      "source_role": "source",
+      "is_fact_source": true,
+      "source_tier": "T1_PROJECT_SOURCE",
+      "can_support_project_fact": true,
+      "can_support_methodology": false,
+      "can_support_style": false,
+      "can_support_critical_claim": true,
+      "char_start": 0,
+      "char_end": 44
+    },
+    {
+      "source_id": "REF-001",
+      "file_id": "FILE-REF",
+      "path": "inputs/reference.md",
+      "title": "Reference",
+      "section": "Methodology",
+      "anchor": "reference-methodology",
+      "text": "Architecture decisions should document trade-offs.",
+      "keywords": ["methodology"],
+      "source_role": "reference",
+      "is_fact_source": false,
+      "source_tier": "T3_REFERENCE_METHODOLOGY",
+      "can_support_project_fact": false,
+      "can_support_methodology": true,
+      "can_support_style": false,
+      "can_support_critical_claim": false,
+      "char_start": 0,
+      "char_end": 48
+    }
+  ],
+  "summary": {
+    "total_sources": 2,
+    "fact_sources": 1,
+    "reference_sources": 1,
+    "skipped_files": 3
+  }
+}

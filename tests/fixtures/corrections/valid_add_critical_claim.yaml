@@ -1,0 +1,9 @@
+profile_id: customer_demo.custom_technical_note
+profile_version: 0.1.0
+correction_type: critical_claim_missing
+field: critical_claims
+operation: add_to_list
+value: data retention period
+rationale: User indicated this must be treated as a critical claim.
+source: human_correction
+status: submitted

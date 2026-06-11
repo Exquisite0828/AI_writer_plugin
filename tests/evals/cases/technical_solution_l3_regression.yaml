@@ -1,0 +1,34 @@
+id: technical_solution_l3_regression
+schema_version: eval_case.v1
+description: Technical solution L3 demo must not leak HARA terminology and must keep evidence boundaries.
+document_type: technical_solution
+case_type: positive_regression
+mode: run_task
+task_path: examples/technical_solution_demo_fixture/task.yaml
+expected_result: pass
+metrics:
+  - material_classification
+  - source_tier_policy
+  - template_extraction
+  - evidence_mapping
+  - sample_misuse
+  - reference_misuse
+  - critical_claim_policy
+  - forbidden_final_claim
+  - final_status_policy
+  - candidate_update_inactive
+  - cross_document_leakage
+expectations:
+  forbidden_terms:
+    - ASIL
+    - S/E/C
+    - severity rating
+    - exposure rating
+    - controllability rating
+    - safety goal
+    - hazardous event
+    - HARA professional judgment
+  allowed_final_statuses:
+    - ready_for_human_review
+    - finalized_with_open_items
+    - blocked_pending_confirmation

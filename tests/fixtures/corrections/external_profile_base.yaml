@@ -1,0 +1,89 @@
+profile_id: customer_demo.custom_technical_note
+profile_version: 0.1.0
+task_type: custom_technical_note
+display_name: Custom Technical Note
+description: A customer-specific technical note profile for implementation review notes.
+default_sections:
+  - Background
+  - Scope
+  - Technical Notes
+  - Compatibility and Constraints
+  - Deployment Risks and Open Questions
+  - Human Confirmations
+required_sections:
+  - background
+  - scope
+  - technical notes
+  - compatibility
+  - deployment risks
+  - open questions
+optional_sections:
+  - review summary
+critical_claims:
+  - implementation constraint
+  - compatibility claim
+  - deployment risk
+  - final deployment decision
+  - cost or schedule commitment
+requires_human_confirmation:
+  - final deployment decision
+  - compatibility claim
+  - deployment risk
+  - cost or schedule commitment
+forbidden_final_claims:
+  - implementation is approved
+  - no deployment risk exists
+  - compatibility is validated
+  - deployment is production ready
+  - rollout is approved
+  - cost is final
+confirmation_marker: NEEDS_USER_CONFIRMATION
+fact_source_roles:
+  - source
+non_fact_source_roles:
+  - sample
+  - template
+  - checklist
+  - reference
+  - expected_output_shape
+reference_policy: Reference materials may support methodology or background but must not prove project-specific facts, compatibility, deployment risk, costs, schedules, or final decisions.
+sample_policy: Sample documents may guide structure and style but must not supply project facts, compatibility, deployment risk, costs, schedules, or final decisions.
+default_final_status: ready_for_human_review
+allowed_final_statuses:
+  - ready_for_human_review
+  - finalized_with_open_items
+  - blocked_pending_confirmation
+review_focus:
+  - template completeness
+  - checklist coverage
+  - unsupported critical claims
+  - sample misuse
+  - reference misuse as project fact
+  - unresolved deployment risks
+verification_focus:
+  - required artifacts
+  - citation integrity
+  - sample not fact source
+  - reference not project fact source
+  - critical claims confirmation
+  - candidate update inactive
+candidate_learning_policy: Generate candidate updates only; keep proposed/inactive unless explicitly approved.
+terminology:
+  sensitive_title_markers: decision|compatibility|deployment|risk|constraint|cost|schedule|confirmation|open question
+  rating_title_markers: ""
+  rating_placeholder: claim status pending
+  professional_judgment: custom technical note critical claim
+  professional_judgments: custom technical note critical claims
+  critical_claims_label: custom technical note critical claims
+  critical_judgment_label: custom technical note critical claims
+  confirmation_heading: Open Custom Technical Note Confirmations
+  final_package_title: Final Custom Technical Note Package
+output_labels:
+  draft_title: Custom Technical Note Conservative Draft
+  final_report_title: Final Custom Technical Note Package
+  confirmation_section: NEEDS_USER_CONFIRMATION
+  boundary_note_heading: Final Boundary Note
+  open_items_heading: Open Custom Technical Note Confirmations
+  critical_claims_label: Custom technical note critical claims
+  no_forbidden_final_claim_detail: No forbidden final custom technical note phrase was found.
+  confirmation_marker_detail: Custom technical note critical claims keep NEEDS_USER_CONFIRMATION markers.
