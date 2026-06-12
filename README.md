@@ -39,7 +39,25 @@ claude --plugin-dir .
 
 如果 `validate` 通过但命令不显示，见 [Troubleshooting](docs/TROUBLESHOOTING.md)。
 
-进入 Claude Code 后，用自己的 `task.yaml` 启动 workflow：
+
+
+进入claudecode界面
+
+# 1. 添加本地目录为 marketplace
+
+/plugin marketplace add D:\Github\Ancoder\Ancoder_Writer_Agent
+
+# 2. 安装插件
+
+/plugin install ai-writing-plugin@ancoder-writer
+
+# 3. 重载插件使其生效
+
+/reload-plugins
+
+
+
+用自己的 `task.yaml` 启动 workflow：
 
 ```text
 /ai-writing-plugin:write "Run the writing workflow with path/to/task.yaml"
@@ -101,20 +119,20 @@ inputs:
 
 ## 使用方式
 
-| 使用方式 | 适合场景 | 示例 |
-| --- | --- | --- |
-| `generic_document` 通用模式 | 大多数有 `source` / `template` / `checklist` 的专业文档 | `examples/generic_document_demo_fixture/task.yaml` |
-| external `document_profile.yaml` | 团队或项目内反复使用的自定义文档 | `examples/custom_technical_note_profile_demo_fixture/task.yaml` |
-| official built-in profiles | 高价值、高风险、高频场景，带内置规则、fixture、测试和 Skill guideline | `hara` / `technical_solution` / `test_report` / `fsr` |
+| 使用方式                           | 适合场景                                                              | 示例                                                              |
+| ---------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `generic_document` 通用模式      | 大多数有 `source` / `template` / `checklist` 的专业文档         | `examples/generic_document_demo_fixture/task.yaml`              |
+| external `document_profile.yaml` | 团队或项目内反复使用的自定义文档                                      | `examples/custom_technical_note_profile_demo_fixture/task.yaml` |
+| official built-in profiles         | 高价值、高风险、高频场景，带内置规则、fixture、测试和 Skill guideline | `hara` / `technical_solution` / `test_report` / `fsr`     |
 
 当前 official built-in profiles：
 
-| `task_type` | 用途 |
-| --- | --- |
-| `hara` | HARA hazard analysis report 辅助写作 |
-| `technical_solution` | 技术方案、架构方案或实现方案写作 |
-| `test_report` | 测试报告包写作 |
-| `fsr` | Functional Safety Requirements package 写作 |
+| `task_type`          | 用途                                        |
+| ---------------------- | ------------------------------------------- |
+| `hara`               | HARA hazard analysis report 辅助写作        |
+| `technical_solution` | 技术方案、架构方案或实现方案写作            |
+| `test_report`        | 测试报告包写作                              |
+| `fsr`                | Functional Safety Requirements package 写作 |
 
 `generic_document` 是通用模式，不是 official built-in profile。
 `custom_technical_note` 是 external profile demo，不是 official built-in profile。
