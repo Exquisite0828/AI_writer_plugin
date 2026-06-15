@@ -46,6 +46,7 @@ python -m ai_writing_plugin
 ```text
 init-run
 ingest-run
+resume-run
 outline-run
 evidence-run
 plan-run
@@ -55,9 +56,17 @@ finalize-run
 learning-run
 record-hitl
 write-run
+prepare-stage-review
+validate-stage-review
+record-stage-review-decision
+check-stage-review-gate
 ```
 
 `write-run` 是完整非交互 helper。它不能伪造 HITL approval。
+
+`resume-run` 使用 `runs/<run_id>/run_state.json` 从中断的 resumable run 继续。`prepare-stage-review` / `validate-stage-review` 生成并校验辅助审查包；`record-stage-review-decision` / `check-stage-review-gate` 记录并检查用户的 `stage_review_gate_only` decision。`--require-stage-review-gates` 是 opt-in stricter workflow flag；默认 `write-run`、`resume-run` 和 stage commands 不强制 gate。
+
+S2B reuses existing S2A gate artifacts and is opt-in enforcement only; it does not auto-call Claude Code, does not auto-fix, and does not create professional approval.
 
 ## Document type rules
 

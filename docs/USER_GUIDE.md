@@ -212,6 +212,17 @@ PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin write-run --task
 runs/<run_id>/
 ```
 
+## Resume interrupted runs and optional stage review gates
+
+- Interrupted resumable runs can continue with `resume-run --run runs/<run_id>`.
+- Stage review packages can be prepared and validated with `prepare-stage-review` and `validate-stage-review`.
+- `review_units.json` supports unit-level review coverage for structured issues.
+- Users can record `accepted`, `skipped`, `needs_revision`, or `blocked` stage review decisions.
+- `--require-stage-review-gates` is opt-in for stricter workflows; the default workflow remains non-gated.
+- Gate decisions are `stage_review_gate_only` and are not professional approval.
+
+Detailed operational commands and recovery cases are covered in [Runbook](RUNBOOK.md).
+
 ## 读取生成的 artifact
 
 先按这个顺序阅读：

@@ -201,6 +201,37 @@ runs/<run_id>/stage_reviews/<stage>/validation_report.json
 
 通过 `check-stage-review-gate` 只表示 S2A gate check passed；不表示专业批准。若用户要继续使用修改后的 `issues.json` 或 validation report，应重新运行 `validate-stage-review`，再重新记录 `record-stage-review-decision`。
 
+## `--require-stage-review-gates` 在某个 stage 前失败
+
+症状类似：
+
+```text
+Stage review gate required before <stage>
+```
+
+这表示 opt-in S2B gate enforcement 在继续执行前 fail closed。它不表示 professional rejection，也不表示专业批准失败。
+
+常见原因：
+
+- previous stage 的 `stage_reviews/<stage>/` package 缺失；
+- `issues.json` 缺失或 invalid；
+- `review_units.json` coverage 不完整；
+- `decision.json` 缺失；
+- `decision` 是 `needs_revision` 或 `blocked`；
+- `decision=skipped` 但缺少 notes；
+- 记录 decision 后修改了 `issues.json` 或 `validation_report.json`，导致 hash mismatch。
+
+处理顺序：
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin prepare-stage-review --run runs/<run_id> --stage <previous_stage>
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage <previous_stage>
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin record-stage-review-decision --run runs/<run_id> --stage <previous_stage> --decision accepted --notes "Reviewed for stage gate only."
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin check-stage-review-gate --run runs/<run_id> --stage <previous_stage>
+```
+
+如果确实不希望使用 gated workflow，去掉 `--require-stage-review-gates`。默认 workflow remains non-gated。
+
 ## `stage_reviews/` 是否需要提交
 
 不需要。`stage_reviews/` 位于 `runs/<run_id>/` 下，是本地 runtime output。`runs/` 不进 git，提交前仍用：

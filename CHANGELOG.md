@@ -2,6 +2,21 @@
 
 本项目使用接近 Keep a Changelog 的格式记录面向用户和维护者的重要变化。
 
+## [Unreleased]
+
+### Added
+
+- Resumable write runs with `runs/<run_id>/run_state.json` and `resume-run`.
+- Stage Review Gate package generation and validation through `prepare-stage-review` and `validate-stage-review`.
+- Review unit coverage validation with `review_units.json`, `reviewed_unit_ids`, `unchecked_unit_ids`, and `issues[].unit_id`.
+- User stage review decisions through `record-stage-review-decision` and `check-stage-review-gate`.
+- Opt-in `--require-stage-review-gates` enforcement for stricter stage-by-stage workflows.
+
+### Notes
+
+- Stage Review Gate is an auxiliary review mechanism. It does not create professional approval, compliance approval, or safety approval.
+- The workflow does not automatically invoke Claude Code, does not automatically modify professional artifacts, and does not implement auto-fix or S4 auto apply.
+
 ## [0.1.0] - 2026-06-08
 
 ### Added
