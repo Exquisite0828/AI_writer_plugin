@@ -127,7 +127,7 @@ Claude Code 入口：
 
 ## Stage review package
 
-Stage Review Gate S1/S1R 可以在某个 stage 完成后生成 advisory review package，供 Claude Code 读取后做语义审查：
+Stage Review Gate S1/S1R/S2A 可以在某个 stage 完成后生成 advisory review package，供 Claude Code 读取后做语义审查，并由用户显式记录 stage review gate decision：
 
 ```bash
 .venv/bin/python -m ai_writing_plugin prepare-stage-review --run runs/<run_id> --stage outline
@@ -173,7 +173,29 @@ issues[].unit_id
 
 `validation_report.json` 会写入 `coverage_summary`，其中 `coverage_complete=true` 只表示 required review units 已被 deterministic coverage validation 接受，不表示 professional approval。
 
-`stage_reviews/` 是 runtime assistance output，不写入 `manifest.artifacts`，不改变 `run_state.json` lifecycle，不证明项目事实，也不表示 professional approval。S1/S1R 不调用 Claude Code，不自动修改原 artifacts，不应用 patch，不阻塞下一 stage。
+记录 S2A gate decision：
+
+```bash
+.venv/bin/python -m ai_writing_plugin record-stage-review-decision --run runs/<run_id> --stage outline --decision accepted --notes "Reviewed."
+```
+
+`decision` 只允许 `accepted`、`skipped`、`needs_revision`、`blocked`。`skipped` 必须有非空 notes。该命令生成：
+
+```text
+runs/<run_id>/stage_reviews/<stage>/decision.json
+```
+
+`decision.json` 固定 `decision_scope=stage_review_gate_only` 且 `professional_approval=false`，并记录 `validation_report_sha256` 和 `issues_sha256`。`accepted` / `skipped` 只表示用户允许该 stage review gate 继续；it does not indicate professional approval。
+
+检查 gate：
+
+```bash
+.venv/bin/python -m ai_writing_plugin check-stage-review-gate --run runs/<run_id> --stage outline
+```
+
+checker 要求 validation report 仍为 `valid`、`coverage_complete=true`、decision 为 `accepted` 或 `skipped`、`professional_approval=false`，并且 `validation_report.json` / `issues.json` hash 未在 decision 后改变。
+
+`stage_reviews/` 是 runtime assistance output，不写入 `manifest.artifacts`，不改变 `run_state.json` lifecycle，不证明项目事实，也不表示 professional approval。S1/S1R/S2A 不调用 Claude Code，不自动修改原 artifacts，不应用 patch，不阻塞下一 stage。
 
 ## Focused regression matrix
 

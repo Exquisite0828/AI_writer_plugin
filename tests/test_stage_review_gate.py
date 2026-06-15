@@ -77,6 +77,18 @@ def valid_issues_payload(run_id: str, stage: str, unit_ids: list[str]) -> dict:
     }
 
 
+def prepare_validated_stage_review(tmp_path: Path, stage: str = "draft") -> tuple[Path, str]:
+    from ai_writing_plugin.stage_review import prepare_stage_review, validate_stage_review
+
+    run_dir = run_until_draft_done(tmp_path)
+    run_id = read_json(run_dir / "manifest.json")["run_id"]
+    prepare_stage_review(run_dir=run_dir, stage=stage)
+    unit_ids = review_unit_ids(run_dir, stage)
+    write_json(run_dir / "stage_reviews" / stage / "issues.json", valid_issues_payload(run_id, stage, unit_ids))
+    validate_stage_review(run_dir=run_dir, stage=stage)
+    return run_dir, run_id
+
+
 def test_prepare_stage_review_package_for_draft_is_advisory_and_does_not_mutate_artifacts(tmp_path: Path) -> None:
     from ai_writing_plugin.stage_review import prepare_stage_review
 
@@ -401,24 +413,248 @@ def test_validate_stage_review_rejects_reviewed_and_unchecked_overlap(tmp_path: 
         validate_stage_review(run_dir=run_dir, stage="draft")
 
 
+def test_record_stage_review_decision_writes_gate_only_decision_without_mutating_professional_artifacts(
+    tmp_path: Path,
+) -> None:
+    from ai_writing_plugin.stage_review import record_stage_review_decision
+
+    run_dir, run_id = prepare_validated_stage_review(tmp_path)
+    manifest_before = read_json(run_dir / "manifest.json")
+    run_state_before = read_json(run_dir / "run_state.json")
+    draft_path = run_dir / "draft" / "full_draft.md"
+    draft_hash_before = sha256(draft_path)
+    issues_hash = sha256(run_dir / "stage_reviews" / "draft" / "issues.json")
+    validation_hash = sha256(run_dir / "stage_reviews" / "draft" / "validation_report.json")
+
+    decision_path = record_stage_review_decision(
+        run_dir=run_dir,
+        stage="draft",
+        decision="accepted",
+        notes="Reviewed after Claude-assisted stage review.",
+    )
+
+    decision = read_json(decision_path)
+    manifest_after = read_json(run_dir / "manifest.json")
+    run_state_after = read_json(run_dir / "run_state.json")
+
+    assert decision_path == run_dir / "stage_reviews" / "draft" / "decision.json"
+    assert decision == {
+        "kind": "stage_review_decision",
+        "schema_version": 1,
+        "run_id": run_id,
+        "stage": "draft",
+        "decision": "accepted",
+        "decision_scope": "stage_review_gate_only",
+        "professional_approval": False,
+        "allow_next_stage": True,
+        "decided_by": "user",
+        "decision_source": "cli",
+        "notes": "Reviewed after Claude-assisted stage review.",
+        "created_at": decision["created_at"],
+        "validation_report_path": "stage_reviews/draft/validation_report.json",
+        "issues_path": "stage_reviews/draft/issues.json",
+        "validation_status_at_decision": "valid",
+        "coverage_complete_at_decision": True,
+        "validation_report_sha256": validation_hash,
+        "issues_sha256": issues_hash,
+    }
+    assert decision["created_at"].endswith("Z")
+    assert manifest_after == manifest_before
+    assert run_state_after["stages"] == run_state_before["stages"]
+    assert sha256(draft_path) == draft_hash_before
+    assert all("stage_reviews/" not in artifact["path"] for artifact in manifest_after["artifacts"])
+
+
+def test_record_stage_review_decision_rejects_missing_invalid_and_incomplete_validation(tmp_path: Path) -> None:
+    from ai_writing_plugin.stage_review import (
+        StageReviewError,
+        prepare_stage_review,
+        record_stage_review_decision,
+        validate_stage_review,
+    )
+
+    run_dir = run_until_draft_done(tmp_path)
+    run_id = read_json(run_dir / "manifest.json")["run_id"]
+    prepare_stage_review(run_dir=run_dir, stage="draft")
+
+    with pytest.raises(StageReviewError, match="validation_report.json missing"):
+        record_stage_review_decision(run_dir=run_dir, stage="draft", decision="accepted")
+
+    payload = valid_issues_payload(run_id, "draft", review_unit_ids(run_dir))
+    payload["status"] = "professionally_approved"
+    write_json(run_dir / "stage_reviews" / "draft" / "issues.json", payload)
+    with pytest.raises(StageReviewError):
+        validate_stage_review(run_dir=run_dir, stage="draft")
+    with pytest.raises(StageReviewError, match="validation_report status must be valid"):
+        record_stage_review_decision(run_dir=run_dir, stage="draft", decision="accepted")
+
+    unit_ids = review_unit_ids(run_dir)
+    write_json(run_dir / "stage_reviews" / "draft" / "issues.json", valid_issues_payload(run_id, "draft", unit_ids))
+    validate_stage_review(run_dir=run_dir, stage="draft")
+    report_path = run_dir / "stage_reviews" / "draft" / "validation_report.json"
+    report = read_json(report_path)
+    report["coverage_summary"]["coverage_complete"] = False
+    write_json(report_path, report)
+    with pytest.raises(StageReviewError, match="coverage_complete must be true"):
+        record_stage_review_decision(run_dir=run_dir, stage="draft", decision="accepted")
+
+
+def test_record_stage_review_decision_requires_issues_json_and_skipped_notes(tmp_path: Path) -> None:
+    from ai_writing_plugin.stage_review import StageReviewError, record_stage_review_decision
+
+    run_dir, _run_id = prepare_validated_stage_review(tmp_path)
+
+    with pytest.raises(StageReviewError, match="notes must be non-empty"):
+        record_stage_review_decision(run_dir=run_dir, stage="draft", decision="skipped")
+
+    (run_dir / "stage_reviews" / "draft" / "issues.json").unlink()
+    with pytest.raises(StageReviewError, match="issues.json missing"):
+        record_stage_review_decision(run_dir=run_dir, stage="draft", decision="accepted")
+
+
+def test_check_stage_review_gate_passes_for_accepted_and_skipped_decisions(tmp_path: Path) -> None:
+    from ai_writing_plugin.stage_review import check_stage_review_gate, record_stage_review_decision
+
+    accepted_run_dir, _run_id = prepare_validated_stage_review(tmp_path / "accepted")
+    record_stage_review_decision(run_dir=accepted_run_dir, stage="draft", decision="accepted")
+    accepted_result = check_stage_review_gate(run_dir=accepted_run_dir, stage="draft")
+    assert accepted_result["status"] == "passed"
+    assert accepted_result["decision"] == "accepted"
+    assert accepted_result["professional_approval"] is False
+
+    skipped_run_dir, _run_id = prepare_validated_stage_review(tmp_path / "skipped")
+    record_stage_review_decision(
+        run_dir=skipped_run_dir,
+        stage="draft",
+        decision="skipped",
+        notes="User explicitly skipped this advisory gate.",
+    )
+    skipped_result = check_stage_review_gate(run_dir=skipped_run_dir, stage="draft")
+    assert skipped_result["status"] == "passed"
+    assert skipped_result["decision"] == "skipped"
+
+
+@pytest.mark.parametrize("decision", ["needs_revision", "blocked"])
+def test_check_stage_review_gate_fails_for_blocking_decisions(tmp_path: Path, decision: str) -> None:
+    from ai_writing_plugin.stage_review import StageReviewError, check_stage_review_gate, record_stage_review_decision
+
+    run_dir, _run_id = prepare_validated_stage_review(tmp_path)
+    record_stage_review_decision(run_dir=run_dir, stage="draft", decision=decision)
+
+    with pytest.raises(StageReviewError, match=decision):
+        check_stage_review_gate(run_dir=run_dir, stage="draft")
+
+
+def test_check_stage_review_gate_fails_when_decision_missing(tmp_path: Path) -> None:
+    from ai_writing_plugin.stage_review import StageReviewError, check_stage_review_gate
+
+    run_dir, _run_id = prepare_validated_stage_review(tmp_path)
+
+    with pytest.raises(StageReviewError, match="decision.json missing"):
+        check_stage_review_gate(run_dir=run_dir, stage="draft")
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_message"),
+    [
+        ("validation_report", "validation_report_sha256 mismatch"),
+        ("issues", "issues_sha256 mismatch"),
+        ("professional_approval", "professional_approval must be false"),
+    ],
+)
+def test_check_stage_review_gate_rejects_hash_mismatch_and_professional_approval(
+    tmp_path: Path,
+    mutation: str,
+    expected_message: str,
+) -> None:
+    from ai_writing_plugin.stage_review import StageReviewError, check_stage_review_gate, record_stage_review_decision
+
+    run_dir, _run_id = prepare_validated_stage_review(tmp_path)
+    record_stage_review_decision(run_dir=run_dir, stage="draft", decision="accepted")
+
+    if mutation == "validation_report":
+        report_path = run_dir / "stage_reviews" / "draft" / "validation_report.json"
+        report = read_json(report_path)
+        report["warnings"].append("changed after decision")
+        write_json(report_path, report)
+    elif mutation == "issues":
+        issues_path = run_dir / "stage_reviews" / "draft" / "issues.json"
+        issues = read_json(issues_path)
+        issues["issues"][0]["title"] = "Changed after decision"
+        write_json(issues_path, issues)
+    else:
+        decision_path = run_dir / "stage_reviews" / "draft" / "decision.json"
+        decision_doc = read_json(decision_path)
+        decision_doc["professional_approval"] = True
+        write_json(decision_path, decision_doc)
+
+    with pytest.raises(StageReviewError, match=expected_message):
+        check_stage_review_gate(run_dir=run_dir, stage="draft")
+
+
+def test_stage_review_decision_cli_record_and_check_smoke(tmp_path: Path) -> None:
+    run_dir, _run_id = prepare_validated_stage_review(tmp_path)
+
+    record_result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ai_writing_plugin",
+            "record-stage-review-decision",
+            "--run",
+            str(run_dir),
+            "--stage",
+            "draft",
+            "--decision",
+            "accepted",
+            "--notes",
+            "Reviewed.",
+        ],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert record_result.returncode == 0, record_result.stderr
+    assert "Recorded stage review gate decision: accepted" in record_result.stdout
+    assert "not professional approval" in record_result.stdout
+
+    check_result = subprocess.run(
+        [sys.executable, "-m", "ai_writing_plugin", "check-stage-review-gate", "--run", str(run_dir), "--stage", "draft"],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert check_result.returncode == 0, check_result.stderr
+    assert "Stage review gate check passed for draft" in check_result.stdout
+    assert "does not indicate professional approval" in check_result.stdout
+
+
 def test_stage_review_docs_describe_s1_runtime_assistance_boundary() -> None:
     contracts = (REPO_ROOT / "docs" / "CURRENT_ARTIFACT_CONTRACTS.md").read_text(encoding="utf-8")
     runbook = (REPO_ROOT / "docs" / "RUNBOOK.md").read_text(encoding="utf-8")
     command = (REPO_ROOT / "commands" / "write.md").read_text(encoding="utf-8")
-    combined = f"{contracts}\n{runbook}\n{command}"
+    troubleshooting = (REPO_ROOT / "docs" / "TROUBLESHOOTING.md").read_text(encoding="utf-8")
+    combined = f"{contracts}\n{runbook}\n{command}\n{troubleshooting}"
 
     for required in [
         "prepare-stage-review",
         "validate-stage-review",
+        "record-stage-review-decision",
+        "check-stage-review-gate",
         "stage_reviews/<stage>/review_context.json",
         "stage_reviews/<stage>/issues_schema.json",
         "stage_reviews/<stage>/review_units.json",
+        "stage_reviews/<stage>/decision.json",
         "stage_reviews/<stage>/validation_report.json",
+        "stage_review_gate_only",
         "reviewed_unit_ids",
         "unchecked_unit_ids",
         "coverage_complete",
         "not professional approval",
         "does not apply fixes",
+        "does not indicate professional approval",
     ]:
         assert required in combined
 

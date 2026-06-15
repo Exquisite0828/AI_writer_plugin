@@ -176,6 +176,31 @@ runs/<run_id>/stage_reviews/<stage>/validation_report.json
 
 `coverage_summary.coverage_complete=false` 只表示 S1R coverage validation 未通过。即使为 `true`，也只表示 required review units 被声明覆盖，不表示专业批准、合规批准或内容最终正确。
 
+## `record-stage-review-decision` 提示无法记录 decision
+
+常见原因：
+
+- `stage_reviews/<stage>/validation_report.json` 缺失；
+- `validation_report.status` 不是 `valid`；
+- `coverage_summary.coverage_complete` 不是 `true`；
+- `stage_reviews/<stage>/issues.json` 缺失；
+- `decision` 不是 `accepted`、`skipped`、`needs_revision` 或 `blocked`；
+- `decision=skipped` 但 `notes` 为空。
+
+`record-stage-review-decision` 只写 `stage_reviews/<stage>/decision.json`。该文件固定 `decision_scope=stage_review_gate_only` 和 `professional_approval=false`，不是 professional artifact，不写入 `manifest.artifacts`，也不会修改原 stage artifacts。
+
+## `check-stage-review-gate` 提示 gate failed
+
+常见原因：
+
+- `validation_report.json` 缺失、invalid，或 `coverage_complete=false`；
+- `decision.json` 缺失；
+- `decision` 是 `needs_revision` 或 `blocked`；
+- `decision.json` 被手动改成 `professional_approval=true`；
+- 记录 decision 后，`validation_report.json` 或 `issues.json` 被修改，导致 `validation_report_sha256` 或 `issues_sha256` mismatch。
+
+通过 `check-stage-review-gate` 只表示 S2A gate check passed；不表示专业批准。若用户要继续使用修改后的 `issues.json` 或 validation report，应重新运行 `validate-stage-review`，再重新记录 `record-stage-review-decision`。
+
 ## `stage_reviews/` 是否需要提交
 
 不需要。`stage_reviews/` 位于 `runs/<run_id>/` 下，是本地 runtime output。`runs/` 不进 git，提交前仍用：

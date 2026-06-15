@@ -54,7 +54,7 @@ runs/<run_id>/
 
 `run_state.json` 是断点续写使用的 runtime control artifact。它不是专业内容 artifact，不表示专业批准，不是 eval 结果，不是 promotion approval，也不会写入 `manifest.artifacts`。维护 artifact contract 时应把它作为 orchestration metadata 单独处理，而不是放宽专业内容 artifact 的阶段边界。
 
-`stage_reviews/` 是可选 runtime assistance artifact directory，用于 Stage Review Gate S1/S1R。它不是 professional artifact，不是 fact source，不表示 professional approval，不改变 `run_state.json` lifecycle，也不会写入 `manifest.artifacts`。S1/S1R 只生成 Claude Code 可读取的 review package，并校验人工/命令层写出的 `issues.json`；S1R 的 `coverage_complete` 只表示 required review units 已被声明覆盖，不表示专业批准。S1/S1R 不调用 Claude Code、不修改原 stage artifacts、不应用 patch、不阻塞下一 stage。
+`stage_reviews/` 是可选 runtime assistance artifact directory，用于 Stage Review Gate S1/S1R/S2A。它不是 professional artifact，不是 fact source，不表示 professional approval，不改变 `run_state.json` lifecycle，也不会写入 `manifest.artifacts`。S1/S1R 只生成 Claude Code 可读取的 review package，并校验人工/命令层写出的 `issues.json`；S1R 的 `coverage_complete` 只表示 required review units 已被声明覆盖，不表示专业批准。S2A 只记录用户对 stage review gate 的操作决定并检查 gate 是否可继续，`accepted` / `skipped` does not indicate professional approval。S1/S1R/S2A 不调用 Claude Code、不修改原 stage artifacts、不应用 patch、不阻塞下一 stage。
 
 共享 role boundaries：
 
@@ -123,6 +123,8 @@ $PYTHON -m ai_writing_plugin resume-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin record-hitl --run runs/<run_id> --stage outline_l1_confirmation --decision approved_with_issues --comment "Keep unsupported sections marked." --affected-sections SEC-003,SEC-005 --next-action continue_with_confirmation_marker
 $PYTHON -m ai_writing_plugin prepare-stage-review --run runs/<run_id> --stage draft
 $PYTHON -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage draft
+$PYTHON -m ai_writing_plugin record-stage-review-decision --run runs/<run_id> --stage draft --decision accepted --notes "Reviewed."
+$PYTHON -m ai_writing_plugin check-stage-review-gate --run runs/<run_id> --stage draft
 $PYTHON -m ai_writing_plugin write-run --task examples/hara_minimal_fixture/task.yaml
 $PYTHON -m ai_writing_plugin correction-harvest --run-dir runs/<run_id> --corrections path/to/corrections.yaml --profile path/to/document_profile.yaml
 $PYTHON -m ai_writing_plugin profile-promote --run-dir runs/<run_id> --candidate-patch runs/<run_id>/learning/candidate_profile_patch.yaml --eval-report runs/eval-n6/<eval_run>/eval_report.json --approval path/to/approval.yaml --target-profile path/to/document_profile.yaml --output-dir runs/<run_id>/learning --apply
@@ -167,7 +169,30 @@ runs/<run_id>/stage_reviews/<stage>/validation_report.json
 
 `review_units.json` 包含 deterministic review units。`issues.json` 必须声明 `reviewed_unit_ids`、`unchecked_unit_ids`，并且每个 issue 必须包含已知 `unit_id`。`validation_report.json` 包含 `coverage_summary.coverage_complete` 和 `unit_validation`，用于说明 required units 是否全部被覆盖。
 
-这两个命令不修改 professional artifacts，不写 `manifest.artifacts`，不修改 `run_state.json` stage status，不应用 auto-fix，也不表示 professional approval。
+`record-stage-review-decision` 在 validation report 为 `valid` 且 `coverage_summary.coverage_complete=true` 后写入：
+
+```text
+runs/<run_id>/stage_reviews/<stage>/decision.json
+```
+
+`decision.json` 是 runtime assistance artifact，不写入 `manifest.artifacts`，不是 evidence source，也不是 critical claim confirmation。它的固定边界字段包括：
+
+```text
+kind = stage_review_decision
+schema_version = 1
+decision_scope = stage_review_gate_only
+professional_approval = false
+decision = accepted | needs_revision | blocked | skipped
+allow_next_stage = true only for accepted/skipped
+validation_report_sha256
+issues_sha256
+```
+
+`skipped` 必须记录非空 `notes`。`accepted` / `skipped` 只表示用户允许 stage review gate 继续，不表示 professional approval、compliance approval、safety approval 或文档最终正确。
+
+`check-stage-review-gate` 只读取 `validation_report.json`、`issues.json` 和 `decision.json`，并要求 validation 仍为 valid、coverage 仍 complete、decision 为 `accepted` 或 `skipped`、`professional_approval=false`，且 validation report / issues hashes 与记录 decision 时一致。通过时只表示 S2A gate check passed；it does not indicate professional approval。
+
+这些命令不修改 professional artifacts，不写 `manifest.artifacts`，不修改 `run_state.json` stage status，不应用 auto-fix，也不表示 professional approval。
 
 `write-run` 是 noninteractive helper，会创建新 run 并执行完整 Phase 0-8 chain。
 

@@ -30,7 +30,14 @@ from .run_manager import (
     review_run,
     write_run,
 )
-from .stage_review import StageReviewError, prepare_stage_review, validate_stage_review
+from .stage_review import (
+    STAGE_REVIEW_DECISIONS,
+    StageReviewError,
+    check_stage_review_gate,
+    prepare_stage_review,
+    record_stage_review_decision,
+    validate_stage_review,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -167,6 +174,44 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional issues.json path. Defaults to stage_reviews/<stage>/issues.json under the run.",
     )
+
+    record_stage_review_decision_parser = subparsers.add_parser(
+        "record-stage-review-decision",
+        help="Record a user stage review gate decision.",
+    )
+    record_stage_review_decision_parser.add_argument(
+        "--run",
+        "--run-dir",
+        dest="run",
+        required=True,
+        help="Existing run directory.",
+    )
+    record_stage_review_decision_parser.add_argument("--stage", required=True, help="Stage whose review gate is decided.")
+    record_stage_review_decision_parser.add_argument(
+        "--decision",
+        required=True,
+        choices=sorted(STAGE_REVIEW_DECISIONS),
+        help="Stage review gate decision.",
+    )
+    record_stage_review_decision_parser.add_argument("--notes", default="", help="Decision notes; required for skipped.")
+    record_stage_review_decision_parser.add_argument(
+        "--decided-by",
+        default="user",
+        help="Short identifier for the user/operator recording the decision.",
+    )
+
+    check_stage_review_gate_parser = subparsers.add_parser(
+        "check-stage-review-gate",
+        help="Check whether a validated stage review has a passing user gate decision.",
+    )
+    check_stage_review_gate_parser.add_argument(
+        "--run",
+        "--run-dir",
+        dest="run",
+        required=True,
+        help="Existing run directory.",
+    )
+    check_stage_review_gate_parser.add_argument("--stage", required=True, help="Stage whose review gate should be checked.")
 
     write_run_parser = subparsers.add_parser("write-run", help="Run the full noninteractive Phase 0-8 writing helper.")
     write_run_parser.add_argument("--task", required=True, help="Path to task.yaml.")
@@ -447,6 +492,37 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Status: {report['status']}")
         print(f"Report: stage_reviews/{report['stage']}/validation_report.json")
         print("Note: validation is not professional approval and does not apply fixes.")
+        return 0
+
+    if args.command == "record-stage-review-decision":
+        try:
+            record_stage_review_decision(
+                run_dir=Path(args.run),
+                stage=args.stage,
+                decision=args.decision,
+                notes=args.notes,
+                decided_by=args.decided_by,
+            )
+        except StageReviewError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        print(f"Recorded stage review gate decision: {args.decision}")
+        print("Scope: stage_review_gate_only")
+        print("This is not professional approval.")
+        return 0
+
+    if args.command == "check-stage-review-gate":
+        try:
+            result = check_stage_review_gate(run_dir=Path(args.run), stage=args.stage)
+        except StageReviewError as exc:
+            print(f"Stage review gate check failed for {args.stage}: {exc}", file=sys.stderr)
+            return 1
+
+        print(f"Stage review gate check passed for {result['stage']}.")
+        print(f"Decision: {result['decision']}")
+        print("Scope: stage_review_gate_only")
+        print("This does not indicate professional approval.")
         return 0
 
     if args.command == "write-run":

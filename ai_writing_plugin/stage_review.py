@@ -13,6 +13,30 @@ from .run_state import STAGE_ORDER, STAGE_REGISTRY, validate_output_path
 EXCERPT_CHAR_LIMIT = 4000
 STAGE_REVIEW_SCHEMA_VERSION = 1
 
+STAGE_REVIEW_DECISIONS = {"accepted", "needs_revision", "blocked", "skipped"}
+STAGE_REVIEW_PASSING_DECISIONS = {"accepted", "skipped"}
+STAGE_REVIEW_DECISION_SCOPE = "stage_review_gate_only"
+EXPECTED_DECISION_FIELDS = {
+    "kind",
+    "schema_version",
+    "run_id",
+    "stage",
+    "decision",
+    "decision_scope",
+    "professional_approval",
+    "allow_next_stage",
+    "decided_by",
+    "decision_source",
+    "notes",
+    "created_at",
+    "validation_report_path",
+    "issues_path",
+    "validation_status_at_decision",
+    "coverage_complete_at_decision",
+    "validation_report_sha256",
+    "issues_sha256",
+}
+
 ISSUE_STATUSES = {
     "no_issues",
     "issues_found",
@@ -439,6 +463,109 @@ def validate_stage_review(run_dir: str | Path, stage: str, issues_file: str | Pa
     if errors:
         raise StageReviewError("Stage review issues invalid: " + "; ".join(errors))
     return report
+
+
+def record_stage_review_decision(
+    run_dir: str | Path,
+    stage: str,
+    decision: str,
+    notes: str = "",
+    decided_by: str = "user",
+) -> Path:
+    run_path = Path(run_dir)
+    ensure_supported_stage(stage)
+    ensure_run_dir(run_path)
+    run_id = load_run_id(run_path)
+    if decision not in STAGE_REVIEW_DECISIONS:
+        raise StageReviewError(f"decision must be one of {sorted(STAGE_REVIEW_DECISIONS)}")
+    if decision == "skipped" and not notes.strip():
+        raise StageReviewError("notes must be non-empty when decision is skipped")
+    if not isinstance(decided_by, str) or not decided_by.strip():
+        raise StageReviewError("decided_by must be a non-empty string")
+    if len(decided_by.strip()) > 120:
+        raise StageReviewError("decided_by must be 120 characters or fewer")
+    if not isinstance(notes, str):
+        raise StageReviewError("notes must be a string")
+
+    review_dir = run_path / "stage_reviews" / stage
+    validation_report_path = review_dir / "validation_report.json"
+    issues_path = review_dir / "issues.json"
+    validation_report = load_gate_ready_validation_report(run_path, stage, run_id)
+    if not issues_path.exists():
+        raise StageReviewError(f"issues.json missing: {issues_path}")
+    if not issues_path.is_file():
+        raise StageReviewError(f"issues.json is not a file: {issues_path}")
+
+    decision_path = review_dir / "decision.json"
+    decision_doc = {
+        "kind": "stage_review_decision",
+        "schema_version": STAGE_REVIEW_SCHEMA_VERSION,
+        "run_id": run_id,
+        "stage": stage,
+        "decision": decision,
+        "decision_scope": STAGE_REVIEW_DECISION_SCOPE,
+        "professional_approval": False,
+        "allow_next_stage": decision in STAGE_REVIEW_PASSING_DECISIONS,
+        "decided_by": decided_by.strip(),
+        "decision_source": "cli",
+        "notes": notes,
+        "created_at": utc_timestamp(),
+        "validation_report_path": f"stage_reviews/{stage}/validation_report.json",
+        "issues_path": f"stage_reviews/{stage}/issues.json",
+        "validation_status_at_decision": validation_report["status"],
+        "coverage_complete_at_decision": validation_report["coverage_summary"]["coverage_complete"],
+        "validation_report_sha256": file_sha256(validation_report_path),
+        "issues_sha256": file_sha256(issues_path),
+    }
+    write_json(decision_path, decision_doc)
+    return decision_path
+
+
+def check_stage_review_gate(run_dir: str | Path, stage: str) -> dict[str, Any]:
+    run_path = Path(run_dir)
+    ensure_supported_stage(stage)
+    ensure_run_dir(run_path)
+    run_id = load_run_id(run_path)
+    load_gate_ready_validation_report(run_path, stage, run_id)
+
+    review_dir = run_path / "stage_reviews" / stage
+    decision_path = review_dir / "decision.json"
+    decision_doc = read_json_object(decision_path, "decision")
+    errors = validate_decision_schema(decision_doc, run_id, stage)
+
+    validation_report_path = review_dir / "validation_report.json"
+    issues_path = review_dir / "issues.json"
+    if not issues_path.exists():
+        errors.append(f"issues.json missing: {issues_path}")
+    elif not issues_path.is_file():
+        errors.append(f"issues.json is not a file: {issues_path}")
+
+    if not errors:
+        if decision_doc["validation_report_sha256"] != file_sha256(validation_report_path):
+            errors.append("validation_report_sha256 mismatch")
+        if decision_doc["issues_sha256"] != file_sha256(issues_path):
+            errors.append("issues_sha256 mismatch")
+
+    decision = decision_doc.get("decision")
+    if not errors and decision not in STAGE_REVIEW_PASSING_DECISIONS:
+        errors.append(f"decision is {decision}")
+
+    if errors:
+        raise StageReviewError("; ".join(errors))
+
+    return {
+        "schema_version": STAGE_REVIEW_SCHEMA_VERSION,
+        "kind": "stage_review_gate_check",
+        "run_id": run_id,
+        "stage": stage,
+        "status": "passed",
+        "decision": decision,
+        "decision_scope": STAGE_REVIEW_DECISION_SCOPE,
+        "professional_approval": False,
+        "allow_next_stage": True,
+        "validation_report_path": f"stage_reviews/{stage}/validation_report.json",
+        "issues_path": f"stage_reviews/{stage}/issues.json",
+    }
 
 
 def build_review_units(run_dir: Path, stage: str, run_id: str) -> dict[str, Any]:
@@ -885,6 +1012,12 @@ def ensure_run_dir(run_dir: Path) -> None:
         raise StageReviewError(f"run_dir is not a directory: {run_dir}")
 
 
+def load_run_id(run_dir: Path) -> str:
+    manifest = read_json_object(run_dir / "manifest.json", "manifest")
+    task_brief = read_json_object(run_dir / "task_brief.json", "task_brief")
+    return validate_run_metadata(manifest, task_brief)
+
+
 def validate_run_metadata(manifest: dict[str, Any], task_brief: dict[str, Any]) -> str:
     run_id = manifest.get("run_id")
     if not isinstance(run_id, str) or not run_id:
@@ -910,6 +1043,84 @@ def validate_run_state_for_stage(state: dict[str, Any], run_id: str, stage: str)
     status = stages[stage].get("status")
     if status != "done":
         raise StageReviewError(f"stage {stage} is not complete; current status is {status}")
+
+
+def load_gate_ready_validation_report(run_dir: Path, stage: str, run_id: str) -> dict[str, Any]:
+    validation_report = read_json_object(run_dir / "stage_reviews" / stage / "validation_report.json", "validation_report")
+    errors: list[str] = []
+    if validation_report.get("schema_version") != STAGE_REVIEW_SCHEMA_VERSION:
+        errors.append("validation_report schema_version must be 1")
+    if validation_report.get("kind") != "stage_review_validation_report":
+        errors.append("validation_report kind must be stage_review_validation_report")
+    if validation_report.get("run_id") != run_id:
+        errors.append("validation_report run_id mismatch")
+    if validation_report.get("stage") != stage:
+        errors.append("validation_report stage mismatch")
+    if validation_report.get("status") != "valid":
+        errors.append("validation_report status must be valid")
+    if validation_report.get("not_professional_approval") is not True:
+        errors.append("validation_report not_professional_approval must be true")
+    coverage_summary = validation_report.get("coverage_summary")
+    if not isinstance(coverage_summary, dict):
+        errors.append("validation_report coverage_summary must be an object")
+    elif coverage_summary.get("coverage_complete") is not True:
+        errors.append("coverage_complete must be true")
+    if errors:
+        raise StageReviewError("; ".join(errors))
+    return validation_report
+
+
+def validate_decision_schema(decision_doc: dict[str, Any], run_id: str, stage: str) -> list[str]:
+    errors: list[str] = []
+    missing_fields = sorted(EXPECTED_DECISION_FIELDS - set(decision_doc))
+    if missing_fields:
+        errors.append(f"decision.json missing required fields: {', '.join(missing_fields)}")
+    if decision_doc.get("schema_version") != STAGE_REVIEW_SCHEMA_VERSION:
+        errors.append("decision schema_version must be 1")
+    if decision_doc.get("kind") != "stage_review_decision":
+        errors.append("decision kind must be stage_review_decision")
+    if decision_doc.get("run_id") != run_id:
+        errors.append("decision run_id mismatch")
+    if decision_doc.get("stage") != stage:
+        errors.append("decision stage mismatch")
+    decision = decision_doc.get("decision")
+    if decision not in STAGE_REVIEW_DECISIONS:
+        errors.append(f"decision must be one of {sorted(STAGE_REVIEW_DECISIONS)}")
+    if decision_doc.get("decision_scope") != STAGE_REVIEW_DECISION_SCOPE:
+        errors.append(f"decision_scope must be {STAGE_REVIEW_DECISION_SCOPE}")
+    if decision_doc.get("professional_approval") is not False:
+        errors.append("professional_approval must be false")
+    expected_allow_next = decision in STAGE_REVIEW_PASSING_DECISIONS
+    if decision in STAGE_REVIEW_DECISIONS and decision_doc.get("allow_next_stage") is not expected_allow_next:
+        errors.append(f"allow_next_stage must be {str(expected_allow_next).lower()} for decision {decision}")
+    decided_by = decision_doc.get("decided_by")
+    if not isinstance(decided_by, str) or not decided_by.strip():
+        errors.append("decided_by must be a non-empty string")
+    elif len(decided_by.strip()) > 120:
+        errors.append("decided_by must be 120 characters or fewer")
+    if decision_doc.get("decision_source") != "cli":
+        errors.append("decision_source must be cli")
+    notes = decision_doc.get("notes")
+    if not isinstance(notes, str):
+        errors.append("notes must be a string")
+    elif decision == "skipped" and not notes.strip():
+        errors.append("notes must be non-empty when decision is skipped")
+    created_at = decision_doc.get("created_at")
+    if not isinstance(created_at, str) or not created_at.strip():
+        errors.append("created_at must be a non-empty string")
+    if decision_doc.get("validation_report_path") != f"stage_reviews/{stage}/validation_report.json":
+        errors.append("validation_report_path mismatch")
+    if decision_doc.get("issues_path") != f"stage_reviews/{stage}/issues.json":
+        errors.append("issues_path mismatch")
+    if decision_doc.get("validation_status_at_decision") != "valid":
+        errors.append("validation_status_at_decision must be valid")
+    if decision_doc.get("coverage_complete_at_decision") is not True:
+        errors.append("coverage_complete_at_decision must be true")
+    for field in ("validation_report_sha256", "issues_sha256"):
+        value = decision_doc.get(field)
+        if not isinstance(value, str) or not value.strip():
+            errors.append(f"{field} must be a non-empty string")
+    return errors
 
 
 def summarize_artifact(run_dir: Path, relative_path: str, kind: str, *, required: bool) -> dict[str, Any]:
