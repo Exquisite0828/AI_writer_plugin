@@ -128,6 +128,56 @@ resume-run failed: completed stage evidence is dirty: plans/evidence_map.json mi
 - 恢复缺失或损坏的 artifact 后再继续；
 - 或启动新的 `write-run`。
 
+## `prepare-stage-review` 提示 unknown stage
+
+`prepare-stage-review` 只接受当前 run lifecycle stage：
+
+```text
+ingest
+outline
+evidence
+planning
+draft
+review
+finalize
+learning
+```
+
+例如 `tsc` 不是当前 stage，也不是已实现的 official L3 document type。遇到 unknown stage 时，不会创建对应 `stage_reviews/<stage>/` 输出。
+
+## `prepare-stage-review` 提示 stage output missing
+
+Stage review package 只能针对已完成 stage 准备。若 required output 缺失、为空、JSON/JSONL 不可解析，先恢复该 stage artifact，或重新创建 run。S1 不会重跑 stage，也不会自动修复原 artifact。
+
+## `validate-stage-review` 提示 issues invalid
+
+常见原因：
+
+- `stage_reviews/<stage>/issues.json` 缺失或不是合法 JSON；
+- `schema_version` 不是 `1`，或 `kind` 不是 `stage_review_issues`；
+- `run_id` / `stage` 与当前 run 不匹配；
+- `status` 使用了 `approved`、`validated`、`compliant`、`professionally_approved` 等批准式语义；
+- 高风险 category 例如 `source_policy`、`critical_claim`、`hitl_required`、`citation_or_evidence`、`final_status_policy`、`candidate_update_policy` 设置了 `safe_auto_fix_eligible=true`；
+- issue 文本声称 sample/reference 可以证明项目事实；
+- issue 文本要求修改 stable profile / Skill，或直接删除 `NEEDS_USER_CONFIRMATION`。
+
+校验失败时会写：
+
+```text
+runs/<run_id>/stage_reviews/<stage>/validation_report.json
+```
+
+根据 `errors` 修正 `issues.json` 后重新运行 `validate-stage-review`。
+
+## `stage_reviews/` 是否需要提交
+
+不需要。`stage_reviews/` 位于 `runs/<run_id>/` 下，是本地 runtime output。`runs/` 不进 git，提交前仍用：
+
+```bash
+git status --short -- runs/
+git ls-files runs/
+```
+
 ## 输出包含 `NEEDS_USER_CONFIRMATION`
 
 `NEEDS_USER_CONFIRMATION`、pending claims、open confirmations 或 blocked verification 通常不是失败。

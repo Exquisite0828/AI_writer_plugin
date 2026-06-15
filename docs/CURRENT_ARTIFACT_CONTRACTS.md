@@ -54,6 +54,8 @@ runs/<run_id>/
 
 `run_state.json` 是断点续写使用的 runtime control artifact。它不是专业内容 artifact，不表示专业批准，不是 eval 结果，不是 promotion approval，也不会写入 `manifest.artifacts`。维护 artifact contract 时应把它作为 orchestration metadata 单独处理，而不是放宽专业内容 artifact 的阶段边界。
 
+`stage_reviews/` 是可选 runtime assistance artifact directory，用于 Stage Review Gate S1。它不是 professional artifact，不是 fact source，不表示 professional approval，不改变 `run_state.json` lifecycle，也不会写入 `manifest.artifacts`。S1 只生成 Claude Code 可读取的 review package，并校验人工/命令层写出的 `issues.json`；S1 不调用 Claude Code、不修改原 stage artifacts、不应用 patch、不阻塞下一 stage。
+
 共享 role boundaries：
 
 1. `source` 是正常 project fact source role。
@@ -119,6 +121,8 @@ $PYTHON -m ai_writing_plugin finalize-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin learning-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin resume-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin record-hitl --run runs/<run_id> --stage outline_l1_confirmation --decision approved_with_issues --comment "Keep unsupported sections marked." --affected-sections SEC-003,SEC-005 --next-action continue_with_confirmation_marker
+$PYTHON -m ai_writing_plugin prepare-stage-review --run runs/<run_id> --stage draft
+$PYTHON -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage draft
 $PYTHON -m ai_writing_plugin write-run --task examples/hara_minimal_fixture/task.yaml
 $PYTHON -m ai_writing_plugin correction-harvest --run-dir runs/<run_id> --corrections path/to/corrections.yaml --profile path/to/document_profile.yaml
 $PYTHON -m ai_writing_plugin profile-promote --run-dir runs/<run_id> --candidate-patch runs/<run_id>/learning/candidate_profile_patch.yaml --eval-report runs/eval-n6/<eval_run>/eval_report.json --approval path/to/approval.yaml --target-profile path/to/document_profile.yaml --output-dir runs/<run_id>/learning --apply
@@ -145,6 +149,22 @@ $PYTHON -m ai_writing_plugin profile-promote --run-dir runs/<run_id> --candidate
 `resume-run` 从已有 `run_state.json` 继续一个 resumable run。`completed` 只表示 deterministic engine lifecycle 完成，不表示 professional approval。`resume-run` 会拒绝 task hash mismatch、external profile hash mismatch、live lock 和 dirty completed stage。
 
 `record-hitl` 向 `trace/hitl_decisions.jsonl` 追加 human-in-the-loop decision record。
+
+`prepare-stage-review` 为已完成 stage 生成 advisory Claude Code review package：
+
+```text
+runs/<run_id>/stage_reviews/<stage>/review_context.json
+runs/<run_id>/stage_reviews/<stage>/review_prompt.md
+runs/<run_id>/stage_reviews/<stage>/issues_schema.json
+```
+
+`validate-stage-review` 校验 `stage_reviews/<stage>/issues.json` 的 schema 和安全边界，并生成：
+
+```text
+runs/<run_id>/stage_reviews/<stage>/validation_report.json
+```
+
+这两个命令不修改 professional artifacts，不写 `manifest.artifacts`，不修改 `run_state.json` stage status，不应用 auto-fix，也不表示 professional approval。
 
 `write-run` 是 noninteractive helper，会创建新 run 并执行完整 Phase 0-8 chain。
 

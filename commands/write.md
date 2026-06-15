@@ -103,8 +103,10 @@ helper 不能伪造 HITL approval。非交互运行会把缺失 gate 记录为 `
 2. 运行 ingest，并向用户说明 material classification。
 3. 只有在用户明确回复后，才记录真实 HITL decisions。
 4. 通过 Python engine 运行 outline、evidence、plan、draft、review、finalize 和 learning。
-5. 如果中途中断，优先用 `resume-run --run <run_dir>` 从 `run_state.json` 继续；不要从头创建新 run，除非 `resume-run` 明确提示 task/profile hash mismatch、missing run_state 或 dirty completed stage。
-6. 用中文报告 run directory、final artifacts、pending critical claims 和 candidate update 状态。
+5. 每个 engine stage 完成后，可以运行 `prepare-stage-review` 生成 Claude review package；Claude Code 读取 package 后只写 `claude_review.md` / `issues.json`，再运行 `validate-stage-review`。
+6. S1 stage review 只供用户 review：不阻塞下一 stage，不自动修改 artifacts，不应用 patch，不写 professional approval。
+7. 如果中途中断，优先用 `resume-run --run <run_dir>` 从 `run_state.json` 继续；不要从头创建新 run，除非 `resume-run` 明确提示 task/profile hash mismatch、missing run_state 或 dirty completed stage。
+8. 用中文报告 run directory、final artifacts、pending critical claims 和 candidate update 状态。
 
 ## Engine commands
 
@@ -119,6 +121,8 @@ $PYTHON -m ai_writing_plugin finalize-run --run <run_dir>
 $PYTHON -m ai_writing_plugin learning-run --run <run_dir>
 $PYTHON -m ai_writing_plugin resume-run --run <run_dir>
 $PYTHON -m ai_writing_plugin record-hitl --run <run_dir> --stage <stage> --decision <decision> --comment <comment> --affected-sections <ids> --next-action <action>
+$PYTHON -m ai_writing_plugin prepare-stage-review --run <run_dir> --stage <stage>
+$PYTHON -m ai_writing_plugin validate-stage-review --run <run_dir> --stage <stage>
 ```
 
 `ingest-run` 和 `write-run` 会创建 `runs/<run_id>/run_state.json`。如果 Claude Code 会话关闭或 Python 进程中断，下一次从仓库根目录运行：
@@ -128,6 +132,37 @@ $PYTHON -m ai_writing_plugin resume-run --run runs/<run_id>
 ```
 
 `resume-run` 只恢复 deterministic engine lifecycle，不代表 professional approval。它不会伪造 HITL decisions，不会自动激活 candidate updates，也不会把 dirty completed stage 自动回滚重跑。
+
+## Stage review S1 flow
+
+在某个 stage 完成后，可以准备 advisory review package：
+
+```bash
+$PYTHON -m ai_writing_plugin outline-run --run "$RUN_DIR"
+$PYTHON -m ai_writing_plugin prepare-stage-review --run "$RUN_DIR" --stage outline
+```
+
+然后读取：
+
+```text
+runs/<run_id>/stage_reviews/outline/review_prompt.md
+runs/<run_id>/stage_reviews/outline/review_context.json
+```
+
+Claude Code 只允许在同一目录下写：
+
+```text
+runs/<run_id>/stage_reviews/outline/claude_review.md
+runs/<run_id>/stage_reviews/outline/issues.json
+```
+
+随后校验：
+
+```bash
+$PYTHON -m ai_writing_plugin validate-stage-review --run "$RUN_DIR" --stage outline
+```
+
+Stage review is advisory. It is not professional approval. It does not apply fixes in S1. It must not add project facts, treat sample/reference as fact support, remove `NEEDS_USER_CONFIRMATION`, or modify original stage artifacts.
 
 ## Boundaries
 

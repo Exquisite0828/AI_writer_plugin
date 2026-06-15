@@ -84,6 +84,8 @@ finalize-run
 learning-run
 resume-run
 record-hitl
+prepare-stage-review
+validate-stage-review
 write-run
 ```
 
@@ -122,6 +124,43 @@ Claude Code 入口：
 - completed stage output 缺失、空文件、JSON/JSONL 不可解析。
 
 如果 `.run_state.lock` 中的 PID 已不存在，工具会按 stale lock recovery 处理，把之前的 `running` stage 标记为 `interrupted` 后继续。
+
+## Stage review package
+
+Stage Review Gate S1 可以在某个 stage 完成后生成 advisory review package，供 Claude Code 读取后做语义审查：
+
+```bash
+.venv/bin/python -m ai_writing_plugin prepare-stage-review --run runs/<run_id> --stage outline
+```
+
+输出位置：
+
+```text
+runs/<run_id>/stage_reviews/<stage>/review_context.json
+runs/<run_id>/stage_reviews/<stage>/review_prompt.md
+runs/<run_id>/stage_reviews/<stage>/issues_schema.json
+```
+
+Claude Code 可以读取 `review_prompt.md` 和 `review_context.json`，然后只在同一目录下写：
+
+```text
+claude_review.md
+issues.json
+```
+
+校验 review issues：
+
+```bash
+.venv/bin/python -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage outline
+```
+
+可选地指定 issues 文件：
+
+```bash
+.venv/bin/python -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage outline --issues-file path/to/issues.json
+```
+
+`stage_reviews/` 是 runtime assistance output，不写入 `manifest.artifacts`，不改变 `run_state.json` lifecycle，不证明项目事实，也不表示 professional approval。S1 不调用 Claude Code，不自动修改原 artifacts，不应用 patch，不阻塞下一 stage。
 
 ## Focused regression matrix
 

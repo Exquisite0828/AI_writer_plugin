@@ -30,6 +30,7 @@ from .run_manager import (
     review_run,
     write_run,
 )
+from .stage_review import StageReviewError, prepare_stage_review, validate_stage_review
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -135,6 +136,37 @@ def build_parser() -> argparse.ArgumentParser:
         help="Comma-separated affected section ids.",
     )
     record_hitl_parser.add_argument("--next-action", required=True, help="Next deterministic action.")
+
+    prepare_stage_review_parser = subparsers.add_parser(
+        "prepare-stage-review",
+        help="Prepare an advisory Claude Code stage review package.",
+    )
+    prepare_stage_review_parser.add_argument(
+        "--run",
+        "--run-dir",
+        dest="run",
+        required=True,
+        help="Existing run directory.",
+    )
+    prepare_stage_review_parser.add_argument("--stage", required=True, help="Completed stage to prepare for review.")
+
+    validate_stage_review_parser = subparsers.add_parser(
+        "validate-stage-review",
+        help="Validate advisory Claude Code stage review issues.",
+    )
+    validate_stage_review_parser.add_argument(
+        "--run",
+        "--run-dir",
+        dest="run",
+        required=True,
+        help="Existing run directory.",
+    )
+    validate_stage_review_parser.add_argument("--stage", required=True, help="Stage whose issues.json should validate.")
+    validate_stage_review_parser.add_argument(
+        "--issues-file",
+        default=None,
+        help="Optional issues.json path. Defaults to stage_reviews/<stage>/issues.json under the run.",
+    )
 
     write_run_parser = subparsers.add_parser("write-run", help="Run the full noninteractive Phase 0-8 writing helper.")
     write_run_parser.add_argument("--task", required=True, help="Path to task.yaml.")
@@ -379,6 +411,42 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Run: {record['run_id']}")
         print(f"Stage: {record['stage']}")
         print(f"Decision: {record['decision']}")
+        return 0
+
+    if args.command == "prepare-stage-review":
+        try:
+            result = prepare_stage_review(run_dir=Path(args.run), stage=args.stage)
+        except StageReviewError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        print("Stage review package prepared")
+        print(f"Run: {result['run_id']}")
+        print(f"Stage: {result['stage']}")
+        print("Generated artifacts:")
+        for artifact_path in result["artifacts"]:
+            print(f"- {artifact_path}")
+        print("Status: prepared_for_claude_review")
+        print("Note: this is not professional approval and does not modify stage artifacts.")
+        return 0
+
+    if args.command == "validate-stage-review":
+        try:
+            report = validate_stage_review(
+                run_dir=Path(args.run),
+                stage=args.stage,
+                issues_file=Path(args.issues_file) if args.issues_file else None,
+            )
+        except StageReviewError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        print("Stage review issues validated")
+        print(f"Run: {report['run_id']}")
+        print(f"Stage: {report['stage']}")
+        print(f"Status: {report['status']}")
+        print(f"Report: stage_reviews/{report['stage']}/validation_report.json")
+        print("Note: validation is not professional approval and does not apply fixes.")
         return 0
 
     if args.command == "write-run":
