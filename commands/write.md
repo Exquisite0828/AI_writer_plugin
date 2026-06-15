@@ -106,8 +106,10 @@ helper 不能伪造 HITL approval。非交互运行会把缺失 gate 记录为 `
 5. 每个 engine stage 完成后，可以运行 `prepare-stage-review` 生成 Claude review package 和 `review_units.json`；Claude Code 读取 package 后只写 `claude_review.md` / `issues.json`，再运行 `validate-stage-review`。
 6. 用户明确决定后，可以运行 `record-stage-review-decision` 写入 `decision.json`，再用 `check-stage-review-gate` 检查 S2A gate。`accepted` / `skipped` does not indicate professional approval。
 7. S1/S1R/S2A stage review 只供用户 review：不阻塞下一 stage，不自动修改 artifacts，不应用 patch，不写 professional approval。`coverage_complete=true` 只表示 required review units 被声明覆盖。
-8. 如果中途中断，优先用 `resume-run --run <run_dir>` 从 `run_state.json` 继续；不要从头创建新 run，除非 `resume-run` 明确提示 task/profile hash mismatch、missing run_state 或 dirty completed stage。
-9. 用中文报告 run directory、final artifacts、pending critical claims 和 candidate update 状态。
+8. 如需 S2B opt-in gate enforcement，使用 `--require-stage-review-gates`。默认 `write-run` / `resume-run` / stage commands 仍是 non-gated。gated `write-run` 只完成 `ingest` 并停止；gated `resume-run` 每次只执行一个 pending stage；带 flag 的 stage command 会在执行前检查上一阶段 gate。
+9. S2B 不调用 Claude Code，不生成 `issues.json`，不应用 fixes，不修改 professional artifacts，也不表示 professional approval。
+10. 如果中途中断，优先用 `resume-run --run <run_dir>` 从 `run_state.json` 继续；不要从头创建新 run，除非 `resume-run` 明确提示 task/profile hash mismatch、missing run_state 或 dirty completed stage。
+11. 用中文报告 run directory、final artifacts、pending critical claims 和 candidate update 状态。
 
 ## Engine commands
 
@@ -126,6 +128,8 @@ $PYTHON -m ai_writing_plugin prepare-stage-review --run <run_dir> --stage <stage
 $PYTHON -m ai_writing_plugin validate-stage-review --run <run_dir> --stage <stage>
 $PYTHON -m ai_writing_plugin record-stage-review-decision --run <run_dir> --stage <stage> --decision <accepted|needs_revision|blocked|skipped> --notes <notes>
 $PYTHON -m ai_writing_plugin check-stage-review-gate --run <run_dir> --stage <stage>
+$PYTHON -m ai_writing_plugin write-run --task <task_yaml> --require-stage-review-gates
+$PYTHON -m ai_writing_plugin resume-run --run <run_dir> --require-stage-review-gates
 ```
 
 `ingest-run` 和 `write-run` 会创建 `runs/<run_id>/run_state.json`。如果 Claude Code 会话关闭或 Python 进程中断，下一次从仓库根目录运行：
@@ -186,6 +190,31 @@ $PYTHON -m ai_writing_plugin check-stage-review-gate --run "$RUN_DIR" --stage ou
 `stage_reviews/<stage>/decision.json` 是 runtime assistance artifact，不写入 `manifest.artifacts`。它固定 `decision_scope=stage_review_gate_only` 和 `professional_approval=false`，并用 hash 绑定当前 `validation_report.json` 与 `issues.json`。`accepted` / `skipped` does not indicate professional approval。
 
 Stage review is advisory. It is not professional approval. `coverage_complete=true` is not professional approval. It does not apply fixes in S1/S1R/S2A. It must not add project facts, treat sample/reference as fact support, remove `NEEDS_USER_CONFIRMATION`, or modify original stage artifacts.
+
+## Stage review S2B opt-in gated workflow
+
+S2B adds opt-in stage review gate enforcement via `--require-stage-review-gates`.
+
+Default `write-run`, `resume-run`, and stage commands remain non-gated. With the flag:
+
+- `write-run --require-stage-review-gates` creates the run, completes `ingest`, then stops.
+- `resume-run --require-stage-review-gates` checks the previous stage gate, executes one pending stage, then stops.
+- `outline-run`, `evidence-run`, `plan-run`, `draft-run`, `review-run`, `finalize-run`, and `learning-run` with the flag check the previous stage gate before running.
+- gate missing, invalid validation, incomplete coverage, `needs_revision` / `blocked`, or hash mismatch fails closed.
+
+Example:
+
+```bash
+$PYTHON -m ai_writing_plugin write-run --task <task_yaml> --require-stage-review-gates
+$PYTHON -m ai_writing_plugin prepare-stage-review --run "$RUN_DIR" --stage ingest
+# Claude Code reads review_prompt.md and review_units.json, then writes issues.json only.
+$PYTHON -m ai_writing_plugin validate-stage-review --run "$RUN_DIR" --stage ingest
+$PYTHON -m ai_writing_plugin record-stage-review-decision --run "$RUN_DIR" --stage ingest --decision accepted --notes "Reviewed."
+$PYTHON -m ai_writing_plugin check-stage-review-gate --run "$RUN_DIR" --stage ingest
+$PYTHON -m ai_writing_plugin resume-run --run "$RUN_DIR" --require-stage-review-gates
+```
+
+`accepted` / `skipped` does not indicate professional approval. `coverage_complete=true` does not indicate professional approval. S2B does not call Claude Code, does not apply fixes, and does not modify professional artifacts.
 
 ## Boundaries
 

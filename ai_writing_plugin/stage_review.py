@@ -568,6 +568,34 @@ def check_stage_review_gate(run_dir: str | Path, stage: str) -> dict[str, Any]:
     }
 
 
+def previous_stage_for_review_gate(stage: str) -> str | None:
+    ensure_supported_stage(stage)
+    stage_index = STAGE_ORDER.index(stage)
+    if stage_index == 0:
+        return None
+    return STAGE_ORDER[stage_index - 1]
+
+
+def require_previous_stage_review_gate(run_dir: str | Path, next_stage: str) -> dict[str, Any] | None:
+    previous_stage = previous_stage_for_review_gate(next_stage)
+    if previous_stage is None:
+        return None
+    try:
+        return check_stage_review_gate(run_dir=run_dir, stage=previous_stage)
+    except StageReviewError as exc:
+        raise StageReviewError(
+            f"Stage review gate required before {next_stage}: "
+            f"previous stage {previous_stage} gate is not passed: {exc}\n"
+            "Next steps:\n"
+            f"1. python -m ai_writing_plugin prepare-stage-review --run {run_dir} --stage {previous_stage}\n"
+            f"2. Have Claude Code write stage_reviews/{previous_stage}/issues.json using review_prompt.md and review_units.json.\n"
+            f"3. python -m ai_writing_plugin validate-stage-review --run {run_dir} --stage {previous_stage}\n"
+            f"4. python -m ai_writing_plugin record-stage-review-decision --run {run_dir} --stage {previous_stage} "
+            '--decision accepted --notes "Reviewed."\n'
+            f"5. python -m ai_writing_plugin check-stage-review-gate --run {run_dir} --stage {previous_stage}"
+        ) from exc
+
+
 def build_review_units(run_dir: Path, stage: str, run_id: str) -> dict[str, Any]:
     source_artifacts = list(STAGE_REGISTRY[stage]["required_outputs"])
     units: list[dict[str, Any]] = []

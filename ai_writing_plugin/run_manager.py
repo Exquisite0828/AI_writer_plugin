@@ -29,6 +29,7 @@ from .run_state import (
     run_checkpointed_stage,
     state_exists,
 )
+from .stage_review import StageReviewError, require_previous_stage_review_gate
 from .trace import write_jsonl
 
 
@@ -154,8 +155,9 @@ def ingest_valid_task(
     return run_dir
 
 
-def outline_run(run_dir: str | Path) -> Path:
+def outline_run(run_dir: str | Path, require_stage_review_gates: bool = False) -> Path:
     run_path = Path(run_dir)
+    require_stage_review_gate_or_raise(run_path, "outline", require_stage_review_gates)
     if state_exists(run_path):
         run_checkpointed_stage_or_raise(run_path, "outline", outline_existing_run)
     else:
@@ -163,8 +165,9 @@ def outline_run(run_dir: str | Path) -> Path:
     return run_path
 
 
-def evidence_run(run_dir: str | Path) -> Path:
+def evidence_run(run_dir: str | Path, require_stage_review_gates: bool = False) -> Path:
     run_path = Path(run_dir)
+    require_stage_review_gate_or_raise(run_path, "evidence", require_stage_review_gates)
     if state_exists(run_path):
         run_checkpointed_stage_or_raise(run_path, "evidence", evidence_existing_run)
     else:
@@ -172,8 +175,9 @@ def evidence_run(run_dir: str | Path) -> Path:
     return run_path
 
 
-def plan_run(run_dir: str | Path) -> Path:
+def plan_run(run_dir: str | Path, require_stage_review_gates: bool = False) -> Path:
     run_path = Path(run_dir)
+    require_stage_review_gate_or_raise(run_path, "planning", require_stage_review_gates)
     if state_exists(run_path):
         run_checkpointed_stage_or_raise(run_path, "planning", plan_existing_run)
     else:
@@ -181,8 +185,9 @@ def plan_run(run_dir: str | Path) -> Path:
     return run_path
 
 
-def draft_run(run_dir: str | Path) -> Path:
+def draft_run(run_dir: str | Path, require_stage_review_gates: bool = False) -> Path:
     run_path = Path(run_dir)
+    require_stage_review_gate_or_raise(run_path, "draft", require_stage_review_gates)
     if state_exists(run_path):
         run_checkpointed_stage_or_raise(run_path, "draft", draft_existing_run)
     else:
@@ -190,8 +195,9 @@ def draft_run(run_dir: str | Path) -> Path:
     return run_path
 
 
-def review_run(run_dir: str | Path) -> Path:
+def review_run(run_dir: str | Path, require_stage_review_gates: bool = False) -> Path:
     run_path = Path(run_dir)
+    require_stage_review_gate_or_raise(run_path, "review", require_stage_review_gates)
     if state_exists(run_path):
         run_checkpointed_stage_or_raise(run_path, "review", review_existing_run)
     else:
@@ -199,8 +205,9 @@ def review_run(run_dir: str | Path) -> Path:
     return run_path
 
 
-def finalize_run(run_dir: str | Path) -> Path:
+def finalize_run(run_dir: str | Path, require_stage_review_gates: bool = False) -> Path:
     run_path = Path(run_dir)
+    require_stage_review_gate_or_raise(run_path, "finalize", require_stage_review_gates)
     if state_exists(run_path):
         run_checkpointed_stage_or_raise(run_path, "finalize", finalize_existing_run)
     else:
@@ -208,13 +215,23 @@ def finalize_run(run_dir: str | Path) -> Path:
     return run_path
 
 
-def learning_run(run_dir: str | Path) -> Path:
+def learning_run(run_dir: str | Path, require_stage_review_gates: bool = False) -> Path:
     run_path = Path(run_dir)
+    require_stage_review_gate_or_raise(run_path, "learning", require_stage_review_gates)
     if state_exists(run_path):
         run_checkpointed_stage_or_raise(run_path, "learning", learning_existing_run)
     else:
         learning_existing_run(run_path)
     return run_path
+
+
+def require_stage_review_gate_or_raise(run_path: Path, stage: str, required: bool) -> None:
+    if not required:
+        return
+    try:
+        require_previous_stage_review_gate(run_path, stage)
+    except StageReviewError as exc:
+        raise ResumeRunError(str(exc)) from exc
 
 
 def run_checkpointed_stage_or_raise(run_path: Path, stage: str, runner) -> None:
@@ -224,7 +241,7 @@ def run_checkpointed_stage_or_raise(run_path: Path, stage: str, runner) -> None:
         raise ResumeRunError(str(exc)) from exc
 
 
-def resume_run(run_dir: str | Path) -> Path:
+def resume_run(run_dir: str | Path, require_stage_review_gates: bool = False) -> Path:
     run_path = Path(run_dir)
     stage_runners = {
         "ingest": ingest_stage_resume_not_supported,
@@ -237,7 +254,16 @@ def resume_run(run_dir: str | Path) -> Path:
         "learning": learning_existing_run,
     }
     try:
+        if require_stage_review_gates:
+            return resume_existing_run(
+                run_path,
+                stage_runners,
+                before_stage=lambda path, stage: require_previous_stage_review_gate(path, stage),
+                max_stages=1,
+            )
         return resume_existing_run(run_path, stage_runners)
+    except StageReviewError as exc:
+        raise ResumeRunError(str(exc)) from exc
     except Exception as exc:
         raise ResumeRunError(str(exc)) from exc
 
@@ -266,11 +292,17 @@ def record_hitl(
     )
 
 
-def write_run(task_file: str | Path, runs_dir: str | Path = "runs") -> Path:
+def write_run(
+    task_file: str | Path,
+    runs_dir: str | Path = "runs",
+    require_stage_review_gates: bool = False,
+) -> Path:
     try:
         run_path = ingest_run(task_file=task_file, runs_dir=runs_dir)
     except InitRunError as exc:
         raise WriteRunError(f"write-run failed at ingest: {exc}") from exc
+    if require_stage_review_gates:
+        return run_path
 
     stage_runners = [
         ("outline", outline_run),

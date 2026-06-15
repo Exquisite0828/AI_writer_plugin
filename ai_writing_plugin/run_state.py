@@ -279,6 +279,9 @@ def run_stage_with_loaded_state(run_dir: Path, state: dict[str, Any], stage: str
 def resume_run(
     run_dir: str | Path,
     stage_runners: dict[str, Callable[[Path], Any]],
+    *,
+    before_stage: Callable[[Path, str], None] | None = None,
+    max_stages: int | None = None,
 ) -> Path:
     run_path = Path(run_dir)
     if not state_exists(run_path):
@@ -295,7 +298,10 @@ def resume_run(
             write_state(run_path, state)
             return run_path
 
+        executed_stage_count = 0
         for stage in STAGE_ORDER[start_index:]:
+            if before_stage is not None:
+                before_stage(run_path, stage)
             run_checkpointed_stage(
                 run_path,
                 stage,
@@ -303,9 +309,12 @@ def resume_run(
                 lock_already_held=True,
                 command="resume-run",
             )
+            executed_stage_count += 1
+            if max_stages is not None and executed_stage_count >= max_stages:
+                break
 
         state = load_state(run_path)
-        state["status"] = "completed"
+        state["status"] = "completed" if all_stages_done(state) else "running"
         write_state(run_path, state)
     return run_path
 

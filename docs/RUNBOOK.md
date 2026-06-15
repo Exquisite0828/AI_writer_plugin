@@ -197,6 +197,51 @@ checker 要求 validation report 仍为 `valid`、`coverage_complete=true`、dec
 
 `stage_reviews/` 是 runtime assistance output，不写入 `manifest.artifacts`，不改变 `run_state.json` lifecycle，不证明项目事实，也不表示 professional approval。S1/S1R/S2A 不调用 Claude Code，不自动修改原 artifacts，不应用 patch，不阻塞下一 stage。
 
+## Stage Review Gate S2B opt-in gated workflow
+
+S2B 是 opt-in gate enforcement。默认 `write-run`、`resume-run` 和 single-stage commands 保持 non-gated 行为。只有显式传入 `--require-stage-review-gates` 时，engine 才会在进入下一阶段前读取上一阶段的 S2A artifacts 并 fail closed。
+
+启动 gated workflow：
+
+```bash
+.venv/bin/python -m ai_writing_plugin write-run --task <task.yaml> --require-stage-review-gates
+```
+
+该命令只创建 run 并完成 `ingest`，然后停止。下一步是为 `ingest` 准备和记录 stage review gate：
+
+```bash
+.venv/bin/python -m ai_writing_plugin prepare-stage-review --run <run_dir> --stage ingest
+# Claude Code reads review_prompt.md and review_units.json, then writes issues.json only.
+.venv/bin/python -m ai_writing_plugin validate-stage-review --run <run_dir> --stage ingest
+.venv/bin/python -m ai_writing_plugin record-stage-review-decision --run <run_dir> --stage ingest --decision accepted --notes "Reviewed."
+.venv/bin/python -m ai_writing_plugin check-stage-review-gate --run <run_dir> --stage ingest
+.venv/bin/python -m ai_writing_plugin resume-run --run <run_dir> --require-stage-review-gates
+```
+
+每次 gated `resume-run` 最多执行一个 pending stage。执行前会检查 immediate previous stage gate；执行成功后立即停止，并提示为刚完成的 stage 准备 review package。
+
+带 flag 的 single-stage commands 也会检查上一阶段 gate：
+
+```bash
+.venv/bin/python -m ai_writing_plugin outline-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin evidence-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin plan-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin draft-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin review-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin finalize-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin learning-run --run <run_dir> --require-stage-review-gates
+```
+
+S2B only reads:
+
+```text
+stage_reviews/<stage>/validation_report.json
+stage_reviews/<stage>/issues.json
+stage_reviews/<stage>/decision.json
+```
+
+S2B 不调用 Claude Code，不自动生成 `issues.json`，不自动修改 professional artifacts，不应用 safe auto-fix，不改变 `run_state.json` schema。`accepted` / `skipped` does not indicate professional approval，`coverage_complete=true` 也不表示 professional approval。
+
 ## Focused regression matrix
 
 常用 focused regression：

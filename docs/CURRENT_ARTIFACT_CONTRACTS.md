@@ -56,6 +56,16 @@ runs/<run_id>/
 
 `stage_reviews/` 是可选 runtime assistance artifact directory，用于 Stage Review Gate S1/S1R/S2A。它不是 professional artifact，不是 fact source，不表示 professional approval，不改变 `run_state.json` lifecycle，也不会写入 `manifest.artifacts`。S1/S1R 只生成 Claude Code 可读取的 review package，并校验人工/命令层写出的 `issues.json`；S1R 的 `coverage_complete` 只表示 required review units 已被声明覆盖，不表示专业批准。S2A 只记录用户对 stage review gate 的操作决定并检查 gate 是否可继续，`accepted` / `skipped` does not indicate professional approval。S1/S1R/S2A 不调用 Claude Code、不修改原 stage artifacts、不应用 patch、不阻塞下一 stage。
 
+S2B adds opt-in stage review gate enforcement through `--require-stage-review-gates`. It introduces no new artifact schema. It only reads existing S2A artifacts:
+
+```text
+stage_reviews/<stage>/validation_report.json
+stage_reviews/<stage>/issues.json
+stage_reviews/<stage>/decision.json
+```
+
+S2B does not write `manifest.artifacts`, does not alter the `run_state.json` schema, does not call Claude Code, does not generate `issues.json`, does not apply fixes, and does not indicate professional approval. `run_state.json` `schema_version` remains `1`.
+
 共享 role boundaries：
 
 1. `source` 是正常 project fact source role。
@@ -126,6 +136,8 @@ $PYTHON -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage d
 $PYTHON -m ai_writing_plugin record-stage-review-decision --run runs/<run_id> --stage draft --decision accepted --notes "Reviewed."
 $PYTHON -m ai_writing_plugin check-stage-review-gate --run runs/<run_id> --stage draft
 $PYTHON -m ai_writing_plugin write-run --task examples/hara_minimal_fixture/task.yaml
+$PYTHON -m ai_writing_plugin write-run --task examples/hara_minimal_fixture/task.yaml --require-stage-review-gates
+$PYTHON -m ai_writing_plugin resume-run --run runs/<run_id> --require-stage-review-gates
 $PYTHON -m ai_writing_plugin correction-harvest --run-dir runs/<run_id> --corrections path/to/corrections.yaml --profile path/to/document_profile.yaml
 $PYTHON -m ai_writing_plugin profile-promote --run-dir runs/<run_id> --candidate-patch runs/<run_id>/learning/candidate_profile_patch.yaml --eval-report runs/eval-n6/<eval_run>/eval_report.json --approval path/to/approval.yaml --target-profile path/to/document_profile.yaml --output-dir runs/<run_id>/learning --apply
 ```
@@ -195,6 +207,14 @@ issues_sha256
 这些命令不修改 professional artifacts，不写 `manifest.artifacts`，不修改 `run_state.json` stage status，不应用 auto-fix，也不表示 professional approval。
 
 `write-run` 是 noninteractive helper，会创建新 run 并执行完整 Phase 0-8 chain。
+
+`--require-stage-review-gates` 是 S2B opt-in enforcement flag。默认不加该 flag 时，`write-run`、`resume-run` 和 single-stage commands 行为保持 non-gated。加该 flag 时：
+
+1. `write-run` 只创建 run 并完成 `ingest`，然后停止，等待 `ingest` stage review gate。
+2. `resume-run` 每次最多执行一个 pending stage；执行前必须通过上一阶段 `check-stage-review-gate`。
+3. `outline-run`、`evidence-run`、`plan-run`、`draft-run`、`review-run`、`finalize-run`、`learning-run` 会在执行前检查上一阶段 gate。
+4. gate missing、invalid、non-passing decision 或 hash mismatch 都 fail closed，且不把目标 stage 标记为 failed。
+5. S2B 只 enforcement，不自动调用 Claude Code、不自动生成 `issues.json`、不自动修改 professional artifacts、不应用 safe auto-fix。
 
 `correction-harvest` 读取显式 correction YAML/JSON/JSONL input 和 external document profile，然后在指定 run directory 下写入 N7 correction 和 candidate profile patch artifacts。
 
