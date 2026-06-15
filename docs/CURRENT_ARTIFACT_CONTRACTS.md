@@ -54,7 +54,7 @@ runs/<run_id>/
 
 `run_state.json` 是断点续写使用的 runtime control artifact。它不是专业内容 artifact，不表示专业批准，不是 eval 结果，不是 promotion approval，也不会写入 `manifest.artifacts`。维护 artifact contract 时应把它作为 orchestration metadata 单独处理，而不是放宽专业内容 artifact 的阶段边界。
 
-`stage_reviews/` 是可选 runtime assistance artifact directory，用于 Stage Review Gate S1。它不是 professional artifact，不是 fact source，不表示 professional approval，不改变 `run_state.json` lifecycle，也不会写入 `manifest.artifacts`。S1 只生成 Claude Code 可读取的 review package，并校验人工/命令层写出的 `issues.json`；S1 不调用 Claude Code、不修改原 stage artifacts、不应用 patch、不阻塞下一 stage。
+`stage_reviews/` 是可选 runtime assistance artifact directory，用于 Stage Review Gate S1/S1R。它不是 professional artifact，不是 fact source，不表示 professional approval，不改变 `run_state.json` lifecycle，也不会写入 `manifest.artifacts`。S1/S1R 只生成 Claude Code 可读取的 review package，并校验人工/命令层写出的 `issues.json`；S1R 的 `coverage_complete` 只表示 required review units 已被声明覆盖，不表示专业批准。S1/S1R 不调用 Claude Code、不修改原 stage artifacts、不应用 patch、不阻塞下一 stage。
 
 共享 role boundaries：
 
@@ -156,6 +156,7 @@ $PYTHON -m ai_writing_plugin profile-promote --run-dir runs/<run_id> --candidate
 runs/<run_id>/stage_reviews/<stage>/review_context.json
 runs/<run_id>/stage_reviews/<stage>/review_prompt.md
 runs/<run_id>/stage_reviews/<stage>/issues_schema.json
+runs/<run_id>/stage_reviews/<stage>/review_units.json
 ```
 
 `validate-stage-review` 校验 `stage_reviews/<stage>/issues.json` 的 schema 和安全边界，并生成：
@@ -163,6 +164,8 @@ runs/<run_id>/stage_reviews/<stage>/issues_schema.json
 ```text
 runs/<run_id>/stage_reviews/<stage>/validation_report.json
 ```
+
+`review_units.json` 包含 deterministic review units。`issues.json` 必须声明 `reviewed_unit_ids`、`unchecked_unit_ids`，并且每个 issue 必须包含已知 `unit_id`。`validation_report.json` 包含 `coverage_summary.coverage_complete` 和 `unit_validation`，用于说明 required units 是否全部被覆盖。
 
 这两个命令不修改 professional artifacts，不写 `manifest.artifacts`，不修改 `run_state.json` stage status，不应用 auto-fix，也不表示 professional approval。
 

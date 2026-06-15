@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -43,6 +44,11 @@ HIGH_RISK_CATEGORIES = {
     "candidate_update_policy",
 }
 ADVISORY_SAFE_FIX_WARNING = "safe_auto_fix_eligible is advisory only in S1; no patch applied."
+REVIEW_UNIT_POLICY = {
+    "coverage_required": True,
+    "partial_review_allowed": False,
+    "unknown_unit_id_allowed": False,
+}
 
 FORBIDDEN_APPROVAL_PHRASES = (
     "approved",
@@ -108,6 +114,7 @@ FORBIDDEN_ACTIONS = [
 
 EXPECTED_ISSUE_FIELDS = {
     "issue_id",
+    "unit_id",
     "severity",
     "category",
     "title",
@@ -117,6 +124,7 @@ EXPECTED_ISSUE_FIELDS = {
     "requires_user_review",
     "requires_hitl",
     "safe_auto_fix_eligible",
+    "recommendation",
     "proposed_action",
     "forbidden_auto_fix_reason",
 }
@@ -128,7 +136,64 @@ EXPECTED_TOP_LEVEL_ISSUE_FIELDS = {
     "reviewer",
     "status",
     "not_professional_approval",
+    "reviewed_unit_ids",
+    "unchecked_unit_ids",
     "issues",
+}
+
+STAGE_REQUIRED_CHECKS = {
+    "ingest": [
+        "material_role_boundary",
+        "sample_not_fact_source",
+        "reference_not_project_fact_source",
+        "missing_or_unsupported_input",
+    ],
+    "outline": [
+        "template_alignment",
+        "missing_required_section",
+        "scope_clarity",
+        "no_irrelevant_document_type_leakage",
+    ],
+    "evidence": [
+        "evidence_boundary",
+        "source_support",
+        "unsupported_critical_claim",
+        "sample_not_fact_source",
+        "reference_not_project_fact_source",
+    ],
+    "planning": [
+        "citation_integrity",
+        "forbidden_source_boundary",
+        "critical_claim_confirmation_policy",
+        "writing_task_clarity",
+    ],
+    "draft": [
+        "evidence_boundary",
+        "unsupported_critical_claim",
+        "sample_not_fact_source",
+        "reference_not_project_fact_source",
+        "clarity",
+        "open_items_visibility",
+    ],
+    "review": [
+        "issue_specificity",
+        "severity_consistency",
+        "verification_boundary",
+        "no_approval_semantics",
+    ],
+    "finalize": [
+        "open_items_visibility",
+        "final_status_boundary",
+        "no_professional_approval",
+        "critical_claim_pending_visibility",
+    ],
+    "learning": [
+        "candidate_inactive",
+        "no_stable_profile_modification",
+        "no_stable_skill_modification",
+        "no_professional_approval",
+        "rollback_visibility",
+    ],
 }
 
 STAGE_REVIEW_FOCUS = {
@@ -262,6 +327,7 @@ def prepare_stage_review(run_dir: str | Path, stage: str) -> dict[str, Any]:
 
     review_dir = run_path / "stage_reviews" / stage
     review_dir.mkdir(parents=True, exist_ok=True)
+    review_units = build_review_units(run_path, stage, run_id)
     expected_outputs = [
         f"stage_reviews/{stage}/claude_review.md",
         f"stage_reviews/{stage}/issues.json",
@@ -284,6 +350,9 @@ def prepare_stage_review(run_dir: str | Path, stage: str) -> dict[str, Any]:
         },
         "stage_outputs": stage_outputs,
         "context_artifacts": context_artifacts,
+        "review_units_path": f"stage_reviews/{stage}/review_units.json",
+        "review_unit_count": len(review_units["units"]),
+        "review_unit_policy": REVIEW_UNIT_POLICY,
         "review_focus": STAGE_REVIEW_FOCUS[stage],
         "forbidden_actions": FORBIDDEN_ACTIONS,
         "expected_outputs": expected_outputs,
@@ -292,12 +361,14 @@ def prepare_stage_review(run_dir: str | Path, stage: str) -> dict[str, Any]:
 
     write_json(review_dir / "review_context.json", context)
     write_json(review_dir / "issues_schema.json", issues_schema)
+    write_json(review_dir / "review_units.json", review_units)
     (review_dir / "review_prompt.md").write_text(render_review_prompt(context, issues_schema), encoding="utf-8")
 
     artifacts = [
         f"stage_reviews/{stage}/review_context.json",
         f"stage_reviews/{stage}/review_prompt.md",
         f"stage_reviews/{stage}/issues_schema.json",
+        f"stage_reviews/{stage}/review_units.json",
     ]
     return {
         "run_id": run_id,
@@ -323,6 +394,8 @@ def validate_stage_review(run_dir: str | Path, stage: str, issues_file: str | Pa
     issues_payload: dict[str, Any] | None = None
     issue_count = 0
     blocking_issue_count = 0
+    coverage_summary = empty_coverage_summary()
+    unit_validation = empty_unit_validation()
 
     try:
         loaded = json.loads(issues_path.read_text(encoding="utf-8"))
@@ -340,6 +413,12 @@ def validate_stage_review(run_dir: str | Path, stage: str, issues_file: str | Pa
     if issues_payload is not None:
         payload_errors, issue_count, blocking_issue_count = validate_issues_payload(issues_payload, run_id, stage)
         errors.extend(payload_errors)
+        coverage_errors, coverage_summary, unit_validation = validate_review_unit_coverage(run_path, stage, run_id, issues_payload)
+        errors.extend(coverage_errors)
+    else:
+        unit_errors, required_unit_ids, _all_unit_ids = load_review_unit_ids(run_path, stage, run_id)
+        errors.extend(unit_errors)
+        coverage_summary["required_unit_count"] = len(required_unit_ids)
 
     report = {
         "schema_version": STAGE_REVIEW_SCHEMA_VERSION,
@@ -351,6 +430,8 @@ def validate_stage_review(run_dir: str | Path, stage: str, issues_file: str | Pa
         "not_professional_approval": True,
         "issue_count": issue_count,
         "blocking_issue_count": blocking_issue_count,
+        "coverage_summary": coverage_summary,
+        "unit_validation": unit_validation,
         "warnings": [ADVISORY_SAFE_FIX_WARNING],
         "errors": errors,
     }
@@ -358,6 +439,438 @@ def validate_stage_review(run_dir: str | Path, stage: str, issues_file: str | Pa
     if errors:
         raise StageReviewError("Stage review issues invalid: " + "; ".join(errors))
     return report
+
+
+def build_review_units(run_dir: Path, stage: str, run_id: str) -> dict[str, Any]:
+    source_artifacts = list(STAGE_REGISTRY[stage]["required_outputs"])
+    units: list[dict[str, Any]] = []
+    warnings: list[str] = []
+    sequence = 1
+    for relative_path in source_artifacts:
+        artifact_units, artifact_warnings = build_review_units_for_artifact(run_dir, stage, relative_path, sequence)
+        units.extend(artifact_units)
+        warnings.extend(artifact_warnings)
+        sequence += len(artifact_units)
+
+    if not units:
+        fallback_path = source_artifacts[0] if source_artifacts else f"{stage}/unknown"
+        units.append(
+            make_review_unit(
+                stage=stage,
+                relative_path=fallback_path,
+                unit_type="fallback_artifact_review",
+                sequence=1,
+                locator=fallback_path,
+                title="Fallback artifact review",
+                required_checks=["artifact_presence", "parse_failure_visibility", "open_items_visibility"],
+                note="No deterministic review units could be extracted; fallback unit created.",
+            )
+        )
+        warnings.append("No deterministic review units could be extracted; fallback unit created.")
+
+    return {
+        "kind": "stage_review_units",
+        "schema_version": STAGE_REVIEW_SCHEMA_VERSION,
+        "run_id": run_id,
+        "stage": stage,
+        "created_at": utc_timestamp(),
+        "source_artifacts": source_artifacts,
+        "unit_policy": REVIEW_UNIT_POLICY,
+        "warnings": warnings,
+        "units": units,
+    }
+
+
+def build_review_units_for_artifact(
+    run_dir: Path,
+    stage: str,
+    relative_path: str,
+    start_sequence: int,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    path = run_dir / relative_path
+    warnings: list[str] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return [
+            make_review_unit(
+                stage=stage,
+                relative_path=relative_path,
+                unit_type="fallback_artifact_review",
+                sequence=start_sequence,
+                locator=relative_path,
+                title="Fallback artifact review",
+                required_checks=["artifact_presence", "parse_failure_visibility", "open_items_visibility"],
+                note="Artifact is not readable as UTF-8.",
+            )
+        ], [f"{relative_path}: unreadable_non_utf8"]
+
+    suffix = path.suffix.lower()
+    if suffix == ".md":
+        return build_markdown_review_units(stage, relative_path, text, start_sequence), warnings
+    if suffix == ".json":
+        try:
+            loaded = json.loads(text)
+        except json.JSONDecodeError as exc:
+            return [
+                make_review_unit(
+                    stage=stage,
+                    relative_path=relative_path,
+                    unit_type="fallback_artifact_review",
+                    sequence=start_sequence,
+                    locator=relative_path,
+                    title="Fallback artifact review",
+                    required_checks=["artifact_presence", "parse_failure_visibility", "open_items_visibility"],
+                    note=f"JSON parse failure: {exc}",
+                )
+            ], [f"{relative_path}: JSON parse failure: {exc}"]
+        return build_json_review_units(stage, relative_path, loaded, start_sequence), warnings
+    if suffix == ".jsonl":
+        return build_jsonl_review_units(stage, relative_path, text, start_sequence), warnings
+    return [
+        make_review_unit(
+            stage=stage,
+            relative_path=relative_path,
+            unit_type=artifact_unit_type(stage, relative_path, "artifact_review"),
+            sequence=start_sequence,
+            locator=relative_path,
+            title=relative_path,
+            required_checks=STAGE_REQUIRED_CHECKS[stage],
+        )
+    ], warnings
+
+
+def build_markdown_review_units(stage: str, relative_path: str, text: str, start_sequence: int) -> list[dict[str, Any]]:
+    headings: list[tuple[int, str]] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        match = re.match(r"^(#{1,6})\s+(.+?)\s*$", line)
+        if match:
+            headings.append((line_number, match.group(2).strip()))
+
+    unit_type = artifact_unit_type(stage, relative_path, "markdown_section")
+    if not headings:
+        return [
+            make_review_unit(
+                stage=stage,
+                relative_path=relative_path,
+                unit_type=unit_type,
+                sequence=start_sequence,
+                locator=relative_path,
+                title=Path(relative_path).name,
+                required_checks=STAGE_REQUIRED_CHECKS[stage],
+                note="No markdown headings found; entire artifact is one review unit.",
+            )
+        ]
+
+    return [
+        make_review_unit(
+            stage=stage,
+            relative_path=relative_path,
+            unit_type=unit_type,
+            sequence=start_sequence + index,
+            locator=f"line {line_number}",
+            title=title,
+            required_checks=STAGE_REQUIRED_CHECKS[stage],
+        )
+        for index, (line_number, title) in enumerate(headings)
+    ]
+
+
+def build_json_review_units(stage: str, relative_path: str, loaded: Any, start_sequence: int) -> list[dict[str, Any]]:
+    list_entries = list(iter_json_list_entries(loaded))
+    unit_type = artifact_unit_type(stage, relative_path, "json_entry")
+    if not list_entries:
+        return [
+            make_review_unit(
+                stage=stage,
+                relative_path=relative_path,
+                unit_type=unit_type,
+                sequence=start_sequence,
+                locator="$",
+                title=Path(relative_path).name,
+                required_checks=STAGE_REQUIRED_CHECKS[stage],
+                note="No JSON list entries found; whole JSON artifact is one review unit.",
+            )
+        ]
+    return [
+        make_review_unit(
+            stage=stage,
+            relative_path=relative_path,
+            unit_type=unit_type,
+            sequence=start_sequence + index,
+            locator=json_path,
+            title=infer_json_unit_title(item, json_path),
+            required_checks=STAGE_REQUIRED_CHECKS[stage],
+        )
+        for index, (json_path, item) in enumerate(list_entries)
+    ]
+
+
+def build_jsonl_review_units(stage: str, relative_path: str, text: str, start_sequence: int) -> list[dict[str, Any]]:
+    unit_type = artifact_unit_type(stage, relative_path, "jsonl_entry")
+    units: list[dict[str, Any]] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            continue
+        units.append(
+            make_review_unit(
+                stage=stage,
+                relative_path=relative_path,
+                unit_type=unit_type,
+                sequence=start_sequence + len(units),
+                locator=f"line {line_number}",
+                title=f"{Path(relative_path).name} line {line_number}",
+                required_checks=STAGE_REQUIRED_CHECKS[stage],
+            )
+        )
+    if not units:
+        units.append(
+            make_review_unit(
+                stage=stage,
+                relative_path=relative_path,
+                unit_type=unit_type,
+                sequence=start_sequence,
+                locator=relative_path,
+                title=Path(relative_path).name,
+                required_checks=STAGE_REQUIRED_CHECKS[stage],
+                note="No JSONL entries found; entire artifact is one review unit.",
+            )
+        )
+    return units
+
+
+def iter_json_list_entries(value: Any, path: str = "$") -> list[tuple[str, Any]]:
+    entries: list[tuple[str, Any]] = []
+    if isinstance(value, list):
+        for index, item in enumerate(value):
+            item_path = f"{path}[{index}]"
+            entries.append((item_path, item))
+            entries.extend(iter_json_list_entries(item, item_path))
+        return entries
+    if isinstance(value, dict):
+        for key, item in value.items():
+            entries.extend(iter_json_list_entries(item, f"{path}.{key}"))
+    return entries
+
+
+def infer_json_unit_title(item: Any, json_path: str) -> str:
+    if isinstance(item, dict):
+        for key in ("title", "section_title", "section_id", "claim_id", "question_id", "file_id", "source_id", "check_id", "id"):
+            value = item.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return json_path
+
+
+def make_review_unit(
+    *,
+    stage: str,
+    relative_path: str,
+    unit_type: str,
+    sequence: int,
+    locator: str,
+    title: str,
+    required_checks: list[str],
+    note: str | None = None,
+) -> dict[str, Any]:
+    unit = {
+        "unit_id": make_unit_id(stage, relative_path, unit_type, sequence),
+        "required": True,
+        "status": "pending",
+        "artifact_path": relative_path,
+        "unit_type": unit_type,
+        "locator": locator,
+        "title": title,
+        "required_checks": required_checks,
+    }
+    if note:
+        unit["decomposition_note"] = note
+    return unit
+
+
+def make_unit_id(stage: str, relative_path: str, unit_type: str, sequence: int) -> str:
+    safe_artifact = re.sub(r"[^a-z0-9]+", ".", relative_path.lower()).strip(".")
+    safe_unit_type = re.sub(r"[^a-z0-9]+", "_", unit_type.lower()).strip("_")
+    return f"{stage}.{safe_artifact}.{safe_unit_type}.{sequence:03d}"
+
+
+def artifact_unit_type(stage: str, relative_path: str, default: str) -> str:
+    path = relative_path
+    if stage == "ingest":
+        if path == "inputs/input_inventory.json":
+            return "input_material"
+        if path == "knowledge/source_index.json":
+            return "source_index_entry"
+    if stage == "outline":
+        if path.endswith("template_structure.json"):
+            return "template_section"
+        return "outline_section"
+    if stage == "evidence":
+        if path.endswith("evidence_map.json"):
+            return "evidence_mapping"
+        return "unresolved_question" if path.endswith(".md") else default
+    if stage == "planning":
+        if path.endswith("citation_plan.json"):
+            return "citation_plan_entry"
+        if path.endswith("section_tasks.json"):
+            return "section_task"
+        if path.endswith("claim_support_matrix.json"):
+            return "claim_support_entry"
+    if stage == "draft":
+        return "markdown_section"
+    if stage == "review":
+        if path.endswith("review_report.json"):
+            return "review_item"
+        if path.endswith("verify_report.json"):
+            return "verification_check"
+        return "markdown_section"
+    if stage == "finalize":
+        if path.endswith("final_report.md"):
+            return "final_report_section"
+        if path.endswith("delivery_summary.md"):
+            return "delivery_summary"
+        if path.endswith("change_log.md"):
+            return "change_log"
+    if stage == "learning":
+        if path.endswith("candidate_profile_update.yaml"):
+            return "candidate_profile_update"
+        if path.endswith("candidate_skill_patch.md"):
+            return "candidate_skill_patch"
+        if path.endswith("promotion_report.md"):
+            return "promotion_report"
+        return "learning_summary"
+    return default
+
+
+def empty_coverage_summary() -> dict[str, Any]:
+    return {
+        "required_unit_count": 0,
+        "reviewed_unit_count": 0,
+        "unchecked_unit_count": 0,
+        "issue_unit_count": 0,
+        "coverage_complete": False,
+    }
+
+
+def empty_unit_validation() -> dict[str, list[str]]:
+    return {
+        "missing_reviewed_unit_ids": [],
+        "unknown_reviewed_unit_ids": [],
+        "unknown_unchecked_unit_ids": [],
+        "unknown_issue_unit_ids": [],
+        "overlapping_reviewed_and_unchecked_unit_ids": [],
+    }
+
+
+def load_review_unit_ids(run_dir: Path, stage: str, run_id: str) -> tuple[list[str], set[str], set[str]]:
+    review_units_path = run_dir / "stage_reviews" / stage / "review_units.json"
+    try:
+        review_units = read_json_object(review_units_path, "review_units")
+    except StageReviewError as exc:
+        return [str(exc)], set(), set()
+
+    errors: list[str] = []
+    if review_units.get("schema_version") != STAGE_REVIEW_SCHEMA_VERSION:
+        errors.append("review_units.json schema_version must be 1")
+    if review_units.get("kind") != "stage_review_units":
+        errors.append("review_units.json kind must be stage_review_units")
+    if review_units.get("run_id") != run_id:
+        errors.append("review_units.json run_id mismatch")
+    if review_units.get("stage") != stage:
+        errors.append("review_units.json stage mismatch")
+    units = review_units.get("units")
+    if not isinstance(units, list) or not units:
+        errors.append("review_units.json units must be a non-empty list")
+        return errors, set(), set()
+
+    all_unit_ids: set[str] = set()
+    required_unit_ids: set[str] = set()
+    for index, unit in enumerate(units, start=1):
+        if not isinstance(unit, dict):
+            errors.append(f"review unit {index} must be an object")
+            continue
+        unit_id = unit.get("unit_id")
+        if not isinstance(unit_id, str) or not unit_id:
+            errors.append(f"review unit {index} unit_id must be a non-empty string")
+            continue
+        if unit_id in all_unit_ids:
+            errors.append(f"duplicate review unit_id: {unit_id}")
+        all_unit_ids.add(unit_id)
+        if unit.get("required") is True:
+            required_unit_ids.add(unit_id)
+        for field in ("artifact_path", "unit_type", "locator", "title"):
+            if not isinstance(unit.get(field), str) or not unit[field].strip():
+                errors.append(f"{unit_id} {field} must be a non-empty string")
+        if not isinstance(unit.get("required_checks"), list) or not all(
+            isinstance(check, str) and check for check in unit.get("required_checks", [])
+        ):
+            errors.append(f"{unit_id} required_checks must be a non-empty list of strings")
+        if unit.get("status") != "pending":
+            errors.append(f"{unit_id} status must be pending")
+        artifact_path = unit.get("artifact_path")
+        if isinstance(artifact_path, str) and not is_safe_relative_path(artifact_path):
+            errors.append(f"{unit_id} artifact_path must be a safe relative path")
+
+    return errors, required_unit_ids, all_unit_ids
+
+
+def validate_review_unit_coverage(
+    run_dir: Path,
+    stage: str,
+    run_id: str,
+    issues_payload: dict[str, Any],
+) -> tuple[list[str], dict[str, Any], dict[str, list[str]]]:
+    errors, required_unit_ids, all_unit_ids = load_review_unit_ids(run_dir, stage, run_id)
+    unit_validation = empty_unit_validation()
+
+    reviewed_unit_ids = list_field_as_set(issues_payload.get("reviewed_unit_ids"))
+    unchecked_unit_ids = list_field_as_set(issues_payload.get("unchecked_unit_ids"))
+    issue_unit_ids = {
+        issue.get("unit_id")
+        for issue in issues_payload.get("issues", [])
+        if isinstance(issue, dict) and isinstance(issue.get("unit_id"), str)
+    }
+
+    unit_validation["missing_reviewed_unit_ids"] = sorted(required_unit_ids - reviewed_unit_ids)
+    unit_validation["unknown_reviewed_unit_ids"] = sorted(reviewed_unit_ids - all_unit_ids)
+    unit_validation["unknown_unchecked_unit_ids"] = sorted(unchecked_unit_ids - all_unit_ids)
+    unit_validation["unknown_issue_unit_ids"] = sorted(issue_unit_ids - all_unit_ids)
+    unit_validation["overlapping_reviewed_and_unchecked_unit_ids"] = sorted(reviewed_unit_ids & unchecked_unit_ids)
+
+    if unit_validation["missing_reviewed_unit_ids"]:
+        errors.append(
+            "missing required review unit coverage: "
+            + ", ".join(unit_validation["missing_reviewed_unit_ids"])
+        )
+    if unit_validation["unknown_reviewed_unit_ids"]:
+        errors.append("unknown reviewed unit ids: " + ", ".join(unit_validation["unknown_reviewed_unit_ids"]))
+    if unit_validation["unknown_unchecked_unit_ids"]:
+        errors.append("unknown unchecked unit ids: " + ", ".join(unit_validation["unknown_unchecked_unit_ids"]))
+    if unit_validation["unknown_issue_unit_ids"]:
+        errors.append("unknown issue unit ids: " + ", ".join(unit_validation["unknown_issue_unit_ids"]))
+    if unit_validation["overlapping_reviewed_and_unchecked_unit_ids"]:
+        errors.append(
+            "reviewed and unchecked unit ids overlap: "
+            + ", ".join(unit_validation["overlapping_reviewed_and_unchecked_unit_ids"])
+        )
+    if unchecked_unit_ids:
+        errors.append("unchecked_unit_ids must be empty in S1R: " + ", ".join(sorted(unchecked_unit_ids)))
+
+    coverage_complete = not any(unit_validation.values()) and not unchecked_unit_ids and not errors
+    coverage_summary = {
+        "required_unit_count": len(required_unit_ids),
+        "reviewed_unit_count": len(reviewed_unit_ids),
+        "unchecked_unit_count": len(unchecked_unit_ids),
+        "issue_unit_count": len(issue_unit_ids),
+        "coverage_complete": coverage_complete,
+    }
+    return errors, coverage_summary, unit_validation
+
+
+def list_field_as_set(value: Any) -> set[str]:
+    if not isinstance(value, list):
+        return set()
+    return {item for item in value if isinstance(item, str)}
 
 
 def ensure_supported_stage(stage: str) -> None:
@@ -476,6 +989,15 @@ def build_issues_schema(stage: str) -> dict[str, Any]:
             "high_risk_categories_must_not_be_safe_auto_fix_eligible": True,
             "not_professional_approval_required": True,
         },
+        "s1r_review_unit_policy": {
+            "review_units_path": f"stage_reviews/{stage}/review_units.json",
+            "reviewed_unit_ids_required": True,
+            "unchecked_unit_ids_required": True,
+            "issue_unit_id_required": True,
+            "coverage_required": True,
+            "partial_review_allowed": False,
+            "unknown_unit_id_allowed": False,
+        },
     }
 
 
@@ -498,6 +1020,8 @@ def render_review_prompt(context: dict[str, Any], issues_schema: dict[str, Any])
             "Do not modify artifacts in this run. Do not add project facts.",
             "sample is not fact source. reference is not project-specific fact support.",
             "If a point requires factual or professional judgment, mark it as requires_user_review or HITL required.",
+            "You must read review_units.json and review every required unit by unit_id.",
+            "Do not summarize the whole stage without unit-level coverage.",
             "",
             "## Run",
             "",
@@ -529,10 +1053,22 @@ def render_review_prompt(context: dict[str, Any], issues_schema: dict[str, Any])
             "",
             expected_outputs,
             "",
+            "## Review Unit Coverage",
+            "",
+            f"- review_units_path: {context['review_units_path']}",
+            f"- review_unit_count: {context['review_unit_count']}",
+            "- Add every checked required unit_id to reviewed_unit_ids.",
+            "- unchecked_unit_ids must be empty for S1R validation to pass.",
+            "- If any required unit cannot be reviewed, list it in unchecked_unit_ids with a reason in claude_review.md.",
+            "- Each issue must include a known unit_id from review_units.json.",
+            "- The validation step fails for missing coverage, unknown unit_id, unchecked units, or reviewed/unchecked overlap.",
+            "",
             "## issues.json Schema Summary",
             "",
             f"- kind: stage_review_issues",
             f"- schema_version: {STAGE_REVIEW_SCHEMA_VERSION}",
+            "- required top-level fields include reviewed_unit_ids and unchecked_unit_ids.",
+            "- required issue fields include unit_id.",
             f"- allowed status values: {statuses}",
             f"- allowed severity values: {', '.join(sorted(ISSUE_SEVERITIES))}",
             f"- allowed category values: {categories}",
@@ -570,6 +1106,8 @@ def validate_issues_payload(payload: dict[str, Any], run_id: str, stage: str) ->
         errors.append("reviewer must be a non-empty string")
     if payload.get("not_professional_approval") is not True:
         errors.append("not_professional_approval must be true")
+    validate_string_list(payload.get("reviewed_unit_ids"), "reviewed_unit_ids", "issues.json", errors)
+    validate_string_list(payload.get("unchecked_unit_ids"), "unchecked_unit_ids", "issues.json", errors)
 
     issues = payload.get("issues")
     if not isinstance(issues, list):
@@ -594,6 +1132,9 @@ def validate_issues_payload(payload: dict[str, Any], run_id: str, stage: str) ->
             errors.append(f"duplicate issue_id: {issue_id}")
         else:
             seen_issue_ids.add(issue_id)
+        unit_id = issue.get("unit_id")
+        if not isinstance(unit_id, str) or not unit_id:
+            errors.append(f"{issue_label} unit_id must be a non-empty string")
 
         severity = issue.get("severity")
         if severity not in ISSUE_SEVERITIES:
@@ -639,7 +1180,7 @@ def validate_string_list(value: Any, field: str, issue_label: str, errors: list[
 
 
 def issue_text(issue: dict[str, Any]) -> str:
-    fields = ["title", "description", "proposed_action", "forbidden_auto_fix_reason"]
+    fields = ["title", "description", "recommendation", "proposed_action", "forbidden_auto_fix_reason"]
     values = [issue.get(field) for field in fields if isinstance(issue.get(field), str)]
     return "\n".join(values).lower()
 

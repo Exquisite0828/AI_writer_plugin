@@ -127,7 +127,7 @@ Claude Code 入口：
 
 ## Stage review package
 
-Stage Review Gate S1 可以在某个 stage 完成后生成 advisory review package，供 Claude Code 读取后做语义审查：
+Stage Review Gate S1/S1R 可以在某个 stage 完成后生成 advisory review package，供 Claude Code 读取后做语义审查：
 
 ```bash
 .venv/bin/python -m ai_writing_plugin prepare-stage-review --run runs/<run_id> --stage outline
@@ -139,14 +139,25 @@ Stage Review Gate S1 可以在某个 stage 完成后生成 advisory review packa
 runs/<run_id>/stage_reviews/<stage>/review_context.json
 runs/<run_id>/stage_reviews/<stage>/review_prompt.md
 runs/<run_id>/stage_reviews/<stage>/issues_schema.json
+runs/<run_id>/stage_reviews/<stage>/review_units.json
 ```
 
-Claude Code 可以读取 `review_prompt.md` 和 `review_context.json`，然后只在同一目录下写：
+Claude Code 可以读取 `review_prompt.md`、`review_context.json` 和 `review_units.json`，然后只在同一目录下写：
 
 ```text
 claude_review.md
 issues.json
 ```
+
+S1R 要求 `issues.json` 声明：
+
+```text
+reviewed_unit_ids
+unchecked_unit_ids
+issues[].unit_id
+```
+
+每个 required review unit 都必须出现在 `reviewed_unit_ids` 中。S1R 不允许 partial review；`unchecked_unit_ids` 非空、unknown unit id、issue 引用未知 `unit_id` 或 reviewed/unchecked 重叠都会导致 validation failed。
 
 校验 review issues：
 
@@ -160,7 +171,9 @@ issues.json
 .venv/bin/python -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage outline --issues-file path/to/issues.json
 ```
 
-`stage_reviews/` 是 runtime assistance output，不写入 `manifest.artifacts`，不改变 `run_state.json` lifecycle，不证明项目事实，也不表示 professional approval。S1 不调用 Claude Code，不自动修改原 artifacts，不应用 patch，不阻塞下一 stage。
+`validation_report.json` 会写入 `coverage_summary`，其中 `coverage_complete=true` 只表示 required review units 已被 deterministic coverage validation 接受，不表示 professional approval。
+
+`stage_reviews/` 是 runtime assistance output，不写入 `manifest.artifacts`，不改变 `run_state.json` lifecycle，不证明项目事实，也不表示 professional approval。S1/S1R 不调用 Claude Code，不自动修改原 artifacts，不应用 patch，不阻塞下一 stage。
 
 ## Focused regression matrix
 

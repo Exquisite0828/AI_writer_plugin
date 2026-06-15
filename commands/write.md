@@ -103,8 +103,8 @@ helper 不能伪造 HITL approval。非交互运行会把缺失 gate 记录为 `
 2. 运行 ingest，并向用户说明 material classification。
 3. 只有在用户明确回复后，才记录真实 HITL decisions。
 4. 通过 Python engine 运行 outline、evidence、plan、draft、review、finalize 和 learning。
-5. 每个 engine stage 完成后，可以运行 `prepare-stage-review` 生成 Claude review package；Claude Code 读取 package 后只写 `claude_review.md` / `issues.json`，再运行 `validate-stage-review`。
-6. S1 stage review 只供用户 review：不阻塞下一 stage，不自动修改 artifacts，不应用 patch，不写 professional approval。
+5. 每个 engine stage 完成后，可以运行 `prepare-stage-review` 生成 Claude review package 和 `review_units.json`；Claude Code 读取 package 后只写 `claude_review.md` / `issues.json`，再运行 `validate-stage-review`。
+6. S1/S1R stage review 只供用户 review：不阻塞下一 stage，不自动修改 artifacts，不应用 patch，不写 professional approval。`coverage_complete=true` 只表示 required review units 被声明覆盖。
 7. 如果中途中断，优先用 `resume-run --run <run_dir>` 从 `run_state.json` 继续；不要从头创建新 run，除非 `resume-run` 明确提示 task/profile hash mismatch、missing run_state 或 dirty completed stage。
 8. 用中文报告 run directory、final artifacts、pending critical claims 和 candidate update 状态。
 
@@ -133,7 +133,7 @@ $PYTHON -m ai_writing_plugin resume-run --run runs/<run_id>
 
 `resume-run` 只恢复 deterministic engine lifecycle，不代表 professional approval。它不会伪造 HITL decisions，不会自动激活 candidate updates，也不会把 dirty completed stage 自动回滚重跑。
 
-## Stage review S1 flow
+## Stage review S1/S1R flow
 
 在某个 stage 完成后，可以准备 advisory review package：
 
@@ -147,6 +147,7 @@ $PYTHON -m ai_writing_plugin prepare-stage-review --run "$RUN_DIR" --stage outli
 ```text
 runs/<run_id>/stage_reviews/outline/review_prompt.md
 runs/<run_id>/stage_reviews/outline/review_context.json
+runs/<run_id>/stage_reviews/outline/review_units.json
 ```
 
 Claude Code 只允许在同一目录下写：
@@ -156,13 +157,23 @@ runs/<run_id>/stage_reviews/outline/claude_review.md
 runs/<run_id>/stage_reviews/outline/issues.json
 ```
 
+`issues.json` 必须包含：
+
+```text
+reviewed_unit_ids
+unchecked_unit_ids
+issues[].unit_id
+```
+
+必须按 `review_units.json` 中的 `unit_id` 逐项审查，不要只做整体总结。每个 required unit 都必须加入 `reviewed_unit_ids`。S1R 不允许 partial review；`unchecked_unit_ids` 非空、unknown unit id、missing coverage 或 reviewed/unchecked overlap 都会导致 validation failed。
+
 随后校验：
 
 ```bash
 $PYTHON -m ai_writing_plugin validate-stage-review --run "$RUN_DIR" --stage outline
 ```
 
-Stage review is advisory. It is not professional approval. It does not apply fixes in S1. It must not add project facts, treat sample/reference as fact support, remove `NEEDS_USER_CONFIRMATION`, or modify original stage artifacts.
+Stage review is advisory. It is not professional approval. `coverage_complete=true` is not professional approval. It does not apply fixes in S1/S1R. It must not add project facts, treat sample/reference as fact support, remove `NEEDS_USER_CONFIRMATION`, or modify original stage artifacts.
 
 ## Boundaries
 

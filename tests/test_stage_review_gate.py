@@ -39,7 +39,13 @@ def run_until_draft_done(tmp_path: Path) -> Path:
     return run_dir
 
 
-def valid_issues_payload(run_id: str, stage: str) -> dict:
+def review_unit_ids(run_dir: Path, stage: str = "draft") -> list[str]:
+    units = read_json(run_dir / "stage_reviews" / stage / "review_units.json")
+    return [unit["unit_id"] for unit in units["units"]]
+
+
+def valid_issues_payload(run_id: str, stage: str, unit_ids: list[str]) -> dict:
+    issue_unit_id = unit_ids[0]
     return {
         "schema_version": 1,
         "kind": "stage_review_issues",
@@ -48,9 +54,12 @@ def valid_issues_payload(run_id: str, stage: str) -> dict:
         "reviewer": "claude_code",
         "status": "issues_found",
         "not_professional_approval": True,
+        "reviewed_unit_ids": unit_ids,
+        "unchecked_unit_ids": [],
         "issues": [
             {
                 "issue_id": "SRI-001",
+                "unit_id": issue_unit_id,
                 "severity": "P2",
                 "category": "artifact_quality",
                 "title": "Draft has repeated wording",
@@ -60,6 +69,7 @@ def valid_issues_payload(run_id: str, stage: str) -> dict:
                 "requires_user_review": False,
                 "requires_hitl": False,
                 "safe_auto_fix_eligible": False,
+                "recommendation": "Ask the user whether the duplicate wording should be reduced in a later manual revision.",
                 "proposed_action": "Ask the user whether the duplicate wording should be reduced in a later manual revision.",
                 "forbidden_auto_fix_reason": "",
             }
@@ -82,6 +92,7 @@ def test_prepare_stage_review_package_for_draft_is_advisory_and_does_not_mutate_
     context = read_json(review_dir / "review_context.json")
     prompt = (review_dir / "review_prompt.md").read_text(encoding="utf-8").lower()
     schema = read_json(review_dir / "issues_schema.json")
+    review_units = read_json(review_dir / "review_units.json")
     manifest_after = read_json(run_dir / "manifest.json")
     run_state_after = read_json(run_dir / "run_state.json")
 
@@ -90,11 +101,19 @@ def test_prepare_stage_review_package_for_draft_is_advisory_and_does_not_mutate_
         "stage_reviews/draft/review_context.json",
         "stage_reviews/draft/review_prompt.md",
         "stage_reviews/draft/issues_schema.json",
+        "stage_reviews/draft/review_units.json",
     ]
     assert context["kind"] == "stage_review_context"
     assert context["not_professional_approval"] is True
     assert context["stage"] == "draft"
     assert context["phase"] == "phase_5"
+    assert context["review_units_path"] == "stage_reviews/draft/review_units.json"
+    assert context["review_unit_count"] == len(review_units["units"])
+    assert context["review_unit_policy"] == {
+        "coverage_required": True,
+        "partial_review_allowed": False,
+        "unknown_unit_id_allowed": False,
+    }
     assert context["run"]["manifest_path"] == "manifest.json"
     assert context["run"]["task_brief_path"] == "task_brief.json"
     assert context["run"]["run_state_path"] == "run_state.json"
@@ -106,8 +125,29 @@ def test_prepare_stage_review_package_for_draft_is_advisory_and_does_not_mutate_
     assert "do not modify artifacts" in prompt
     assert "sample is not fact source" in prompt
     assert "not professional approval" in prompt
+    assert "review_units.json" in prompt
+    assert "unit_id" in prompt
+    assert "reviewed_unit_ids" in prompt
+    assert "unchecked_unit_ids" in prompt
     assert schema["kind"] == "stage_review_issues_schema"
     assert schema["schema_version"] == 1
+    assert "reviewed_unit_ids" in schema["required_top_level_fields"]
+    assert "unchecked_unit_ids" in schema["required_top_level_fields"]
+    assert "unit_id" in schema["required_issue_fields"]
+    assert review_units["kind"] == "stage_review_units"
+    assert review_units["schema_version"] == 1
+    assert review_units["run_id"] == context["run_id"]
+    assert review_units["stage"] == "draft"
+    assert review_units["source_artifacts"] == ["draft/full_draft.md"]
+    assert review_units["units"]
+    unit_ids_before = [unit["unit_id"] for unit in review_units["units"]]
+    assert all(unit["required"] is True for unit in review_units["units"])
+    assert all(unit["status"] == "pending" for unit in review_units["units"])
+    assert all(unit["artifact_path"] == "draft/full_draft.md" for unit in review_units["units"])
+    assert all(unit["unit_id"] and unit["unit_type"] and unit["required_checks"] for unit in review_units["units"])
+    prepare_stage_review(run_dir=run_dir, stage="draft")
+    unit_ids_after = [unit["unit_id"] for unit in read_json(review_dir / "review_units.json")["units"]]
+    assert unit_ids_after == unit_ids_before
 
     assert manifest_after == manifest_before
     assert run_state_after["stages"] == run_state_before["stages"]
@@ -133,7 +173,8 @@ def test_validate_stage_review_accepts_valid_issues_and_writes_report(tmp_path: 
     run_dir = run_until_draft_done(tmp_path)
     run_id = read_json(run_dir / "manifest.json")["run_id"]
     prepare_stage_review(run_dir=run_dir, stage="draft")
-    write_json(run_dir / "stage_reviews" / "draft" / "issues.json", valid_issues_payload(run_id, "draft"))
+    unit_ids = review_unit_ids(run_dir)
+    write_json(run_dir / "stage_reviews" / "draft" / "issues.json", valid_issues_payload(run_id, "draft", unit_ids))
 
     report = validate_stage_review(run_dir=run_dir, stage="draft")
     saved_report = read_json(run_dir / "stage_reviews" / "draft" / "validation_report.json")
@@ -144,6 +185,20 @@ def test_validate_stage_review_accepts_valid_issues_and_writes_report(tmp_path: 
     assert report["not_professional_approval"] is True
     assert report["issue_count"] == 1
     assert report["errors"] == []
+    assert report["coverage_summary"] == {
+        "required_unit_count": len(unit_ids),
+        "reviewed_unit_count": len(unit_ids),
+        "unchecked_unit_count": 0,
+        "issue_unit_count": 1,
+        "coverage_complete": True,
+    }
+    assert report["unit_validation"] == {
+        "missing_reviewed_unit_ids": [],
+        "unknown_reviewed_unit_ids": [],
+        "unknown_unchecked_unit_ids": [],
+        "unknown_issue_unit_ids": [],
+        "overlapping_reviewed_and_unchecked_unit_ids": [],
+    }
     assert "safe_auto_fix_eligible is advisory only in S1; no patch applied." in report["warnings"]
 
 
@@ -153,7 +208,7 @@ def test_validate_stage_review_rejects_professional_approval_wording(tmp_path: P
     run_dir = run_until_draft_done(tmp_path)
     run_id = read_json(run_dir / "manifest.json")["run_id"]
     prepare_stage_review(run_dir=run_dir, stage="draft")
-    payload = valid_issues_payload(run_id, "draft")
+    payload = valid_issues_payload(run_id, "draft", review_unit_ids(run_dir))
     payload["issues"][0]["description"] = "This draft is professionally approved and compliance approved."
     write_json(run_dir / "stage_reviews" / "draft" / "issues.json", payload)
 
@@ -171,7 +226,7 @@ def test_validate_stage_review_rejects_missing_top_level_reviewer(tmp_path: Path
     run_dir = run_until_draft_done(tmp_path)
     run_id = read_json(run_dir / "manifest.json")["run_id"]
     prepare_stage_review(run_dir=run_dir, stage="draft")
-    payload = valid_issues_payload(run_id, "draft")
+    payload = valid_issues_payload(run_id, "draft", review_unit_ids(run_dir))
     payload.pop("reviewer")
     write_json(run_dir / "stage_reviews" / "draft" / "issues.json", payload)
 
@@ -185,7 +240,7 @@ def test_validate_stage_review_rejects_high_risk_auto_fix(tmp_path: Path) -> Non
     run_dir = run_until_draft_done(tmp_path)
     run_id = read_json(run_dir / "manifest.json")["run_id"]
     prepare_stage_review(run_dir=run_dir, stage="draft")
-    payload = valid_issues_payload(run_id, "draft")
+    payload = valid_issues_payload(run_id, "draft", review_unit_ids(run_dir))
     payload["issues"][0]["severity"] = "P1"
     payload["issues"][0]["category"] = "critical_claim"
     payload["issues"][0]["requires_user_review"] = True
@@ -209,7 +264,7 @@ def test_validate_stage_review_rejects_sample_or_reference_fact_source_claims(tm
     run_dir = run_until_draft_done(tmp_path)
     run_id = read_json(run_dir / "manifest.json")["run_id"]
     prepare_stage_review(run_dir=run_dir, stage="draft")
-    payload = valid_issues_payload(run_id, "draft")
+    payload = valid_issues_payload(run_id, "draft", review_unit_ids(run_dir))
     payload["issues"][0]["description"] = bad_text
     write_json(run_dir / "stage_reviews" / "draft" / "issues.json", payload)
 
@@ -232,7 +287,8 @@ def test_stage_review_cli_prepare_and_validate(tmp_path: Path) -> None:
     assert "Stage review package prepared" in prepare_result.stdout
     assert "not professional approval" in prepare_result.stdout
 
-    write_json(run_dir / "stage_reviews" / "draft" / "issues.json", valid_issues_payload(run_id, "draft"))
+    unit_ids = review_unit_ids(run_dir)
+    write_json(run_dir / "stage_reviews" / "draft" / "issues.json", valid_issues_payload(run_id, "draft", unit_ids))
     validate_result = subprocess.run(
         [sys.executable, "-m", "ai_writing_plugin", "validate-stage-review", "--run", str(run_dir), "--stage", "draft"],
         cwd=REPO_ROOT,
@@ -251,7 +307,7 @@ def test_stage_review_cli_invalid_issues_returns_nonzero(tmp_path: Path) -> None
     from ai_writing_plugin.stage_review import prepare_stage_review
 
     prepare_stage_review(run_dir=run_dir, stage="draft")
-    payload = valid_issues_payload(run_id, "draft")
+    payload = valid_issues_payload(run_id, "draft", review_unit_ids(run_dir))
     payload["status"] = "professionally_approved"
     write_json(run_dir / "stage_reviews" / "draft" / "issues.json", payload)
 
@@ -267,6 +323,84 @@ def test_stage_review_cli_invalid_issues_returns_nonzero(tmp_path: Path) -> None
     assert "Stage review issues invalid" in result.stderr
 
 
+def test_validate_stage_review_rejects_missing_unit_coverage(tmp_path: Path) -> None:
+    from ai_writing_plugin.stage_review import StageReviewError, prepare_stage_review, validate_stage_review
+
+    run_dir = run_until_draft_done(tmp_path)
+    run_id = read_json(run_dir / "manifest.json")["run_id"]
+    prepare_stage_review(run_dir=run_dir, stage="draft")
+    unit_ids = review_unit_ids(run_dir)
+    payload = valid_issues_payload(run_id, "draft", unit_ids[:-1])
+    write_json(run_dir / "stage_reviews" / "draft" / "issues.json", payload)
+
+    with pytest.raises(StageReviewError, match="missing required review unit coverage"):
+        validate_stage_review(run_dir=run_dir, stage="draft")
+
+    report = read_json(run_dir / "stage_reviews" / "draft" / "validation_report.json")
+    assert report["status"] == "invalid"
+    assert report["coverage_summary"]["coverage_complete"] is False
+    assert report["unit_validation"]["missing_reviewed_unit_ids"] == [unit_ids[-1]]
+
+
+def test_validate_stage_review_rejects_unknown_reviewed_unit(tmp_path: Path) -> None:
+    from ai_writing_plugin.stage_review import StageReviewError, prepare_stage_review, validate_stage_review
+
+    run_dir = run_until_draft_done(tmp_path)
+    run_id = read_json(run_dir / "manifest.json")["run_id"]
+    prepare_stage_review(run_dir=run_dir, stage="draft")
+    unit_ids = review_unit_ids(run_dir)
+    payload = valid_issues_payload(run_id, "draft", unit_ids + ["unknown.unit"])
+    write_json(run_dir / "stage_reviews" / "draft" / "issues.json", payload)
+
+    with pytest.raises(StageReviewError, match="unknown reviewed unit"):
+        validate_stage_review(run_dir=run_dir, stage="draft")
+
+
+def test_validate_stage_review_rejects_unknown_issue_unit(tmp_path: Path) -> None:
+    from ai_writing_plugin.stage_review import StageReviewError, prepare_stage_review, validate_stage_review
+
+    run_dir = run_until_draft_done(tmp_path)
+    run_id = read_json(run_dir / "manifest.json")["run_id"]
+    prepare_stage_review(run_dir=run_dir, stage="draft")
+    unit_ids = review_unit_ids(run_dir)
+    payload = valid_issues_payload(run_id, "draft", unit_ids)
+    payload["issues"][0]["unit_id"] = "unknown.unit"
+    write_json(run_dir / "stage_reviews" / "draft" / "issues.json", payload)
+
+    with pytest.raises(StageReviewError, match="unknown issue unit"):
+        validate_stage_review(run_dir=run_dir, stage="draft")
+
+
+def test_validate_stage_review_rejects_unchecked_units(tmp_path: Path) -> None:
+    from ai_writing_plugin.stage_review import StageReviewError, prepare_stage_review, validate_stage_review
+
+    run_dir = run_until_draft_done(tmp_path)
+    run_id = read_json(run_dir / "manifest.json")["run_id"]
+    prepare_stage_review(run_dir=run_dir, stage="draft")
+    unit_ids = review_unit_ids(run_dir)
+    payload = valid_issues_payload(run_id, "draft", unit_ids)
+    payload["unchecked_unit_ids"] = [unit_ids[0]]
+    write_json(run_dir / "stage_reviews" / "draft" / "issues.json", payload)
+
+    with pytest.raises(StageReviewError, match="unchecked_unit_ids must be empty"):
+        validate_stage_review(run_dir=run_dir, stage="draft")
+
+
+def test_validate_stage_review_rejects_reviewed_and_unchecked_overlap(tmp_path: Path) -> None:
+    from ai_writing_plugin.stage_review import StageReviewError, prepare_stage_review, validate_stage_review
+
+    run_dir = run_until_draft_done(tmp_path)
+    run_id = read_json(run_dir / "manifest.json")["run_id"]
+    prepare_stage_review(run_dir=run_dir, stage="draft")
+    unit_ids = review_unit_ids(run_dir)
+    payload = valid_issues_payload(run_id, "draft", unit_ids)
+    payload["unchecked_unit_ids"] = [unit_ids[0]]
+    write_json(run_dir / "stage_reviews" / "draft" / "issues.json", payload)
+
+    with pytest.raises(StageReviewError, match="overlap"):
+        validate_stage_review(run_dir=run_dir, stage="draft")
+
+
 def test_stage_review_docs_describe_s1_runtime_assistance_boundary() -> None:
     contracts = (REPO_ROOT / "docs" / "CURRENT_ARTIFACT_CONTRACTS.md").read_text(encoding="utf-8")
     runbook = (REPO_ROOT / "docs" / "RUNBOOK.md").read_text(encoding="utf-8")
@@ -278,7 +412,11 @@ def test_stage_review_docs_describe_s1_runtime_assistance_boundary() -> None:
         "validate-stage-review",
         "stage_reviews/<stage>/review_context.json",
         "stage_reviews/<stage>/issues_schema.json",
+        "stage_reviews/<stage>/review_units.json",
         "stage_reviews/<stage>/validation_report.json",
+        "reviewed_unit_ids",
+        "unchecked_unit_ids",
+        "coverage_complete",
         "not professional approval",
         "does not apply fixes",
     ]:

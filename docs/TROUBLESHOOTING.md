@@ -160,6 +160,11 @@ Stage review package 只能针对已完成 stage 准备。若 required output �
 - 高风险 category 例如 `source_policy`、`critical_claim`、`hitl_required`、`citation_or_evidence`、`final_status_policy`、`candidate_update_policy` 设置了 `safe_auto_fix_eligible=true`；
 - issue 文本声称 sample/reference 可以证明项目事实；
 - issue 文本要求修改 stable profile / Skill，或直接删除 `NEEDS_USER_CONFIRMATION`。
+- 缺少 `reviewed_unit_ids` / `unchecked_unit_ids`；
+- `reviewed_unit_ids` 没有覆盖 `review_units.json` 中全部 required units；
+- `unchecked_unit_ids` 非空；
+- `reviewed_unit_ids`、`unchecked_unit_ids` 或 `issues[].unit_id` 引用了未知 unit id；
+- 同一个 unit id 同时出现在 `reviewed_unit_ids` 和 `unchecked_unit_ids`。
 
 校验失败时会写：
 
@@ -168,6 +173,8 @@ runs/<run_id>/stage_reviews/<stage>/validation_report.json
 ```
 
 根据 `errors` 修正 `issues.json` 后重新运行 `validate-stage-review`。
+
+`coverage_summary.coverage_complete=false` 只表示 S1R coverage validation 未通过。即使为 `true`，也只表示 required review units 被声明覆盖，不表示专业批准、合规批准或内容最终正确。
 
 ## `stage_reviews/` 是否需要提交
 
