@@ -22,6 +22,13 @@ from .models import ArtifactRecord, Manifest, ProfileMetadata, TaskBrief, TaskCo
 from .outline import outline_existing_run
 from .planning import plan_existing_run
 from .review import review_existing_run
+from .run_state import (
+    RunStateError,
+    create_run_state,
+    resume_run as resume_existing_run,
+    run_checkpointed_stage,
+    state_exists,
+)
 from .trace import write_jsonl
 
 
@@ -31,6 +38,10 @@ class InitRunError(Exception):
 
 class WriteRunError(Exception):
     """Raised when the full Phase 0-8 write helper cannot complete."""
+
+
+class ResumeRunError(Exception):
+    """Raised when a resumable run cannot continue."""
 
 
 @dataclass(frozen=True)
@@ -139,49 +150,102 @@ def ingest_valid_task(
         profile=prepared_rules.profile,
     )
     write_json(run_dir / "manifest.json", manifest.model_dump(exclude_defaults=True, exclude_none=True))
+    create_run_state(run_dir, task_path, task_config)
     return run_dir
 
 
 def outline_run(run_dir: str | Path) -> Path:
     run_path = Path(run_dir)
-    outline_existing_run(run_path)
+    if state_exists(run_path):
+        run_checkpointed_stage_or_raise(run_path, "outline", outline_existing_run)
+    else:
+        outline_existing_run(run_path)
     return run_path
 
 
 def evidence_run(run_dir: str | Path) -> Path:
     run_path = Path(run_dir)
-    evidence_existing_run(run_path)
+    if state_exists(run_path):
+        run_checkpointed_stage_or_raise(run_path, "evidence", evidence_existing_run)
+    else:
+        evidence_existing_run(run_path)
     return run_path
 
 
 def plan_run(run_dir: str | Path) -> Path:
     run_path = Path(run_dir)
-    plan_existing_run(run_path)
+    if state_exists(run_path):
+        run_checkpointed_stage_or_raise(run_path, "planning", plan_existing_run)
+    else:
+        plan_existing_run(run_path)
     return run_path
 
 
 def draft_run(run_dir: str | Path) -> Path:
     run_path = Path(run_dir)
-    draft_existing_run(run_path)
+    if state_exists(run_path):
+        run_checkpointed_stage_or_raise(run_path, "draft", draft_existing_run)
+    else:
+        draft_existing_run(run_path)
     return run_path
 
 
 def review_run(run_dir: str | Path) -> Path:
     run_path = Path(run_dir)
-    review_existing_run(run_path)
+    if state_exists(run_path):
+        run_checkpointed_stage_or_raise(run_path, "review", review_existing_run)
+    else:
+        review_existing_run(run_path)
     return run_path
 
 
 def finalize_run(run_dir: str | Path) -> Path:
     run_path = Path(run_dir)
-    finalize_existing_run(run_path)
+    if state_exists(run_path):
+        run_checkpointed_stage_or_raise(run_path, "finalize", finalize_existing_run)
+    else:
+        finalize_existing_run(run_path)
     return run_path
 
 
 def learning_run(run_dir: str | Path) -> Path:
     run_path = Path(run_dir)
-    learning_existing_run(run_path)
+    if state_exists(run_path):
+        run_checkpointed_stage_or_raise(run_path, "learning", learning_existing_run)
+    else:
+        learning_existing_run(run_path)
     return run_path
+
+
+def run_checkpointed_stage_or_raise(run_path: Path, stage: str, runner) -> None:
+    try:
+        run_checkpointed_stage(run_path, stage, runner)
+    except RunStateError as exc:
+        raise ResumeRunError(str(exc)) from exc
+
+
+def resume_run(run_dir: str | Path) -> Path:
+    run_path = Path(run_dir)
+    stage_runners = {
+        "ingest": ingest_stage_resume_not_supported,
+        "outline": outline_existing_run,
+        "evidence": evidence_existing_run,
+        "planning": plan_existing_run,
+        "draft": draft_existing_run,
+        "review": review_existing_run,
+        "finalize": finalize_existing_run,
+        "learning": learning_existing_run,
+    }
+    try:
+        return resume_existing_run(run_path, stage_runners)
+    except Exception as exc:
+        raise ResumeRunError(str(exc)) from exc
+
+
+def ingest_stage_resume_not_supported(run_dir: Path) -> None:
+    raise ResumeRunError(
+        f"resume-run failed: ingest stage is not resumable for partial run {run_dir}; start a new write-run"
+    )
 
 
 def record_hitl(

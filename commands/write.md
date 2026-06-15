@@ -103,7 +103,8 @@ helper 不能伪造 HITL approval。非交互运行会把缺失 gate 记录为 `
 2. 运行 ingest，并向用户说明 material classification。
 3. 只有在用户明确回复后，才记录真实 HITL decisions。
 4. 通过 Python engine 运行 outline、evidence、plan、draft、review、finalize 和 learning。
-5. 用中文报告 run directory、final artifacts、pending critical claims 和 candidate update 状态。
+5. 如果中途中断，优先用 `resume-run --run <run_dir>` 从 `run_state.json` 继续；不要从头创建新 run，除非 `resume-run` 明确提示 task/profile hash mismatch、missing run_state 或 dirty completed stage。
+6. 用中文报告 run directory、final artifacts、pending critical claims 和 candidate update 状态。
 
 ## Engine commands
 
@@ -116,8 +117,17 @@ $PYTHON -m ai_writing_plugin draft-run --run <run_dir>
 $PYTHON -m ai_writing_plugin review-run --run <run_dir>
 $PYTHON -m ai_writing_plugin finalize-run --run <run_dir>
 $PYTHON -m ai_writing_plugin learning-run --run <run_dir>
+$PYTHON -m ai_writing_plugin resume-run --run <run_dir>
 $PYTHON -m ai_writing_plugin record-hitl --run <run_dir> --stage <stage> --decision <decision> --comment <comment> --affected-sections <ids> --next-action <action>
 ```
+
+`ingest-run` 和 `write-run` 会创建 `runs/<run_id>/run_state.json`。如果 Claude Code 会话关闭或 Python 进程中断，下一次从仓库根目录运行：
+
+```bash
+$PYTHON -m ai_writing_plugin resume-run --run runs/<run_id>
+```
+
+`resume-run` 只恢复 deterministic engine lifecycle，不代表 professional approval。它不会伪造 HITL decisions，不会自动激活 candidate updates，也不会把 dirty completed stage 自动回滚重跑。
 
 ## Boundaries
 

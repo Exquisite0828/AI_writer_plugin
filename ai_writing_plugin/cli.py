@@ -15,6 +15,7 @@ from .planning import PlanRunError
 from .review import ReviewRunError
 from .run_manager import (
     InitRunError,
+    ResumeRunError,
     WriteRunError,
     draft_run,
     evidence_run,
@@ -25,6 +26,7 @@ from .run_manager import (
     outline_run,
     plan_run,
     record_hitl,
+    resume_run,
     review_run,
     write_run,
 )
@@ -111,6 +113,15 @@ def build_parser() -> argparse.ArgumentParser:
         dest="run",
         required=True,
         help="Existing Phase 7 run directory.",
+    )
+
+    resume_run_parser = subparsers.add_parser("resume-run", help="Resume an interrupted resumable write run.")
+    resume_run_parser.add_argument(
+        "--run",
+        "--run-dir",
+        dest="run",
+        required=True,
+        help="Existing run directory containing run_state.json.",
     )
 
     record_hitl_parser = subparsers.add_parser("record-hitl", help="Append a HITL decision to a run trace.")
@@ -213,7 +224,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "outline-run":
         try:
             run_dir = outline_run(run_dir=Path(args.run))
-        except OutlineRunError as exc:
+        except (OutlineRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -227,7 +238,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "evidence-run":
         try:
             run_dir = evidence_run(run_dir=Path(args.run))
-        except EvidenceRunError as exc:
+        except (EvidenceRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -243,7 +254,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "plan-run":
         try:
             run_dir = plan_run(run_dir=Path(args.run))
-        except PlanRunError as exc:
+        except (PlanRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -260,7 +271,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "draft-run":
         try:
             run_dir = draft_run(run_dir=Path(args.run))
-        except DraftRunError as exc:
+        except (DraftRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -280,7 +291,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "review-run":
         try:
             run_dir = review_run(run_dir=Path(args.run))
-        except ReviewRunError as exc:
+        except (ReviewRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -300,7 +311,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "finalize-run":
         try:
             run_dir = finalize_run(run_dir=Path(args.run))
-        except FinalizeRunError as exc:
+        except (FinalizeRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -318,7 +329,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "learning-run":
         try:
             run_dir = learning_run(run_dir=Path(args.run))
-        except LearningRunError as exc:
+        except (LearningRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -333,6 +344,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("- learning/candidate_skill_patch.md")
         print("- learning/promotion_report.md")
         print("Status: completed_with_candidate_updates_proposed")
+        return 0
+
+    if args.command == "resume-run":
+        try:
+            run_dir = resume_run(run_dir=Path(args.run))
+        except ResumeRunError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        print(f"Resumed run: {run_dir}")
+        print("断点续写已完成。")
+        print("Status: completed")
+        print("说明：completed 仅表示 deterministic engine lifecycle 完成，不表示 professional approval。")
         return 0
 
     if args.command == "record-hitl":

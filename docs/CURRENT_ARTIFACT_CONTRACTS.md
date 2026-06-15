@@ -18,6 +18,7 @@
 ```text
 runs/<run_id>/
   manifest.json
+  run_state.json
   task_brief.json
   inputs/input_inventory.json
   knowledge/source_index.json
@@ -50,6 +51,8 @@ runs/<run_id>/
   learning/candidate_skill_patch.md
   learning/promotion_report.md
 ```
+
+`run_state.json` 是断点续写使用的 runtime control artifact。它不是专业内容 artifact，不表示专业批准，不是 eval 结果，不是 promotion approval，也不会写入 `manifest.artifacts`。维护 artifact contract 时应把它作为 orchestration metadata 单独处理，而不是放宽专业内容 artifact 的阶段边界。
 
 共享 role boundaries：
 
@@ -114,6 +117,7 @@ $PYTHON -m ai_writing_plugin draft-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin review-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin finalize-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin learning-run --run runs/<run_id>
+$PYTHON -m ai_writing_plugin resume-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin record-hitl --run runs/<run_id> --stage outline_l1_confirmation --decision approved_with_issues --comment "Keep unsupported sections marked." --affected-sections SEC-003,SEC-005 --next-action continue_with_confirmation_marker
 $PYTHON -m ai_writing_plugin write-run --task examples/hara_minimal_fixture/task.yaml
 $PYTHON -m ai_writing_plugin correction-harvest --run-dir runs/<run_id> --corrections path/to/corrections.yaml --profile path/to/document_profile.yaml
@@ -138,6 +142,8 @@ $PYTHON -m ai_writing_plugin profile-promote --run-dir runs/<run_id> --candidate
 
 `learning-run` 更新已有 Phase 7 run，并生成 Phase 8 trace and learning artifacts。
 
+`resume-run` 从已有 `run_state.json` 继续一个 resumable run。`completed` 只表示 deterministic engine lifecycle 完成，不表示 professional approval。`resume-run` 会拒绝 task hash mismatch、external profile hash mismatch、live lock 和 dirty completed stage。
+
 `record-hitl` 向 `trace/hitl_decisions.jsonl` 追加 human-in-the-loop decision record。
 
 `write-run` 是 noninteractive helper，会创建新 run 并执行完整 Phase 0-8 chain。
@@ -146,7 +152,7 @@ $PYTHON -m ai_writing_plugin profile-promote --run-dir runs/<run_id> --candidate
 
 `profile-promote` 对 N7 candidate profile patch 执行 promotion gate。无论结果是 blocked、dry-run 还是 promoted，都会写 promotion report。它只会修改明确传入的 external YAML profile target，并且只有在传入 `--apply` 且 approval/eval/hash/schema/rollback gates 全部通过时才修改。
 
-Interactive plugin flow 可以在 `review-run` 前调用 `record-hitl`。这种情况下，`trace/hitl_decisions.jsonl` 是 Phase 6 review 前唯一允许的 trace artifact。`trace/session_trace.jsonl` 和 `learning/` 仍然是 Phase 8 artifacts，在 Phase 8 前禁止生成。
+Interactive plugin flow 可以在 `review-run` 前调用 `record-hitl`。这种情况下，`trace/hitl_decisions.jsonl` 是 Phase 6 review 前唯一允许的 trace artifact。`trace/session_trace.jsonl` 和 `learning/` 仍然是 Phase 8 artifacts，在 Phase 8 前禁止生成。Checkpoint / resume 机制本身不得提前生成 `trace/session_trace.jsonl`；但 invalid external profile fail-safe path 保持下方记录 `document_profile_validation` event 的既有例外。
 
 External profile validation failure path：
 
@@ -157,6 +163,70 @@ External profile validation failure path：
 5. `verify/failures.md` 必须说明 `profile validation failure`，并提示修正 `document_profile.yaml` 后重跑。
 6. `trace/session_trace.jsonl` 必须记录 `document_profile_validation` event。
 7. invalid profile failure 不能生成 successful final package，也不能自动创建 candidate update。
+
+## 2.1 Resumable Run State
+
+`ingest-run` 和 `write-run` 创建 resumable run 时会写：
+
+```text
+runs/<run_id>/run_state.json
+```
+
+`init-run` 保持非 resumable，只生成 Phase 0 artifacts。
+
+`run_state.json` 记录：
+
+1. `schema_version`
+2. `run_id`
+3. `task_file`
+4. `task_sha256`
+5. `profile_path`
+6. `profile_sha256`
+7. run-level `status`
+8. `stage_order`
+9. per-stage `status`, `phase`, required outputs, output hashes, timestamps, and failure/dirty metadata
+
+Stage registry：
+
+1. `ingest -> phase_1`
+2. `outline -> phase_2`
+3. `evidence -> phase_3`
+4. `planning -> phase_4`
+5. `draft -> phase_5`
+6. `review -> phase_6`
+7. `finalize -> phase_7`
+8. `learning -> phase_8`
+
+Stage statuses：
+
+```text
+pending
+running
+done
+failed
+interrupted
+dirty
+skipped
+```
+
+Run-level statuses：
+
+```text
+running
+completed
+failed
+interrupted
+```
+
+`resume-run` validates all completed stage outputs before skipping them. Missing, empty, invalid JSON, or invalid JSONL output marks the completed stage as `dirty` and fails safely. V1 does not automatically rewind upstream artifacts or delete downstream outputs; start a new `write-run` or restore the missing/corrupt artifact.
+
+The lock file is:
+
+```text
+runs/<run_id>/.run_state.lock
+```
+
+It records `pid`, `created_at`, and `command`. A live PID blocks resume. A dead PID is treated as stale lock recovery: the stale lock is replaced, any previous `running` stage is marked `interrupted`, and resume continues from that stage. Malformed lock content fails for manual inspection.
 
 ## 3. Phase 0 Artifacts
 

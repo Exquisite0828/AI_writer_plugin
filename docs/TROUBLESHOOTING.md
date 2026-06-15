@@ -78,6 +78,56 @@ git ls-files runs/
 
 `git ls-files runs/` 不应输出 tracked files。
 
+## `resume-run` 提示不是 resumable run
+
+症状：
+
+```text
+resume-run failed: ... is not a resumable run; run_state.json is missing
+```
+
+原因通常是该目录来自旧版本运行，或只执行了 `init-run`。`init-run` 保持非 resumable；可恢复运行从 `ingest-run` 或 `write-run` 开始。
+
+处理方式：重新执行 `ingest-run` 或 `write-run` 创建新的 resumable run。
+
+## `resume-run` 提示 task/profile hash mismatch
+
+`run_state.json` 会记录原始 `task.yaml` 和 external `document_profile.yaml` 的 SHA-256。恢复时如果文件被修改、替换或删除，工具会拒绝继续，避免把不同任务混到同一个 run 里。
+
+处理方式：
+
+- 恢复原始 `task.yaml` / `document_profile.yaml` 后再运行 `resume-run`；
+- 如果任务或 profile 确实已经改变，启动新的 `write-run`。
+
+## `resume-run` 提示 lock 仍在运行
+
+症状类似：
+
+```text
+run_state lock exists and pid <pid> is alive; another process may be running this run
+```
+
+这表示 `.run_state.lock` 中记录的 PID 仍存活。不要同时对同一个 `runs/<run_id>/` 执行两个 workflow。
+
+如果进程已经崩溃且 PID 不存在，`resume-run` 会自动执行 stale lock recovery：替换 lock，把之前的 `running` stage 标记为 `interrupted`，然后继续。
+
+如果 lock 文件内容损坏、缺少 PID 或不是 JSON，工具会失败并要求人工检查。不要静默覆盖无法判断来源的 lock。
+
+## `resume-run` 提示 completed stage is dirty
+
+症状：
+
+```text
+resume-run failed: completed stage evidence is dirty: plans/evidence_map.json missing. Start a new write-run or restore the artifact; automatic upstream rewind is not supported in v1.
+```
+
+这表示 `run_state.json` 记录某个 stage 已完成，但该 stage 的 required output 缺失、为空、JSON/JSONL 不可解析。V1 不会自动回滚 manifest、删除下游 artifacts 或重跑上游 stage。
+
+处理方式：
+
+- 恢复缺失或损坏的 artifact 后再继续；
+- 或启动新的 `write-run`。
+
 ## 输出包含 `NEEDS_USER_CONFIRMATION`
 
 `NEEDS_USER_CONFIRMATION`、pending claims、open confirmations 或 blocked verification 通常不是失败。

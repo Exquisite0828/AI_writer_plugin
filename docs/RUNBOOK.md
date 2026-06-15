@@ -82,6 +82,7 @@ draft-run
 review-run
 finalize-run
 learning-run
+resume-run
 record-hitl
 write-run
 ```
@@ -93,6 +94,34 @@ Claude Code 入口：
 ```
 
 `write-run` 是非交互式完整链路 helper。它不会伪造 HITL approval。
+
+`ingest-run` 和 `write-run` 会创建 `runs/<run_id>/run_state.json`，用于断点续写。`init-run` 保持非 resumable。
+
+如果 Claude Code 或 Python 进程中断，使用：
+
+```bash
+.venv/bin/python -m ai_writing_plugin resume-run --run runs/<run_id>
+```
+
+`resume-run` 会从第一个非 `done` stage 继续执行。完成后的 run-level `completed` 只表示 deterministic engine lifecycle 完成，不表示专业批准、合规批准或候选更新批准。
+
+典型恢复流程：
+
+1. 找到上次输出的 `runs/<run_id>/`。
+2. 确认目录内存在 `run_state.json`。
+3. 不修改原 `task.yaml` 和 external `document_profile.yaml`。
+4. 执行 `resume-run --run runs/<run_id>`。
+5. 完成后照常检查 `review/`、`verify/`、`final/`、`trace/` 和 `learning/` artifacts。
+
+`resume-run` 会拒绝：
+
+- missing `run_state.json`；
+- `task.yaml` hash mismatch；
+- external `document_profile.yaml` hash mismatch；
+- live `.run_state.lock`；
+- completed stage output 缺失、空文件、JSON/JSONL 不可解析。
+
+如果 `.run_state.lock` 中的 PID 已不存在，工具会按 stale lock recovery 处理，把之前的 `running` stage 标记为 `interrupted` 后继续。
 
 ## Focused regression matrix
 
