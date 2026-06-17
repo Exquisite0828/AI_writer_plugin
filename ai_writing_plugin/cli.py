@@ -15,6 +15,7 @@ from .planning import PlanRunError
 from .review import ReviewRunError
 from .run_manager import (
     InitRunError,
+    ResumeRunError,
     WriteRunError,
     draft_run,
     evidence_run,
@@ -25,9 +26,61 @@ from .run_manager import (
     outline_run,
     plan_run,
     record_hitl,
+    resume_run,
     review_run,
     write_run,
 )
+from .stage_review import (
+    STAGE_REVIEW_DECISIONS,
+    StageReviewError,
+    check_stage_review_gate,
+    prepare_stage_review,
+    record_stage_review_decision,
+    validate_stage_review,
+)
+
+
+def add_stage_review_gate_flag(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--require-stage-review-gates",
+        action="store_true",
+        help="Opt in to S2B stage review gate enforcement before running the next deterministic stage.",
+    )
+
+
+def print_stage_review_next_steps(run_dir: Path, stage: str, include_resume: bool = False) -> None:
+    print("Stage review next steps:")
+    print(f"python -m ai_writing_plugin prepare-stage-review --run {run_dir} --stage {stage}")
+    print(f"python -m ai_writing_plugin validate-stage-review --run {run_dir} --stage {stage}")
+    print(
+        f'python -m ai_writing_plugin record-stage-review-decision --run {run_dir} --stage {stage} '
+        '--decision accepted --notes "Reviewed."'
+    )
+    print(f"python -m ai_writing_plugin check-stage-review-gate --run {run_dir} --stage {stage}")
+    if include_resume:
+        print(f"python -m ai_writing_plugin resume-run --run {run_dir} --require-stage-review-gates")
+
+
+def print_gated_stage_success(run_dir: Path, completed_stage: str) -> None:
+    print("Stage review gate enforcement was enabled for this step.")
+    print("Prepare and validate this completed stage review before continuing.")
+    print_stage_review_next_steps(run_dir, completed_stage, include_resume=True)
+    print("This does not indicate professional approval.")
+
+
+def latest_completed_stage_for_review(run_dir: Path) -> str | None:
+    state_path = run_dir / "run_state.json"
+    if not state_path.exists():
+        return None
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    stage_order = [item["name"] for item in state.get("stage_order", []) if isinstance(item, dict) and "name" in item]
+    previous_done_stage: str | None = None
+    for stage in stage_order:
+        stage_state = state.get("stages", {}).get(stage, {})
+        if stage_state.get("status") != "done":
+            return previous_done_stage
+        previous_done_stage = stage
+    return previous_done_stage
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -58,6 +111,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Existing Phase 1 run directory.",
     )
+    add_stage_review_gate_flag(outline_run_parser)
 
     evidence_run_parser = subparsers.add_parser("evidence-run", help="Create Phase 3 research questions and evidence map.")
     evidence_run_parser.add_argument(
@@ -67,6 +121,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Existing Phase 2 run directory.",
     )
+    add_stage_review_gate_flag(evidence_run_parser)
 
     plan_run_parser = subparsers.add_parser("plan-run", help="Create Phase 4 citation and writing plan artifacts.")
     plan_run_parser.add_argument(
@@ -76,6 +131,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Existing Phase 3 run directory.",
     )
+    add_stage_review_gate_flag(plan_run_parser)
 
     draft_run_parser = subparsers.add_parser("draft-run", help="Create Phase 5 conservative draft artifacts.")
     draft_run_parser.add_argument(
@@ -85,6 +141,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Existing Phase 4 run directory.",
     )
+    add_stage_review_gate_flag(draft_run_parser)
 
     review_run_parser = subparsers.add_parser("review-run", help="Create Phase 6 review and verification artifacts.")
     review_run_parser.add_argument(
@@ -94,6 +151,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Existing Phase 5 run directory.",
     )
+    add_stage_review_gate_flag(review_run_parser)
 
     finalize_run_parser = subparsers.add_parser("finalize-run", help="Create Phase 7 revision and final delivery artifacts.")
     finalize_run_parser.add_argument(
@@ -103,6 +161,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Existing Phase 6 run directory.",
     )
+    add_stage_review_gate_flag(finalize_run_parser)
 
     learning_run_parser = subparsers.add_parser("learning-run", help="Create Phase 8 trace and learning artifacts.")
     learning_run_parser.add_argument(
@@ -112,6 +171,17 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Existing Phase 7 run directory.",
     )
+    add_stage_review_gate_flag(learning_run_parser)
+
+    resume_run_parser = subparsers.add_parser("resume-run", help="Resume an interrupted resumable write run.")
+    resume_run_parser.add_argument(
+        "--run",
+        "--run-dir",
+        dest="run",
+        required=True,
+        help="Existing run directory containing run_state.json.",
+    )
+    add_stage_review_gate_flag(resume_run_parser)
 
     record_hitl_parser = subparsers.add_parser("record-hitl", help="Append a HITL decision to a run trace.")
     record_hitl_parser.add_argument("--run", "--run-dir", dest="run", required=True, help="Existing run directory.")
@@ -125,6 +195,75 @@ def build_parser() -> argparse.ArgumentParser:
     )
     record_hitl_parser.add_argument("--next-action", required=True, help="Next deterministic action.")
 
+    prepare_stage_review_parser = subparsers.add_parser(
+        "prepare-stage-review",
+        help="Prepare an advisory Claude Code stage review package.",
+    )
+    prepare_stage_review_parser.add_argument(
+        "--run",
+        "--run-dir",
+        dest="run",
+        required=True,
+        help="Existing run directory.",
+    )
+    prepare_stage_review_parser.add_argument("--stage", required=True, help="Completed stage to prepare for review.")
+
+    validate_stage_review_parser = subparsers.add_parser(
+        "validate-stage-review",
+        help="Validate advisory Claude Code stage review issues.",
+    )
+    validate_stage_review_parser.add_argument(
+        "--run",
+        "--run-dir",
+        dest="run",
+        required=True,
+        help="Existing run directory.",
+    )
+    validate_stage_review_parser.add_argument("--stage", required=True, help="Stage whose issues.json should validate.")
+    validate_stage_review_parser.add_argument(
+        "--issues-file",
+        default=None,
+        help="Optional issues.json path. Defaults to stage_reviews/<stage>/issues.json under the run.",
+    )
+
+    record_stage_review_decision_parser = subparsers.add_parser(
+        "record-stage-review-decision",
+        help="Record a user stage review gate decision.",
+    )
+    record_stage_review_decision_parser.add_argument(
+        "--run",
+        "--run-dir",
+        dest="run",
+        required=True,
+        help="Existing run directory.",
+    )
+    record_stage_review_decision_parser.add_argument("--stage", required=True, help="Stage whose review gate is decided.")
+    record_stage_review_decision_parser.add_argument(
+        "--decision",
+        required=True,
+        choices=sorted(STAGE_REVIEW_DECISIONS),
+        help="Stage review gate decision.",
+    )
+    record_stage_review_decision_parser.add_argument("--notes", default="", help="Decision notes; required for skipped.")
+    record_stage_review_decision_parser.add_argument(
+        "--decided-by",
+        default="user",
+        help="Short identifier for the user/operator recording the decision.",
+    )
+
+    check_stage_review_gate_parser = subparsers.add_parser(
+        "check-stage-review-gate",
+        help="Check whether a validated stage review has a passing user gate decision.",
+    )
+    check_stage_review_gate_parser.add_argument(
+        "--run",
+        "--run-dir",
+        dest="run",
+        required=True,
+        help="Existing run directory.",
+    )
+    check_stage_review_gate_parser.add_argument("--stage", required=True, help="Stage whose review gate should be checked.")
+
     write_run_parser = subparsers.add_parser("write-run", help="Run the full noninteractive Phase 0-8 writing helper.")
     write_run_parser.add_argument("--task", required=True, help="Path to task.yaml.")
     write_run_parser.add_argument(
@@ -132,6 +271,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="runs",
         help="Directory where run outputs are created. Defaults to runs.",
     )
+    add_stage_review_gate_flag(write_run_parser)
 
     profile_from_spec_parser = subparsers.add_parser(
         "profile-from-spec",
@@ -212,8 +352,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "outline-run":
         try:
-            run_dir = outline_run(run_dir=Path(args.run))
-        except OutlineRunError as exc:
+            run_dir = outline_run(
+                run_dir=Path(args.run),
+                require_stage_review_gates=args.require_stage_review_gates,
+            )
+        except (OutlineRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -222,12 +365,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("生成的 artifacts:")
         print("- plans/template_structure.json")
         print("- plans/outline_l1.md")
+        if args.require_stage_review_gates:
+            print_gated_stage_success(run_dir, "outline")
         return 0
 
     if args.command == "evidence-run":
         try:
-            run_dir = evidence_run(run_dir=Path(args.run))
-        except EvidenceRunError as exc:
+            run_dir = evidence_run(
+                run_dir=Path(args.run),
+                require_stage_review_gates=args.require_stage_review_gates,
+            )
+        except (EvidenceRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -238,12 +386,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("- plans/research_questions.json")
         print("- plans/evidence_map.json")
         print("- plans/unresolved_questions.md")
+        if args.require_stage_review_gates:
+            print_gated_stage_success(run_dir, "evidence")
         return 0
 
     if args.command == "plan-run":
         try:
-            run_dir = plan_run(run_dir=Path(args.run))
-        except PlanRunError as exc:
+            run_dir = plan_run(
+                run_dir=Path(args.run),
+                require_stage_review_gates=args.require_stage_review_gates,
+            )
+        except (PlanRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -255,12 +408,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("- plans/outline_final.md")
         print("- plans/section_tasks.json")
         print("- plans/writing_plan.md")
+        if args.require_stage_review_gates:
+            print_gated_stage_success(run_dir, "planning")
         return 0
 
     if args.command == "draft-run":
         try:
-            run_dir = draft_run(run_dir=Path(args.run))
-        except DraftRunError as exc:
+            run_dir = draft_run(
+                run_dir=Path(args.run),
+                require_stage_review_gates=args.require_stage_review_gates,
+            )
+        except (DraftRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -275,12 +433,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("生成的 artifacts:")
         for artifact_path in artifact_paths:
             print(f"- {artifact_path}")
+        if args.require_stage_review_gates:
+            print_gated_stage_success(run_dir, "draft")
         return 0
 
     if args.command == "review-run":
         try:
-            run_dir = review_run(run_dir=Path(args.run))
-        except ReviewRunError as exc:
+            run_dir = review_run(
+                run_dir=Path(args.run),
+                require_stage_review_gates=args.require_stage_review_gates,
+            )
+        except (ReviewRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -295,12 +458,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("生成的 artifacts:")
         for artifact_path in artifact_paths:
             print(f"- {artifact_path}")
+        if args.require_stage_review_gates:
+            print_gated_stage_success(run_dir, "review")
         return 0
 
     if args.command == "finalize-run":
         try:
-            run_dir = finalize_run(run_dir=Path(args.run))
-        except FinalizeRunError as exc:
+            run_dir = finalize_run(
+                run_dir=Path(args.run),
+                require_stage_review_gates=args.require_stage_review_gates,
+            )
+        except (FinalizeRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -313,12 +481,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("- final/final_report.md")
         print("- final/delivery_summary.md")
         print("Status: finalized_with_open_items")
+        if args.require_stage_review_gates:
+            print_gated_stage_success(run_dir, "finalize")
         return 0
 
     if args.command == "learning-run":
         try:
-            run_dir = learning_run(run_dir=Path(args.run))
-        except LearningRunError as exc:
+            run_dir = learning_run(
+                run_dir=Path(args.run),
+                require_stage_review_gates=args.require_stage_review_gates,
+            )
+        except (LearningRunError, ResumeRunError) as exc:
             print(str(exc), file=sys.stderr)
             return 1
 
@@ -333,6 +506,35 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("- learning/candidate_skill_patch.md")
         print("- learning/promotion_report.md")
         print("Status: completed_with_candidate_updates_proposed")
+        if args.require_stage_review_gates:
+            print_gated_stage_success(run_dir, "learning")
+        return 0
+
+    if args.command == "resume-run":
+        try:
+            run_dir = resume_run(
+                run_dir=Path(args.run),
+                require_stage_review_gates=args.require_stage_review_gates,
+            )
+        except ResumeRunError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        if args.require_stage_review_gates:
+            print("Gated resume step completed.")
+            print(f"Run: {run_dir}")
+            print("Only one deterministic stage was executed.")
+            print("Prepare and validate the completed stage review before continuing.")
+            completed_stage = latest_completed_stage_for_review(run_dir)
+            if completed_stage is not None:
+                print_stage_review_next_steps(run_dir, completed_stage, include_resume=True)
+            print("This does not indicate professional approval.")
+            return 0
+
+        print(f"Resumed run: {run_dir}")
+        print("断点续写已完成。")
+        print("Status: completed")
+        print("说明：completed 仅表示 deterministic engine lifecycle 完成，不表示 professional approval。")
         return 0
 
     if args.command == "record-hitl":
@@ -357,12 +559,92 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Decision: {record['decision']}")
         return 0
 
+    if args.command == "prepare-stage-review":
+        try:
+            result = prepare_stage_review(run_dir=Path(args.run), stage=args.stage)
+        except StageReviewError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        print("Stage review package prepared")
+        print(f"Run: {result['run_id']}")
+        print(f"Stage: {result['stage']}")
+        print("Generated artifacts:")
+        for artifact_path in result["artifacts"]:
+            print(f"- {artifact_path}")
+        print("Status: prepared_for_claude_review")
+        print("Note: this is not professional approval and does not modify stage artifacts.")
+        return 0
+
+    if args.command == "validate-stage-review":
+        try:
+            report = validate_stage_review(
+                run_dir=Path(args.run),
+                stage=args.stage,
+                issues_file=Path(args.issues_file) if args.issues_file else None,
+            )
+        except StageReviewError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        print("Stage review issues validated")
+        print(f"Run: {report['run_id']}")
+        print(f"Stage: {report['stage']}")
+        print(f"Status: {report['status']}")
+        print(f"Report: stage_reviews/{report['stage']}/validation_report.json")
+        print("Note: validation is not professional approval and does not apply fixes.")
+        return 0
+
+    if args.command == "record-stage-review-decision":
+        try:
+            record_stage_review_decision(
+                run_dir=Path(args.run),
+                stage=args.stage,
+                decision=args.decision,
+                notes=args.notes,
+                decided_by=args.decided_by,
+            )
+        except StageReviewError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+
+        print(f"Recorded stage review gate decision: {args.decision}")
+        print("Scope: stage_review_gate_only")
+        print("This is not professional approval.")
+        return 0
+
+    if args.command == "check-stage-review-gate":
+        try:
+            result = check_stage_review_gate(run_dir=Path(args.run), stage=args.stage)
+        except StageReviewError as exc:
+            print(f"Stage review gate check failed for {args.stage}: {exc}", file=sys.stderr)
+            return 1
+
+        print(f"Stage review gate check passed for {result['stage']}.")
+        print(f"Decision: {result['decision']}")
+        print("Scope: stage_review_gate_only")
+        print("This does not indicate professional approval.")
+        return 0
+
     if args.command == "write-run":
         try:
-            run_dir = write_run(task_file=Path(args.task), runs_dir=Path(args.runs_dir))
+            run_dir = write_run(
+                task_file=Path(args.task),
+                runs_dir=Path(args.runs_dir),
+                require_stage_review_gates=args.require_stage_review_gates,
+            )
         except WriteRunError as exc:
             print(str(exc), file=sys.stderr)
             return 1
+
+        if args.require_stage_review_gates:
+            print("Gated write run started.")
+            print(f"Run: {run_dir}")
+            print("Ingest completed only.")
+            print("Next stage outline requires the ingest stage review gate.")
+            print_stage_review_next_steps(run_dir, "ingest", include_resume=True)
+            print("This is not professional approval.")
+            return 0
 
         print("写作流程已完成")
         print(f"Run: {run_dir}")

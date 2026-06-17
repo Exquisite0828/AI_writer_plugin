@@ -19,6 +19,7 @@ PHASE_1_ARTIFACTS = {
     "knowledge/provenance_index.json",
     "knowledge/knowledge_gaps.md",
 }
+RUNTIME_CONTROL_ARTIFACTS = {"run_state.json"}
 
 PHASE_2_ARTIFACTS = [
     "plans/template_structure.json",
@@ -55,6 +56,14 @@ def init_run(task_path: Path, runs_dir: Path) -> Path:
 
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def generated_files(run_dir: Path) -> set[str]:
+    return {path.relative_to(run_dir).as_posix() for path in run_dir.rglob("*") if path.is_file()}
+
+
+def generated_professional_artifacts(run_dir: Path) -> set[str]:
+    return generated_files(run_dir) - RUNTIME_CONTROL_ARTIFACTS
 
 
 def run_fixture(tmp_path: Path) -> Path:
@@ -265,8 +274,8 @@ def test_ingest_run_does_not_generate_phase_2_artifacts(tmp_path: Path) -> None:
     for relative_path in PHASE_2_ARTIFACTS:
         assert not (run_dir / relative_path).exists()
 
-    generated_files = {path.relative_to(run_dir).as_posix() for path in run_dir.rglob("*") if path.is_file()}
-    assert generated_files == PHASE_1_ARTIFACTS
+    assert generated_professional_artifacts(run_dir) == PHASE_1_ARTIFACTS
+    assert generated_files(run_dir) == PHASE_1_ARTIFACTS | RUNTIME_CONTROL_ARTIFACTS
 
 
 def test_invalid_input_role_fails_task_validation(tmp_path: Path) -> None:

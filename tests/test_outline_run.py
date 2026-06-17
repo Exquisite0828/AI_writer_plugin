@@ -22,6 +22,7 @@ PHASE_2_ARTIFACTS = PHASE_1_ARTIFACTS | {
     "plans/template_structure.json",
     "plans/outline_l1.md",
 }
+RUNTIME_CONTROL_ARTIFACTS = {"run_state.json"}
 PHASE_3_ARTIFACTS = [
     "plans/outline_final.md",
     "plans/research_questions.json",
@@ -66,6 +67,10 @@ def read_json(path: Path) -> dict:
 
 def generated_files(run_dir: Path) -> set[str]:
     return {path.relative_to(run_dir).as_posix() for path in run_dir.rglob("*") if path.is_file()}
+
+
+def generated_professional_artifacts(run_dir: Path) -> set[str]:
+    return generated_files(run_dir) - RUNTIME_CONTROL_ARTIFACTS
 
 
 def run_phase_2_fixture(tmp_path: Path) -> Path:
@@ -201,7 +206,8 @@ def test_outline_run_does_not_generate_phase_3_artifacts(tmp_path: Path) -> None
     for relative_path in PHASE_3_ARTIFACTS:
         assert not (run_dir / relative_path).exists()
 
-    assert generated_files(run_dir) == PHASE_2_ARTIFACTS
+    assert generated_professional_artifacts(run_dir) == PHASE_2_ARTIFACTS
+    assert generated_files(run_dir) == PHASE_2_ARTIFACTS | RUNTIME_CONTROL_ARTIFACTS
 
 
 def test_init_run_still_only_generates_phase_0_artifacts(tmp_path: Path) -> None:
@@ -213,7 +219,8 @@ def test_init_run_still_only_generates_phase_0_artifacts(tmp_path: Path) -> None
 def test_ingest_run_still_only_generates_phase_0_and_1_artifacts(tmp_path: Path) -> None:
     run_dir = ingest_run(FIXTURE_TASK, tmp_path / "runs")
 
-    assert generated_files(run_dir) == PHASE_1_ARTIFACTS
+    assert generated_professional_artifacts(run_dir) == PHASE_1_ARTIFACTS
+    assert generated_files(run_dir) == PHASE_1_ARTIFACTS | RUNTIME_CONTROL_ARTIFACTS
 
 
 def test_outline_run_requires_existing_phase_1_run(tmp_path: Path) -> None:

@@ -18,6 +18,7 @@
 ```text
 runs/<run_id>/
   manifest.json
+  run_state.json
   task_brief.json
   inputs/input_inventory.json
   knowledge/source_index.json
@@ -50,6 +51,20 @@ runs/<run_id>/
   learning/candidate_skill_patch.md
   learning/promotion_report.md
 ```
+
+`run_state.json` 是断点续写使用的 runtime control artifact。它不是专业内容 artifact，不表示专业批准，不是 eval 结果，不是 promotion approval，也不会写入 `manifest.artifacts`。维护 artifact contract 时应把它作为 orchestration metadata 单独处理，而不是放宽专业内容 artifact 的阶段边界。
+
+`stage_reviews/` 是可选 runtime assistance artifact directory，用于 Stage Review Gate S1/S1R/S2A。它不是 professional artifact，不是 fact source，不表示 professional approval，不改变 `run_state.json` lifecycle，也不会写入 `manifest.artifacts`。S1/S1R 只生成 Claude Code 可读取的 review package，并校验人工/命令层写出的 `issues.json`；S1R 的 `coverage_complete` 只表示 required review units 已被声明覆盖，不表示专业批准。S2A 只记录用户对 stage review gate 的操作决定并检查 gate 是否可继续，`accepted` / `skipped` does not indicate professional approval。S1/S1R/S2A 不调用 Claude Code、不修改原 stage artifacts、不应用 patch、不阻塞下一 stage。
+
+S2B adds opt-in stage review gate enforcement through `--require-stage-review-gates`. It introduces no new artifact schema. It only reads existing S2A artifacts:
+
+```text
+stage_reviews/<stage>/validation_report.json
+stage_reviews/<stage>/issues.json
+stage_reviews/<stage>/decision.json
+```
+
+S2B does not write `manifest.artifacts`, does not alter the `run_state.json` schema, does not call Claude Code, does not generate `issues.json`, does not apply fixes, and does not indicate professional approval. `run_state.json` `schema_version` remains `1`.
 
 共享 role boundaries：
 
@@ -114,8 +129,15 @@ $PYTHON -m ai_writing_plugin draft-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin review-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin finalize-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin learning-run --run runs/<run_id>
+$PYTHON -m ai_writing_plugin resume-run --run runs/<run_id>
 $PYTHON -m ai_writing_plugin record-hitl --run runs/<run_id> --stage outline_l1_confirmation --decision approved_with_issues --comment "Keep unsupported sections marked." --affected-sections SEC-003,SEC-005 --next-action continue_with_confirmation_marker
+$PYTHON -m ai_writing_plugin prepare-stage-review --run runs/<run_id> --stage draft
+$PYTHON -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage draft
+$PYTHON -m ai_writing_plugin record-stage-review-decision --run runs/<run_id> --stage draft --decision accepted --notes "Reviewed."
+$PYTHON -m ai_writing_plugin check-stage-review-gate --run runs/<run_id> --stage draft
 $PYTHON -m ai_writing_plugin write-run --task examples/hara_minimal_fixture/task.yaml
+$PYTHON -m ai_writing_plugin write-run --task examples/hara_minimal_fixture/task.yaml --require-stage-review-gates
+$PYTHON -m ai_writing_plugin resume-run --run runs/<run_id> --require-stage-review-gates
 $PYTHON -m ai_writing_plugin correction-harvest --run-dir runs/<run_id> --corrections path/to/corrections.yaml --profile path/to/document_profile.yaml
 $PYTHON -m ai_writing_plugin profile-promote --run-dir runs/<run_id> --candidate-patch runs/<run_id>/learning/candidate_profile_patch.yaml --eval-report runs/eval-n6/<eval_run>/eval_report.json --approval path/to/approval.yaml --target-profile path/to/document_profile.yaml --output-dir runs/<run_id>/learning --apply
 ```
@@ -138,15 +160,67 @@ $PYTHON -m ai_writing_plugin profile-promote --run-dir runs/<run_id> --candidate
 
 `learning-run` 更新已有 Phase 7 run，并生成 Phase 8 trace and learning artifacts。
 
+`resume-run` 从已有 `run_state.json` 继续一个 resumable run。`completed` 只表示 deterministic engine lifecycle 完成，不表示 professional approval。`resume-run` 会拒绝 task hash mismatch、external profile hash mismatch、live lock 和 dirty completed stage。
+
 `record-hitl` 向 `trace/hitl_decisions.jsonl` 追加 human-in-the-loop decision record。
 
+`prepare-stage-review` 为已完成 stage 生成 advisory Claude Code review package：
+
+```text
+runs/<run_id>/stage_reviews/<stage>/review_context.json
+runs/<run_id>/stage_reviews/<stage>/review_prompt.md
+runs/<run_id>/stage_reviews/<stage>/issues_schema.json
+runs/<run_id>/stage_reviews/<stage>/review_units.json
+```
+
+`validate-stage-review` 校验 `stage_reviews/<stage>/issues.json` 的 schema 和安全边界，并生成：
+
+```text
+runs/<run_id>/stage_reviews/<stage>/validation_report.json
+```
+
+`review_units.json` 包含 deterministic review units。`issues.json` 必须声明 `reviewed_unit_ids`、`unchecked_unit_ids`，并且每个 issue 必须包含已知 `unit_id`。`validation_report.json` 包含 `coverage_summary.coverage_complete` 和 `unit_validation`，用于说明 required units 是否全部被覆盖。
+
+`record-stage-review-decision` 在 validation report 为 `valid` 且 `coverage_summary.coverage_complete=true` 后写入：
+
+```text
+runs/<run_id>/stage_reviews/<stage>/decision.json
+```
+
+`decision.json` 是 runtime assistance artifact，不写入 `manifest.artifacts`，不是 evidence source，也不是 critical claim confirmation。它的固定边界字段包括：
+
+```text
+kind = stage_review_decision
+schema_version = 1
+decision_scope = stage_review_gate_only
+professional_approval = false
+decision = accepted | needs_revision | blocked | skipped
+allow_next_stage = true only for accepted/skipped
+validation_report_sha256
+issues_sha256
+```
+
+`skipped` 必须记录非空 `notes`。`accepted` / `skipped` 只表示用户允许 stage review gate 继续，不表示 professional approval、compliance approval、safety approval 或文档最终正确。
+
+`check-stage-review-gate` 只读取 `validation_report.json`、`issues.json` 和 `decision.json`，并要求 validation 仍为 valid、coverage 仍 complete、decision 为 `accepted` 或 `skipped`、`professional_approval=false`，且 validation report / issues hashes 与记录 decision 时一致。通过时只表示 S2A gate check passed；it does not indicate professional approval。
+
+这些命令不修改 professional artifacts，不写 `manifest.artifacts`，不修改 `run_state.json` stage status，不应用 auto-fix，也不表示 professional approval。
+
 `write-run` 是 noninteractive helper，会创建新 run 并执行完整 Phase 0-8 chain。
+
+`--require-stage-review-gates` 是 S2B opt-in enforcement flag。默认不加该 flag 时，`write-run`、`resume-run` 和 single-stage commands 行为保持 non-gated。加该 flag 时：
+
+1. `write-run` 只创建 run 并完成 `ingest`，然后停止，等待 `ingest` stage review gate。
+2. `resume-run` 每次最多执行一个 pending stage；执行前必须通过上一阶段 `check-stage-review-gate`。
+3. `outline-run`、`evidence-run`、`plan-run`、`draft-run`、`review-run`、`finalize-run`、`learning-run` 会在执行前检查上一阶段 gate。
+4. gate missing、invalid、non-passing decision 或 hash mismatch 都 fail closed，且不把目标 stage 标记为 failed。
+5. S2B 只 enforcement，不自动调用 Claude Code、不自动生成 `issues.json`、不自动修改 professional artifacts、不应用 safe auto-fix。
 
 `correction-harvest` 读取显式 correction YAML/JSON/JSONL input 和 external document profile，然后在指定 run directory 下写入 N7 correction 和 candidate profile patch artifacts。
 
 `profile-promote` 对 N7 candidate profile patch 执行 promotion gate。无论结果是 blocked、dry-run 还是 promoted，都会写 promotion report。它只会修改明确传入的 external YAML profile target，并且只有在传入 `--apply` 且 approval/eval/hash/schema/rollback gates 全部通过时才修改。
 
-Interactive plugin flow 可以在 `review-run` 前调用 `record-hitl`。这种情况下，`trace/hitl_decisions.jsonl` 是 Phase 6 review 前唯一允许的 trace artifact。`trace/session_trace.jsonl` 和 `learning/` 仍然是 Phase 8 artifacts，在 Phase 8 前禁止生成。
+Interactive plugin flow 可以在 `review-run` 前调用 `record-hitl`。这种情况下，`trace/hitl_decisions.jsonl` 是 Phase 6 review 前唯一允许的 trace artifact。`trace/session_trace.jsonl` 和 `learning/` 仍然是 Phase 8 artifacts，在 Phase 8 前禁止生成。Checkpoint / resume 机制本身不得提前生成 `trace/session_trace.jsonl`；但 invalid external profile fail-safe path 保持下方记录 `document_profile_validation` event 的既有例外。
 
 External profile validation failure path：
 
@@ -157,6 +231,70 @@ External profile validation failure path：
 5. `verify/failures.md` 必须说明 `profile validation failure`，并提示修正 `document_profile.yaml` 后重跑。
 6. `trace/session_trace.jsonl` 必须记录 `document_profile_validation` event。
 7. invalid profile failure 不能生成 successful final package，也不能自动创建 candidate update。
+
+## 2.1 Resumable Run State
+
+`ingest-run` 和 `write-run` 创建 resumable run 时会写：
+
+```text
+runs/<run_id>/run_state.json
+```
+
+`init-run` 保持非 resumable，只生成 Phase 0 artifacts。
+
+`run_state.json` 记录：
+
+1. `schema_version`
+2. `run_id`
+3. `task_file`
+4. `task_sha256`
+5. `profile_path`
+6. `profile_sha256`
+7. run-level `status`
+8. `stage_order`
+9. per-stage `status`, `phase`, required outputs, output hashes, timestamps, and failure/dirty metadata
+
+Stage registry：
+
+1. `ingest -> phase_1`
+2. `outline -> phase_2`
+3. `evidence -> phase_3`
+4. `planning -> phase_4`
+5. `draft -> phase_5`
+6. `review -> phase_6`
+7. `finalize -> phase_7`
+8. `learning -> phase_8`
+
+Stage statuses：
+
+```text
+pending
+running
+done
+failed
+interrupted
+dirty
+skipped
+```
+
+Run-level statuses：
+
+```text
+running
+completed
+failed
+interrupted
+```
+
+`resume-run` validates all completed stage outputs before skipping them. Missing, empty, invalid JSON, or invalid JSONL output marks the completed stage as `dirty` and fails safely. V1 does not automatically rewind upstream artifacts or delete downstream outputs; start a new `write-run` or restore the missing/corrupt artifact.
+
+The lock file is:
+
+```text
+runs/<run_id>/.run_state.lock
+```
+
+It records `pid`, `created_at`, and `command`. A live PID blocks resume. A dead PID is treated as stale lock recovery: the stale lock is replaced, any previous `running` stage is marked `interrupted`, and resume continues from that stage. Malformed lock content fails for manual inspection.
 
 ## 3. Phase 0 Artifacts
 

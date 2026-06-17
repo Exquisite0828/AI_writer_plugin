@@ -82,7 +82,10 @@ draft-run
 review-run
 finalize-run
 learning-run
+resume-run
 record-hitl
+prepare-stage-review
+validate-stage-review
 write-run
 ```
 
@@ -93,6 +96,151 @@ Claude Code 入口：
 ```
 
 `write-run` 是非交互式完整链路 helper。它不会伪造 HITL approval。
+
+`ingest-run` 和 `write-run` 会创建 `runs/<run_id>/run_state.json`，用于断点续写。`init-run` 保持非 resumable。
+
+如果 Claude Code 或 Python 进程中断，使用：
+
+```bash
+.venv/bin/python -m ai_writing_plugin resume-run --run runs/<run_id>
+```
+
+`resume-run` 会从第一个非 `done` stage 继续执行。完成后的 run-level `completed` 只表示 deterministic engine lifecycle 完成，不表示专业批准、合规批准或候选更新批准。
+
+典型恢复流程：
+
+1. 找到上次输出的 `runs/<run_id>/`。
+2. 确认目录内存在 `run_state.json`。
+3. 不修改原 `task.yaml` 和 external `document_profile.yaml`。
+4. 执行 `resume-run --run runs/<run_id>`。
+5. 完成后照常检查 `review/`、`verify/`、`final/`、`trace/` 和 `learning/` artifacts。
+
+`resume-run` 会拒绝：
+
+- missing `run_state.json`；
+- `task.yaml` hash mismatch；
+- external `document_profile.yaml` hash mismatch；
+- live `.run_state.lock`；
+- completed stage output 缺失、空文件、JSON/JSONL 不可解析。
+
+如果 `.run_state.lock` 中的 PID 已不存在，工具会按 stale lock recovery 处理，把之前的 `running` stage 标记为 `interrupted` 后继续。
+
+## Stage review package
+
+Stage Review Gate S1/S1R/S2A 可以在某个 stage 完成后生成 advisory review package，供 Claude Code 读取后做语义审查，并由用户显式记录 stage review gate decision：
+
+```bash
+.venv/bin/python -m ai_writing_plugin prepare-stage-review --run runs/<run_id> --stage outline
+```
+
+输出位置：
+
+```text
+runs/<run_id>/stage_reviews/<stage>/review_context.json
+runs/<run_id>/stage_reviews/<stage>/review_prompt.md
+runs/<run_id>/stage_reviews/<stage>/issues_schema.json
+runs/<run_id>/stage_reviews/<stage>/review_units.json
+```
+
+Claude Code 可以读取 `review_prompt.md`、`review_context.json` 和 `review_units.json`，然后只在同一目录下写：
+
+```text
+claude_review.md
+issues.json
+```
+
+S1R 要求 `issues.json` 声明：
+
+```text
+reviewed_unit_ids
+unchecked_unit_ids
+issues[].unit_id
+```
+
+每个 required review unit 都必须出现在 `reviewed_unit_ids` 中。S1R 不允许 partial review；`unchecked_unit_ids` 非空、unknown unit id、issue 引用未知 `unit_id` 或 reviewed/unchecked 重叠都会导致 validation failed。
+
+校验 review issues：
+
+```bash
+.venv/bin/python -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage outline
+```
+
+可选地指定 issues 文件：
+
+```bash
+.venv/bin/python -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage outline --issues-file path/to/issues.json
+```
+
+`validation_report.json` 会写入 `coverage_summary`，其中 `coverage_complete=true` 只表示 required review units 已被 deterministic coverage validation 接受，不表示 professional approval。
+
+记录 S2A gate decision：
+
+```bash
+.venv/bin/python -m ai_writing_plugin record-stage-review-decision --run runs/<run_id> --stage outline --decision accepted --notes "Reviewed."
+```
+
+`decision` 只允许 `accepted`、`skipped`、`needs_revision`、`blocked`。`skipped` 必须有非空 notes。该命令生成：
+
+```text
+runs/<run_id>/stage_reviews/<stage>/decision.json
+```
+
+`decision.json` 固定 `decision_scope=stage_review_gate_only` 且 `professional_approval=false`，并记录 `validation_report_sha256` 和 `issues_sha256`。`accepted` / `skipped` 只表示用户允许该 stage review gate 继续；it does not indicate professional approval。
+
+检查 gate：
+
+```bash
+.venv/bin/python -m ai_writing_plugin check-stage-review-gate --run runs/<run_id> --stage outline
+```
+
+checker 要求 validation report 仍为 `valid`、`coverage_complete=true`、decision 为 `accepted` 或 `skipped`、`professional_approval=false`，并且 `validation_report.json` / `issues.json` hash 未在 decision 后改变。
+
+`stage_reviews/` 是 runtime assistance output，不写入 `manifest.artifacts`，不改变 `run_state.json` lifecycle，不证明项目事实，也不表示 professional approval。S1/S1R/S2A 不调用 Claude Code，不自动修改原 artifacts，不应用 patch，不阻塞下一 stage。
+
+## Stage Review Gate S2B opt-in gated workflow
+
+S2B 是 opt-in gate enforcement。默认 `write-run`、`resume-run` 和 single-stage commands 保持 non-gated 行为。只有显式传入 `--require-stage-review-gates` 时，engine 才会在进入下一阶段前读取上一阶段的 S2A artifacts 并 fail closed。
+
+启动 gated workflow：
+
+```bash
+.venv/bin/python -m ai_writing_plugin write-run --task <task.yaml> --require-stage-review-gates
+```
+
+该命令只创建 run 并完成 `ingest`，然后停止。下一步是为 `ingest` 准备和记录 stage review gate：
+
+```bash
+.venv/bin/python -m ai_writing_plugin prepare-stage-review --run <run_dir> --stage ingest
+# Claude Code reads review_prompt.md and review_units.json, then writes issues.json only.
+.venv/bin/python -m ai_writing_plugin validate-stage-review --run <run_dir> --stage ingest
+.venv/bin/python -m ai_writing_plugin record-stage-review-decision --run <run_dir> --stage ingest --decision accepted --notes "Reviewed."
+.venv/bin/python -m ai_writing_plugin check-stage-review-gate --run <run_dir> --stage ingest
+.venv/bin/python -m ai_writing_plugin resume-run --run <run_dir> --require-stage-review-gates
+```
+
+每次 gated `resume-run` 最多执行一个 pending stage。执行前会检查 immediate previous stage gate；执行成功后立即停止，并提示为刚完成的 stage 准备 review package。
+
+带 flag 的 single-stage commands 也会检查上一阶段 gate：
+
+```bash
+.venv/bin/python -m ai_writing_plugin outline-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin evidence-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin plan-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin draft-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin review-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin finalize-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin learning-run --run <run_dir> --require-stage-review-gates
+```
+
+S2B only reads:
+
+```text
+stage_reviews/<stage>/validation_report.json
+stage_reviews/<stage>/issues.json
+stage_reviews/<stage>/decision.json
+```
+
+S2B 不调用 Claude Code，不自动生成 `issues.json`，不自动修改 professional artifacts，不应用 safe auto-fix，不改变 `run_state.json` schema。`accepted` / `skipped` does not indicate professional approval，`coverage_complete=true` 也不表示 professional approval。
 
 ## Focused regression matrix
 
