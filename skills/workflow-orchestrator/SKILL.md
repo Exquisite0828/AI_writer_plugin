@@ -13,6 +13,7 @@ description: 中文优先总控 skill，按顺序编排 workflow 的 15 个 step
 
 - 用户希望「一步一步、每步人工确认」地走完整条专业文档写作流程。
 - 需要在每个步骤产出后做人工审核，未通过不得继续。
+- 作为 `/ai-writing-plugin:write` 命令「交互 workflow」的编排层：command 确认 task 后把控制权交给本 skill，由本 skill 逐 stage 驱动 `skills/workflow-steps/` 下的 15 个 step skill（每步先子代理审核、后用户确认闸门）。
 
 ## 核心原则
 

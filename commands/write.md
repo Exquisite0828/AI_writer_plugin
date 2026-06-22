@@ -97,19 +97,32 @@ $PYTHON -m ai_writing_plugin write-run --task examples/custom_technical_note_pro
 
 helper 不能伪造 HITL approval。非交互运行会把缺失 gate 记录为 `not_collected_in_noninteractive_run` 或 `pending_user_confirmation`，并保持 candidate updates remain proposed/inactive。
 
-## 交互 workflow
+## 交互 workflow（由 workflow-orchestrator 总控 skill 编排）
 
-1. 用中文确认 task file 路径和 `task_type`。
-2. 运行 ingest，并向用户说明 material classification。
-3. 只有在用户明确回复后，才记录真实 HITL decisions。
-4. 通过 Python engine 运行 outline、evidence、plan、draft、review、finalize 和 learning。
-5. 每个 engine stage 完成后，可以运行 `prepare-stage-review` 生成 Claude review package 和 `review_units.json`；Claude Code 读取 package 后只写 `claude_review.md` / `issues.json`，再运行 `validate-stage-review`。
-6. 用户明确决定后，可以运行 `record-stage-review-decision` 写入 `decision.json`，再用 `check-stage-review-gate` 检查 S2A gate。`accepted` / `skipped` does not indicate professional approval。
-7. S1/S1R/S2A stage review 只供用户 review：不阻塞下一 stage，不自动修改 artifacts，不应用 patch，不写 professional approval。`coverage_complete=true` 只表示 required review units 被声明覆盖。
-8. 如需 S2B opt-in gate enforcement，使用 `--require-stage-review-gates`。默认 `write-run` / `resume-run` / stage commands 仍是 non-gated。gated `write-run` 只完成 `ingest` 并停止；gated `resume-run` 每次只执行一个 pending stage；带 flag 的 stage command 会在执行前检查上一阶段 gate。
-9. S2B 不调用 Claude Code，不生成 `issues.json`，不应用 fixes，不修改 professional artifacts，也不表示 professional approval。
-10. 如果中途中断，优先用 `resume-run --run <run_dir>` 从 `run_state.json` 继续；不要从头创建新 run，除非 `resume-run` 明确提示 task/profile hash mismatch、missing run_state 或 dirty completed stage。
-11. 用中文报告 run directory、final artifacts、pending critical claims 和 candidate update 状态。
+本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 `skills/workflow-steps/` 下的 15 个 step skill，并对每一步做到「**先子代理审核、后用户确认闸门**」。command 层只负责确认 task、准备 Python 环境、把控制权交给总控 skill；真实产出仍由下方 Python engine 命令完成。
+
+1. 用中文确认 task file 路径和 `task_type`。**无 task.yaml 时先向用户索取路径与输入材料，不要凭空开跑**（自由文本如「写一份 HARA 报告」不能直接驱动引擎）。
+2. 启用 **`workflow-orchestrator`** skill 作为总控，按其「编排主循环」逐 engine stage 推进；每个 stage 覆盖的 step 见下方映射表，逐 step 调用对应 step skill。
+3. 每个 step 执行后，按该 step skill 的「子代理审核」小节**新开独立 subagent**：自主完成 A1 审核任务与 A2 修订任务的分解与执行，在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` / `revision_state` 三态（`not_run` / `running` / `done`）跟踪进度；修订采用「提取脚本目的、重新驱动」，不机械重跑原命令。循环直到无 P0/P1 且全部子任务 `done`。
+4. subagent 审核通过后，再向用户弹出 stage-review 确认问题列表，走真实闸门 `prepare-stage-review → validate-stage-review → record-stage-review-decision → check-stage-review-gate`；未获 `accepted` / `skipped` 不得进入下一 stage。S1/S1R/S2A/S2B 的细节见下文对应小节。
+5. 只有在用户明确回复后，才记录真实 HITL decisions；非交互运行不得伪造，缺失 gate 记为 `not_collected_in_noninteractive_run` / `pending_user_confirmation`。
+6. 如果中途中断，优先用 `resume-run --run <run_dir>` 从 `run_state.json` 继续；不要从头创建新 run，除非 `resume-run` 明确提示 task/profile hash mismatch、missing run_state 或 dirty completed stage。
+7. 用中文报告 run directory、final artifacts、pending critical claims 和 candidate update 状态。
+
+### Stage → step skill 映射（总控 skill 据此逐 step 驱动）
+
+| 引擎 stage | step skill（按顺序） |
+|---|---|
+| `ingest` | `step-input-materials` / `step-material-inventory` / `step-source-index` |
+| `outline` | `step-template-outline` |
+| `evidence` | `step-research-questions` / `step-evidence-map` |
+| `planning` | `step-citation-plan` / `step-section-tasks` |
+| `draft` | `step-conservative-draft` |
+| `review` | `step-review` / `step-verification` |
+| `finalize` | `step-revision` / `step-final-report` |
+| `learning` | `step-run-summary` / `step-candidate-profile-update` |
+
+stage 顺序固定：`ingest → outline → evidence → planning → draft → review → finalize → learning`。多个 step 共用一个 stage 时，先逐个 step 完成「子代理审核 + 向用户呈现确认问题」，全部确认后再记录该 stage 的单一闸门决定，然后跑下一 stage。完整编排闭环见 `workflow-orchestrator` skill，各步边界与 A1/A2 分解见对应 step skill。
 
 ## Engine commands
 
