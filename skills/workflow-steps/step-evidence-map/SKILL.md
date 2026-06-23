@@ -16,8 +16,8 @@ description: 中文优先指导 workflow 第 6 步「证据·引用·章节计�
 | 阶段 | 原步骤 | 产出 |
 |---|---|---|
 | **Phase A · 证据映射** | 原 step-evidence-map | `evidence_map.json`、`unresolved_questions.md` |
-| **Phase B · 引用计划** | 原 step-citation-plan | `citation_plan.json`、`claim_support_matrix.json` |
-| **Phase C · 章节任务** | 原 step-section-tasks | `section_tasks.json`、`outline_final.md`、`writing_plan.md` |
+| **Phase B · 引用计划** | 引用计划 | `citation_plan.json`、`claim_support_matrix.json` |
+| **Phase C · 章节任务** | 章节任务 | `section_tasks.json`、`outline_final.md`、`writing_plan.md` |
 
 **规则**：Phase A 全部子任务 `done` 后才进入 Phase B；Phase B 全部 `done` 后才进入 Phase C。子任务状态仅 `not_run` / `running` / `done`，登记于 `execution_state`，每完成一条立即写回 state.json。
 
@@ -129,7 +129,7 @@ Phase A 子任务默认**按 outline_l2 每 L2 一条** `em-*`；Phase B/C 粒�
 - 路径：`skills/document-types/<task_type>/steps/step-evidence-map.md`
 - 例：`task_type: hara` → `skills/document-types/hara/steps/step-evidence-map.md`
 
-**原 `step-citation-plan` / `step-section-tasks` 已合并入本步**，勿单独执行；领域规则见合并后的 HARA 子 skill 内 Phase B/C 章节。
+从子 skill 获取：Phase A/B/C 领域规则、A1/A2 审核修订子任务、state.json 示例、B 审核检查项。若缺失须显式报告并停下。
 
 ## 子代理审核 (Subagent Review)
 

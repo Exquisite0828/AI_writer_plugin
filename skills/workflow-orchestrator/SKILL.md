@@ -1,11 +1,11 @@
 ---
 name: workflow-orchestrator
-description: 中文优先总控 skill，按顺序编排 workflow 的 13 个 step skills（原 Step 7–8 已合并入 step-evidence-map）。每个 step 执行完毕后，由 step skill 的 subagent 产出 stage-review 材料并弹出供用户确认的问题列表；必须用户审核通过（在 stage_reviews/<stage>/decision.json 落 accepted）才能进入下一步。不自动批准、不伪造 HITL。
+description: 中文优先总控 skill，按顺序编排 workflow 的 13 个 step skills。每个 step 执行完毕后，由 step skill 的 subagent 产出 stage-review 材料并弹出供用户确认的问题列表；必须用户审核通过（在 stage_reviews/<stage>/decision.json 落 accepted）才能进入下一步。不自动批准、不伪造 HITL。
 ---
 
 # Workflow Orchestrator Skill
 
-总控 skill：按固定顺序驱动 `skills/workflow-steps/` 下的 **13 个** step skills（原 `step-citation-plan` / `step-section-tasks` 已合并入 `step-evidence-map`），并在**每一步执行完毕后弹出供用户确认的问题列表**，由用户审核该步产出后才允许进入下一步。
+总控 skill：按固定顺序驱动 `skills/workflow-steps/` 下的 **13 个** step skill，并在**每一步执行完毕后弹出供用户确认的问题列表**，由用户审核该步产出后才允许进入下一步。
 
 本 skill 是编排指导层，不直接写最终文档。各 step 的 artifacts 由对应 step skill 的 subagent **提取该步目的、自主驱动**产出（须符合 artifact 契约）；stage-review 闸门通过 subagent 写入 `runs/<run_id>/stage_reviews/<stage>/decision.json` 记录，不自动批准、不伪造 HITL。
 
@@ -41,8 +41,6 @@ stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage �
 | 14 运行总结 / 15 候选 profile 更新 | `learning` |
 
 7 个 stage 顺序固定：`ingest → outline → evidence_planning → draft → review → finalize → learning`。
-
-**已合并（勿单独驱动）**：原 Step 7 `step-citation-plan`、Step 8 `step-section-tasks` → 现 Step 6 `step-evidence-map` 的 Phase B/C。
 
 ## 编排主循环
 

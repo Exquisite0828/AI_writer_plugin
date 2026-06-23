@@ -1,8 +1,6 @@
-# HARA 子 skill · Step 6 · 证据·引用·章节计划（合并原 6–8）
+# HARA 子 skill · Step 6 · 证据·引用·章节计划
 
-本文件是 `skills/workflow-steps/step-evidence-map/SKILL.md` 在 `task_type: hara` 下的任务专属子 skill。HARA 领域规则以 `skills/document-types/hara/SKILL.md` 为准。
-
-**原 Step 7（引用计划）与 Step 8（章节任务）已合并入本步**，分 Phase A/B/C 顺序执行。
+本文件是 `skills/workflow-steps/step-evidence-map/SKILL.md` 在 `task_type: hara` 下的任务专属子 skill，涵盖 **Phase A 证据映射 / Phase B 引用计划 / Phase C 章节任务**。HARA 领域规则以 `skills/document-types/hara/SKILL.md` 为准。
 
 ## 本步目的要点（HARA）
 
