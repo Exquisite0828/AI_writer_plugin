@@ -38,6 +38,38 @@
 **自检底线**：summary 只描述流程事实，不做专业结论的重新判断；非交互 run 不得伪造 HITL 确认。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步记录本次 run 经过的 Stage Gates、HITL 决策与开放项，作为后续 Confirmation Review 与 PLM 入库的工作记录。
+
+### Checklist（Run Summary 5 节）
+
+- [ ] **输入摘要**：含 role 分类（source/template/checklist/reference/sample 各计数）、缺失材料数、是否含既有 HARA 报告参考
+- [ ] **HITL 决策记录**：列出每条 HITL 输入与影响的 critical claim；非交互 run 显式记 "no HITL in this run"
+- [ ] **知识缺口**：从 `knowledge_gaps.md` / `unresolved_questions` 汇总，按 Phase 分类
+- [ ] **Stage Gate 状态**：本次 run 是否触达 G-A / G-B / G-C / G-D / G-E；尚未通过的 Gate 列出阻断原因
+- [ ] **可复用流程模式**：仅记录流程 / 结构信号（如「漏 Unintended 引导词」「FTTI 缺失高发」），**不**记录具体 hazard / ASIL / SG 数值
+- [ ] **状态总结**：保守 document_status（仅 `ready_for_human_review` / `finalized_with_open_items` / `blocked_pending_confirmation`）
+
+### Review 要点
+
+| 失效 | 级别 |
+|---|---|
+| summary 写 `completed` / `approved` 作为专业批准 | **P0** |
+| 未确认 critical claim 在 summary 中被标 confirmed | **P0** |
+| HITL 决策伪造（无对应记录却声称已确认） | **P0** |
+| Stage Gate 状态写「通过」但 P0 未关闭 | **P0** |
+| 流程模式条目含具体 hazard / ASIL / SG 数值 | **P0**（事实泄露） |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 输入摘要 | 标 "no reference HARA" | 标 sample 文件数；列出 Δ-Analysis 节是否完成 |
+| 状态总结 | 同 | 必须显示 Δ-Analysis 节是否已通过内审 |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA Run Summary 应记录的核心内容

@@ -43,6 +43,74 @@ HARA 危害识别的核心是引导词法（HAZOP-style）：对每个功能逐�
 **自检底线**：本步只描述待答问题、不预设结论；不得由 sample HARA 报告或 reference 方法学直接给出 hazard / rating / ASIL / SG 的"已确认"答案。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步统一覆盖 Phase A3（方法选择）+ Phase B1/B2（运行工况与模式）+ Phase C1（HAZOP 引导词法）所需的问题框架。
+研究问题集只设问、**不预设答案**，对应的事实将在 Step 6（证据映射）/ Step 9（草稿）中由 T1 source 给出。
+
+### A3 · 方法选择 Checklist
+
+- [ ] 危害识别方法声明 ≥ 2 种（HAZOP 引导词法 + FMEA / FTA / Brainstorming），ISO 26262 推荐方法多样性
+- [ ] S/E/C 评级方法声明（ISO 26262-3 Table 1/2/3）
+- [ ] ASIL 确定方法声明（ISO 26262-3 Table 4）
+- [ ] 团队组成跨学科（系统 / 电控 / 软件 / 测试 / 用户研究 / Safety）
+
+### B1 · 运行工况问题集（Operational Situations）
+
+须覆盖（缺一即 P1）：
+- [ ] 道路类型：高速 / 城市 / 乡村 / 停车场 / 越野
+- [ ] 速度范围分段（0、低速、中速、高速）
+- [ ] 交通密度（无 / 低 / 中 / 高）
+- [ ] 环境条件（晴 / 雨 / 雪 / 雾 / 夜间）
+- [ ] 路面条件（干 / 湿 / 冰雪 / 砂石）
+- [ ] 驾驶员状态（正常 / 疲劳 / 分心，与 Controllability 相关）
+- [ ] 车辆载重 / 牵引状态（如适用）
+- [ ] 维护场景（充电 / 停放 / 维修）
+- [ ] 故障 / 降级场景
+
+### B2 · 运行模式问题集（Operating Modes）
+
+- [ ] item 操作模式枚举（启动 / 待机 / 工作 / 降级 / 关机）
+- [ ] 模式间转换条件
+- [ ] 模式与工况的耦合
+
+### C1 · HAZOP 引导词覆盖（对每个 F-xx）
+
+| 引导词 | 失效类型 |
+|---|---|
+| No / Loss of Function | 功能缺失 |
+| More / Excess Function | 功能过强 |
+| Less / Insufficient Function | 功能过弱 |
+| Wrong / Reverse Direction | 错误方向 |
+| Unintended / Spurious | 非预期激活 |
+| Too Early / Too Late / Stuck | 时序错误 |
+
+- [ ] 每个 F-xx **至少 ≥ 2** 种引导词
+- [ ] 必覆盖 Unintended / Spurious（常见漏项）
+- [ ] 组合失效与瞬态状态相关失效已设问
+- [ ] 误用场景（reasonably foreseeable misuse）单独设问
+
+### Review 要点
+
+| 失效 | 级别 |
+|---|---|
+| 仅用单一危害识别方法 | **P1** |
+| 团队学科缺失 | **P1** |
+| 工况覆盖类别 < 4 | **P1** |
+| 某 F-xx 仅有 No Function 单一引导词 | **P0** |
+| 未考虑 Unintended Function | **P0** |
+| 降级模式未设问 | **P0** |
+| 问题预设 hazard / ASIL / SG 答案 | **P0** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 主要风险 | 工况覆盖不全、引导词漏项 | 直接拿 sample 答案当本项目答案 |
+| 本步动作 | 用引导词法对每个 F-xx 强制扫描；Q-OPEN 优先 | 增设独立类 **Q-DIFF**：本项目与 sample 在 item 范围、工况频率、用户群体、车型、法规、架构上的潜在差异；问题集独立成稿后再与 sample 对照 |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA 标准研究问题模板

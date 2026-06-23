@@ -44,6 +44,50 @@ HARA 草稿完成后须经多维结构化审查。本步以 6 大维度系统化
 **自检底线**：本步只发现问题、不改稿；P0 阻断项必须显式标记，未确认项保持可见，由 Step 12 修订处理。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步是 Phase G1（Verification，§6.4.5）+ Phase H1（Documentation Completeness）的内审落点，并为 Phase G2（Confirmation Review，§Part 2 §6.4.7）准备材料。
+
+### G1 · 验证（§6.4.5）Checklist
+
+- [ ] HARA 输出与 Item Definition（Clause 5）一致（无矛盾）
+- [ ] HARA 输出与 Functional Safety Concept（Clause 7）接口一致
+- [ ] hazard 识别方法的适用性已论证（≥ 2 种方法）
+- [ ] S/E/C/ASIL 评级的合理性已论证（每条含文字依据）
+- [ ] SG 完备性：每个 ASIL ≥ A 的 HE 有 SG 覆盖
+- [ ] 验证方法（Walkthrough / Inspection / Analysis）已记录
+- [ ] 验证发现的所有 issue 已闭环或登入开放清单
+- [ ] 验证报告非由唯一作者执行（独立性占位）
+
+### 6 维度内审 Checklist 与标准映射
+
+| 维度 | 对应 Clause | 关键 P0 |
+|---|---|---|
+| RD-1 模板完整性 | §6.4.4 + Part 2 §5.4.2 | 强制章节缺失 |
+| RD-2 Item 定义完整性 | §5 | 边界 / 接口 / 误用缺失 |
+| RD-3 危害识别合理性 | §6.4.2 | 单一引导词、H-xx 抽象层次错误 |
+| RD-4 S/E/C 评级证据 | §6.4.3 + Tables 1/2/3 | E 与 fault rate 混淆、C 用专家假设 |
+| RD-5 ASIL 与 SG 一致性 | §6.4.3 Table 4 + §6.4.4 + §7.4 | ASIL ↔ S/E/C 不一致、FTTI 缺失 |
+| RD-6 开放项可见性 | 全篇 | NEEDS_USER_CONFIRMATION 被移除 |
+
+### 元审查（review_findings 自身合规）
+
+| 失效 | 级别 |
+|---|---|
+| review_findings 摘要写「审查通过 / 合规 / validated / approved」 | **P0** |
+| 建议移除 `NEEDS_USER_CONFIRMATION` | **P0** |
+| 唯一审核员（无独立性占位） | **P0** |
+| 任一维度结论缺失 | **P1** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 重点 | RD-2（Item 完整性）/ RD-6（开放项） | RD-3 / RD-4 / RD-5（hazard / 评级 / SG 独立性） + Δ-Analysis 节内审 |
+| 必加检查 | — | 草稿与 sample 文字相似度检查；Δ-Analysis 节具体差异条目 ≥ 1 |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA 审查检查维度（review_dimensions）

@@ -43,6 +43,82 @@ HARA 报告完成时只能使用**保守状态声明**，不输出「合规 / �
 **自检底线**：final report 是 review-ready artifact，不替代合格人工审查或 HARA 专业 sign-off；任何批准语义出现即 P0 阻断打包。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步对应 Phase H1（Documentation Completeness）+ Phase H2（Sign-off）+ Stage Gate G-E（HARA 报告发布）。
+
+### H1 · 最终报告强制内容 Checklist
+
+最终 HARA 报告必须含以下章节（任一缺失即 **P0**）：
+
+- [ ] 文档信息（标题 / 版本 / 日期 / 作者 / 修订历史 / 状态）
+- [ ] 范围与适用标准（含 ISO 26262-3:2018 版本声明）
+- [ ] 参考文档与术语
+- [ ] Item Definition 摘要
+- [ ] 运行工况与模式
+- [ ] 危害识别（H-xx 表）
+- [ ] 危害事件（HE-xxx 表）
+- [ ] S/E/C 评级表
+- [ ] ASIL 候选表
+- [ ] 安全目标（SG-xx 表，含 **Safe State / FTTI**）
+- [ ] 开放问题（Open Issues）
+- [ ] 验证记录
+- [ ] **Confirmation Review 记录占位**（ASIL ≥ B 强制）
+- [ ] **追溯矩阵**（F → H → HE → S/E/C → ASIL → SG，双向可追溯）
+- [ ] 签字栏占位（作者 / 评审人 / Confirmation Reviewer / FSM / PM）
+- [ ] With-Reference 情景：**Differences from Reference HARA** 节
+
+### 交付包（5 件）
+
+- [ ] `final_report.md`（或对应导出格式）
+- [ ] `open_items_registry.json`
+- [ ] `evidence_traceability.json`
+- [ ] `disclaimer`（含强制文本，见下）
+- [ ] `run_summary`
+
+### 强制免责声明文本（必须含）
+
+> 「本报告由 AI 辅助工具生成，是供具备资质工程师审查的准备材料。不等于 ISO 26262 合规认证，不等于 HARA 专业批准，不等于 Confirmation Review。所有 critical claim 在签字前保持 pending。」
+
+### document_status 取值规则
+
+仅允许：
+- `ready_for_human_review`（无 P0、产物齐全、开放项已汇总）
+- `finalized_with_open_items`（P0 全部清除、仍有待确认项）
+- `blocked_pending_confirmation`（存在未修复的阻断性问题）
+
+**严格禁止**：`approved` / `validated` / `compliant` / `HARA 已完成` / `ASIL D（已批准）`
+
+### H2 · 签字 Checklist
+
+- [ ] 作者签字位
+- [ ] 评审人签字位
+- [ ] **Confirmation Reviewer 签字位**（ASIL ≥ B 强制）
+- [ ] Functional Safety Manager 签字位
+- [ ] 项目经理 / 产品负责人签字位
+- [ ] 文档进入受控状态字段（PLM / CMS 入库标记）
+
+### Review 要点
+
+| 失效 | 级别 |
+|---|---|
+| 任一强制章节缺失 | **P0** |
+| `document_status` 取 `approved` / `validated` / `compliant` | **P0** |
+| 缺免责声明 | **P0** |
+| 追溯矩阵不可双向追溯 | **P1** |
+| 任一必要签字位缺失 | **P0** |
+| With-Reference 情景缺 "Differences from Reference HARA" | **P0** |
+| 全文 grep 命中 `approved` / `validated` / `compliant` / `HARA 完成` | **P0** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 额外章节 | — | "Differences from Reference HARA" 必备节 |
+| 额外签字考量 | — | Δ-Analysis 节单独列出审核责任人 |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA 最终交付包结构

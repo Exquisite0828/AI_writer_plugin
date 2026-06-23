@@ -50,6 +50,50 @@ HARA 报告在 ISO 26262-3 约束下有标准 12 节结构。本步从 HARA 模�
 **自检底线**：本步只定义结构与章节意图，**不写正文、不预设 hazard / rating / ASIL / SG 结论**；模板章节缺失会在 Step 10 直接 P0 阻断。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步对应 Phase H1（Documentation Completeness）。模板大纲必须为 Clause 5（Item Def）、Clause 6（HARA）、Clause 7（Functional Safety Concept 衔接）的所有强制章节预留位置。
+
+### H1 · 报告章节完整性 Checklist
+
+模板必须含以下章节占位（任一缺失即 **P0**）：
+
+- [ ] 文档信息（标题 / 版本 / 日期 / 作者 / 修订历史 / 状态）
+- [ ] 范围与适用标准（含 ISO 26262-3:2018 版本声明）
+- [ ] 参考文档与术语
+- [ ] **Item Definition 摘要**（SEC-ITEM ★）
+- [ ] **运行工况与模式**（SEC-OPS ★）
+- [ ] **危害识别 H-xx 表**（SEC-HAZ ★）
+- [ ] **危害事件 HE-xxx 表**（SEC-HE ★）
+- [ ] **S/E/C 评级表**（SEC-SEC ★）
+- [ ] **ASIL 候选表**（SEC-SEC ★，与 S/E/C 同节或子节）
+- [ ] **安全目标 SG-xx 表**（SEC-SG ★，含 Safe State / FTTI 字段）
+- [ ] **开放问题**（SEC-OPEN ★）
+- [ ] **验证记录**（SEC-REVIEW ★）
+- [ ] **Confirmation Review 记录**（ASIL ≥ B 强制，含审核员资质声明占位）
+- [ ] **追溯矩阵**（F → H → HE → S/E/C → ASIL → SG）
+- [ ] **签字栏**（作者 / 评审人 / Confirmation Reviewer / FSM / PM）
+- [ ] **Differences from Reference HARA**（仅 With-Reference 情景必备）
+
+### Review 要点
+
+| 失效 | 级别 |
+|---|---|
+| 任一强制章节缺失 | **P0** |
+| 追溯矩阵章节缺失 | **P1**（影响双向追溯） |
+| SG 表无 Safe State / FTTI 列 | **P0**（ISO 26262-3 §7.4.2.4） |
+| 签字栏缺 Confirmation Reviewer（ASIL ≥ B 场景） | **P0** |
+| With-Reference 情景缺 "Differences from Reference HARA" 节 | **P0** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 模板复用 | 仅参考 ISO 26262-3 标准结构 | 可借用 sample 的章节顺序与表格列定义（结构），**不可**复用其文字 |
+| 必备额外节 | 无 | **Differences from Reference HARA**（强制） |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### ISO 26262-3 HARA 报告标准章节结构

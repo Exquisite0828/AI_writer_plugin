@@ -42,6 +42,62 @@
 **自检底线**：验证是确定性检查，不替代专业判断或最终批准；任何 P0 失败必须阻断进入 Step 13。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步对应 Phase G1（Verification，§6.4.5）的结构化必过检查，并为 Phase G2（Confirmation Review，Part 2 §6.4.7）做独立性预检。
+
+### G1 · 5 类 REQUIRED_CHECKS（每项必须有 pass/fail）
+
+**VC-1 产物齐全**：manifest / source_index / template_structure / claim_support_matrix / draft / review_findings / unresolved_questions 全部存在
+
+**VC-2 Source Tier 合规**
+- [ ] critical claim 无 T4 evidence（P0）
+- [ ] 无 T5（推断）作为任何 claim 支撑（P0）
+- [ ] S/E/C 不仅由 T3 支撑（P1）
+
+**VC-3 Critical Claim 状态**
+- [ ] H / HE / S / E / C / ASIL 全部含 `NEEDS_USER_CONFIRMATION`
+- [ ] SG 使用禁止性表述
+- [ ] SG 含 Safe State 与 FTTI 字段（§7.4.2.4）
+
+**VC-4 ASIL 逻辑一致性**
+- [ ] 每条 HE 的 ASIL = S × E × C 按 ISO 26262-3 Table 4 查表结果
+- [ ] ASIL > QM 的 HE 数 ≤ SG 数
+- [ ] ASIL = QM 的 HE 无 SG
+
+**VC-5 禁止操作**
+- [ ] 无批准措辞（grep `approved` / `validated` / `compliant` / `HARA 完成`）
+- [ ] `NEEDS_USER_CONFIRMATION` 保留
+- [ ] candidate update `status: proposed` / `active: false`
+- [ ] 无静默解析失败
+
+### G2 · Confirmation Review 独立性预检（Part 2 §6.4.7，ASIL ≥ B 强制）
+
+- [ ] HARA 最高 ASIL 候选已确定（用于查独立性等级）
+- [ ] 独立性等级标记到 verify_report：
+  - ASIL A / B：组织内独立部门
+  - ASIL C：独立部门 + 独立汇报线
+  - ASIL D：完全独立（不同组织 / 法人）
+- [ ] Confirmation Reviewer 资质 / 范围 / 状态字段在最终报告中已留位
+- [ ] verify_report 明确：「Confirmation Review 须由具备资质的独立审核员完成；AI 生成的 verify_report 不等于 Confirmation Review」
+
+### 元验证 Checklist
+
+| 失效 | 级别 |
+|---|---|
+| 失败项被静默通过 | **P0** |
+| verify_report.status 取 `validated` / `approved` / `compliant` | **P0** |
+| 独立性等级与最高 ASIL 不匹配 | **P0** |
+| Confirmation Review 占位缺失 | **P0**（ASIL ≥ B 场景） |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 额外验证项 | — | VC-2 加查：sample 内容是否流入 critical claim 引用槽；VC-3 加查：Δ-Analysis 节存在且每个 Δ 条目可追溯到本项目 source |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA REQUIRED_CHECKS（验证检查清单）

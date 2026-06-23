@@ -46,6 +46,40 @@
 **自检底线**：本步只规划"写什么、用哪些来源"，不在此步生成正文；HITL 依赖任务的 critical claim 默认保持 pending。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步对应 Phase F1/F2/F3（Safety Goal 推导与聚合）任务编排，同时为 Phase C/D/E 的写作任务确定边界。
+
+### Checklist（任务编排）
+
+- [ ] 12 个 mandatory section 均有 ≥ 1 条 TASK-xxx
+- [ ] TASK-HAZ-xx 覆盖 ≥ 2 种 HAZOP 引导词（与 Step 5 问题集一致）
+- [ ] **TASK-SG-xx 仅关联 ASIL > QM 的 HE**（ISO 26262-3 §6.4.4）
+- [ ] 每条 TASK-SG-xx 任务输出含：SG 文本（禁止性表述）+ Safe State + **FTTI**（§7.4.2.4 强制）+ Emergency Operation（若无法立即达 safe state）
+- [ ] TASK-SG 聚合任务存在（合并相似 SG，ASIL 取最高，§7.4.4）
+- [ ] 必有 TASK-OPEN-xx 汇总 `NEEDS_USER_CONFIRMATION`
+- [ ] 缺证据章节的 `writing_mode` 为 `confirmation_required` / `open_issue_list`
+- [ ] With-Reference 情景：必有 TASK-DIFF-xx（Δ-Analysis 章节写作任务）
+
+### Review 要点
+
+| 失效 | 级别 |
+|---|---|
+| 任一 mandatory section 无任务 | **P0** |
+| TASK 含 hazard / ASIL / SG 结论预设 | **P0** |
+| ASIL > QM 的 HE 无 TASK-SG-xx 覆盖 | **P0** |
+| TASK-SG 未要求 FTTI / Safe State 字段 | **P0** |
+| SG 聚合任务缺失（多个相似 SG 散乱） | **P1** |
+| With-Reference 情景缺 TASK-DIFF | **P0** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 任务来源 | 严格按 Step 4 大纲展开 | 在 From-Scratch 任务上叠加 TASK-DIFF（差异分析章节写作） |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA 章节写作任务清单

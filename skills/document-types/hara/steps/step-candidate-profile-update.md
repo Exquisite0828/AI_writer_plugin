@@ -42,6 +42,45 @@ HARA 流程结束后的候选 profile 更新**只基于流程 / 结构信号**�
 **自检底线**：候选物默认 inactive，待人工评审；HARA 稳定 skill 不被自动覆盖。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步提炼仅限**流程 / 结构 / 检查清单**信号，**任何**情况下不得把本项目或 sample 的 hazard / 评级 / ASIL / SG 数值写入候选更新——这等同于把事实跨项目泄漏，违反 ISO 26262 项目独立性原则。
+
+### Checklist（候选更新）
+
+- [ ] `candidate_profile_update.yaml` 固定字段：`status: proposed` / `active: false` / `auto_applied: false` / `requires_user_approval: true`
+- [ ] `candidate_skill_patch.md` target 指向 HARA skill / 子 skill，含 `Status: proposed_only`
+- [ ] 提炼内容**仅**含流程 / 结构信号（触发条件、章节顺序、checklist 漏项、知识缺口模式、引导词覆盖盲区）
+- [ ] **不**含具体 hazard / HE / S/E/C / ASIL / SG 数值
+- [ ] 无 `auto_promote: true` / `auto_apply: true` 字段
+- [ ] With-Reference 情景：Δ-Analysis 的方法学改进可写入；Δ 的具体内容不可写入
+
+### 可 / 不可提炼信号对照
+
+| ✅ 可提炼（流程 / 结构 / 检查清单） | ❌ 不可提炼（事实数据） |
+|---|---|
+| "HARA 草稿常漏 Unintended 引导词" | "本项目 H-03 是 Unintended Acceleration" |
+| "FTTI 字段在 sample 中常缺失，需加 checklist" | "FTTI = 100 ms" |
+| "Δ-Analysis 节常见漏项：用户群体差异" | "本项目用户群体年龄 18-35" |
+| "TASK-SG 任务模板需含 Safe State 字段" | "SG-02 的 Safe State = degraded mode" |
+
+### Review 要点
+
+| 失效 | 级别 |
+|---|---|
+| candidate `active: true` 或 `auto_applied: true` | **P0** |
+| patch 内含具体 hazard / HE / S/E/C / ASIL / SG 数值 | **P0**（事实跨项目泄漏） |
+| 提炼内容把 sample 报告的具体内容当通用规则 | **P0** |
+| status 字段为 `accepted` / `merged` 等终态 | **P0** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 信号类型 | 漏项 / 覆盖盲区 / gap 模式 | 同 + Δ-Analysis 方法学改进（不含 Δ 内容） |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA 候选提炼规则

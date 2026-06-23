@@ -41,6 +41,48 @@
 **自检底线**：修订是**目的驱动**，不是机械重跑；HITL pending 不得自动改为 confirmed；修订完成后必须回到 Step 10/11 重新审查验证，直到无 P0 或显式 HITL 接受。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步衔接 Stage Gates：任何 P0 issue 未关闭，本步必须把项目回退到对应 Phase 修订，**不可跳级前进**。
+
+### Stage Gates 回退矩阵
+
+| Gate | 进入条件 | 决策者 | P0 出现时回退到 |
+|---|---|---|---|
+| G-A · Item Definition 冻结 | A1-A3 OK + Confirmation Review（Item Def）通过 | FSM | Phase A（Step 1/2） |
+| G-B · Hazard 清单冻结 | B-C 阶段 review 无 P0 | Safety Team Lead | Phase B-C（Step 5 / 9 SEC-HAZ） |
+| G-C · ASIL 表冻结 | E 阶段独立重算通过 | FSM + 独立审核员 | Phase E（Step 6/7/9 SEC-SEC） |
+| G-D · Safety Goal 冻结 | F 阶段完整性 + Confirmation Review 通过 | FSM + PM | Phase F（Step 9 SEC-SG） |
+| G-E · HARA 报告发布 | Phase G/H 全部通过 | FSM + PO + Confirmation Reviewer | Phase G-H（Step 10/11/13） |
+
+### Checklist（修订动作）
+
+- [ ] 每条修订**对应**具体 issue ID（review_findings 或 failures.md）
+- [ ] 修订前后 `NEEDS_USER_CONFIRMATION` 数量**不减少**（除非 HITL 已记录确认）
+- [ ] 引入的新引用 tier ≠ T4 / T5
+- [ ] diff 无新增 `approved` / `validated` / `compliant` 措辞
+- [ ] 知识缺口型问题以**登记**代替凭空填值
+- [ ] 修订完成后**必须回到 Step 10/11** 重新审查验证
+- [ ] 若涉及 Item Definition / Hazard List / ASIL / SG 变更，对应 Gate 视为重新打开，需重新通过
+
+### Review 要点
+
+| 失效 | 级别 |
+|---|---|
+| 修订移除 pending 标记（无 HITL 记录） | **P0** |
+| 用 sample 内容补 hazard 空白 | **P0** |
+| 修订后未回到 Step 10/11 重审 | **P0** |
+| 跨 Gate 修订未触发上游 Gate 重新打开 | **P0** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 常见修订诱惑 | 凭空填 [PENDING] | 偷用 sample 数据补 critical claim 空白 |
+| 额外约束 | — | 修订涉及 Δ-Analysis 节时，必须重新核对 Δ 条目独立性 |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA 修订类型与规则

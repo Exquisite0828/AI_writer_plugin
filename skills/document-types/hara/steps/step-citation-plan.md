@@ -37,6 +37,39 @@ HARA 报告中每个 critical claim 都需要可见的引用证据。本步把 e
 **自检底线**：每条 hazard / HE / S-E-C / ASIL / SG 都应在草稿中有显式 `citation_slot`，**绝不**为缺证据的 HARA claim 编造引用，更不用 sample / reference 充当 critical claim 的支撑来源。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步对应 Phase E4（ASIL 确定）的引用编排：每个 ASIL 候选必须可被独立审核员**重算**——这就要求引用槽（citation slot）逐字段（S/E/C）都指向具体 T1 source。
+
+### Checklist（引用计划）
+
+- [ ] `claim_support_matrix.json` 每条 critical claim 含 `tier` 字段
+- [ ] 每个 HE 的 S citation_slot 引用 T1 source（item 定义 / 伤害分析）
+- [ ] 每个 HE 的 E citation_slot 引用 OS-xx + 对应 T1 工况 source
+- [ ] 每个 HE 的 C citation_slot 引用 T1 source（驾驶员响应分析或 ODD）
+- [ ] 每个 HE 的 ASIL citation_slot 指向 ISO 26262-3 **Table 4**（T3）+ 上述 S/E/C 的 T1 证据
+- [ ] 每个 SG citation_slot 指向其覆盖的 HE 与 Safe State / FTTI 设定依据
+- [ ] 弱支撑 claim 不省略，保留 candidate + `NEEDS_USER_CONFIRMATION`
+- [ ] 无 sample / reference 进入 critical claim 引用槽
+
+### Review 要点
+
+| 失效 | 级别 |
+|---|---|
+| 为缺证据 claim 编造引用 | **P0** |
+| E 评级引用 sample 而非 T1 工况 source | **P0** |
+| ASIL 引用未含 Table 4 与 S/E/C 三方支撑 | **P0** |
+| 引用槽 tier 字段缺失 | **P1** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 主要风险 | 引用槽空缺被默认填默认值 | sample 的 critical claim 引用被原样保留 |
+| 本步动作 | 缺证据槽保留 candidate + 登记 unresolved | 即使 sample 显示相同 HE 已有评级，本项目 ASIL 引用必须独立查 Table 4；引用计划须为 Step 9 的 **独立重算**预留位 |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA 章节引用槽（citation_slots）设计

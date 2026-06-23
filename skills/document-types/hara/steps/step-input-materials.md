@@ -40,6 +40,49 @@ HARA（ISO 26262-3）通过 15 步流程产出 hazard 分析报告。本步是�
 **自检底线**：sample HARA 报告与 reference 方法学的 role 是否被正确隔离；如有任何关键字段缺失，登记 knowledge_gap 而不是推断填值。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步对应 ISO 26262-3:2018 **Clause 5（Item Definition）** 输入登记，以及文档治理层（Scope & References）。
+登记输入时必须为后续 Clause 5/6 工作奠定可追溯基础。
+
+### A1 · Item Definition 输入完备性（ISO 26262-3 §5）
+
+- [ ] Item 功能清单（F-xx）来源已登记（item_definition / SyRS / SRS）
+- [ ] Item 非功能性需求（性能、可用性、可维护性）来源已登记
+- [ ] 系统边界（In-scope / Out-of-scope）来源已登记
+- [ ] 外部接口（传感器 / 执行器 / CAN / 机械 / 用户）来源已登记，含信号方向描述材料
+- [ ] 假设与依赖（Assumptions & Constraints）来源已显式登记
+- [ ] 操作环境（速度范围、温度、车型）来源已登记
+- [ ] **合理可预见的误用**（reasonably foreseeable misuse，ISO 26262-3 §5.4.4 b）来源已登记
+- [ ] Legacy item 信息（若有）来源已登记
+- [ ] 缺失项登记到 `knowledge_gaps`，**不静默跳过**
+
+### A2 · 文档范围与参考（Scope & References）
+
+- [ ] 适用标准声明（ISO 26262-3:2018）记入 manifest 元数据
+- [ ] 项目输入文件**含版本号与日期**
+- [ ] 参考文档清单**含版本号**
+
+### Review 要点（按 Clause 映射）
+
+| 失效 | 级别 |
+|---|---|
+| Item 边界材料缺失且无 gap 登记 | **P0** |
+| 接口信号方向材料缺失 | **P1** |
+| 误用材料未登记（§5.4.4 b） | **P0** |
+| 假设隐式而非显式 | **P1** |
+| 引用文档无版本号 | **P1** |
+| 适用标准版本声明缺失或版本错配 | **P0** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 主要风险 | 输入不全、推断填值 | 误用既有项目的边界 / 接口定义 |
+| 本步动作 | 缺失项标 `[PENDING]`、登记 knowledge gap | 既有 HARA 报告 role 必须 `sample`；项目独立 source 单独登记；为 Step 9/13 的 **Δ-Analysis** 预留 file_id |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA 典型输入材料与 role 判定指引

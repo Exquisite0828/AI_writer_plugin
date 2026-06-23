@@ -38,6 +38,38 @@ HARA 流程把各类输入材料拆解为可索引的 inventory 记录。本步�
 **自检底线**：sample / reference 即使解析成功，其内容也不可作为后续 critical claim 的事实依据；解析失败应如实标记，不可静默吞掉。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步在 Clause 5 输入登记之后、Clause 6 分析之前完成材料解析。
+解析结果必须区分「事实来源（T0/T1）」与「形态参考（T2/T3/T4）」，并显式标注无法解析项。
+
+### Checklist（材料解析）
+
+- [ ] 每个 file_id 含 `parse_status: parsed / failed / unsupported / pending`
+- [ ] source（T1）解析结果含：功能清单、边界、接口、假设、操作环境、误用清单的提取摘要
+- [ ] sample（T4）解析结果**仅**进入 `style_hint / style_example` 字段，**不**进入 hazard / rating / ASIL / SG 字段
+- [ ] reference 方法学（T3）解析结果只用于方法框架引用，不作为评级数值依据
+- [ ] 解析失败 / 不支持格式显式记录，不静默跳过
+- [ ] Legacy item / 历史项目沿用条目单独标注
+
+### Review 要点
+
+| 失效 | 级别 |
+|---|---|
+| 解析失败被静默忽略 | **P1** |
+| sample 内容流入 hazard / rating / ASIL / SG 字段 | **P0** |
+| reference 方法学被错引为 S/E/C 评级依据 | **P1** |
+| 误用清单未在解析摘要中出现 | **P1** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 主要风险 | source 解析不完整、字段空缺 | sample 表格被整表搬入解析摘要 |
+| 本步动作 | 字段缺失保留 `[PENDING]` + gap 登记 | sample 中识别出的表格列定义/章节标题记为 `style_hint`；具体 hazard / 评级 / SG 数值只记为 `style_example`，**严禁**写入分析字段 |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA 材料解析重点：各 role 材料需提取的内容

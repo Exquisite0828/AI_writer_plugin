@@ -40,6 +40,44 @@ HARA critical claim 须可追溯到 T0/T1 证据。本步把 research-questions 
 **自检底线**：HARA critical claim 只接受 T0（HITL）或 T1（项目源）证据；匹配失败的问题对应 claim 保持 `NEEDS_USER_CONFIRMATION`，**不得**用 sample / reference 补位。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步对应 Phase D1（HE 证据基础）+ Phase E1/E2/E3（S/E/C 评级证据基础）。
+所有 critical claim 的事实证据**只能**指向 T0/T1，sample（T4）严禁进入。
+
+### Checklist（证据映射）
+
+- [ ] hazard（H-xx）evidence_ids 仅指向 T0/T1
+- [ ] 危害事件（HE-xxx）的工况组合证据来自 T1 工况 source
+- [ ] **Severity（S，ISO 26262-3 Table 1）** 证据含：伤害类型 / AIS / 碰撞速度 / 被撞对象 / 保护装置 等具体依据
+- [ ] **Exposure（E，ISO 26262-3 Table 2）** 证据基于**工况出现频率**（**非**失效概率）；含时间占比或公里数占比，引用 T1 工况 source 或 ISO 26262-3 Annex B
+- [ ] **Controllability（C，ISO 26262-3 Table 3）** 证据基于**典型驾驶员**响应能力、警示信号可用性，含具体推理
+- [ ] T2 仅支撑结构合规，不支撑评级
+- [ ] T3 不为具体评级数值背书
+- [ ] T4 / T5 不进入任何 critical claim 的支撑
+- [ ] 匹配失败的问题登入 `unresolved_questions`
+
+### Review 要点
+
+| 失效 | 级别 |
+|---|---|
+| 任何 critical claim evidence 指向 T4 | **P0** |
+| E 与失效概率混淆（把 fault rate 当 E） | **P0**（ISO 26262 概念错误） |
+| E 缺时间占比 / 公里数占比依据 | **P1** |
+| S 仅有数字无伤害类型依据 | **P1** |
+| C 用专家驾驶员假设 | **P0** |
+| 自动驾驶场景 C 默认 C3 但无依据 | **P1** |
+| S/E/C 支撑仅有 T3 | **P1** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 主要风险 | 缺基线数据时倾向推断填值 | sample 评级数值作为"现成证据"被引入（**最大诱惑点**） |
+| 本步动作 | 缺数据 claim 保持 candidate；登记 `unresolved_questions` | 显式列出"sample 中的 hazard / S/E/C / ASIL / SG 已剔除，不作为本项目证据"；E 评级因目标市场 / 车型 / ODD 差异最大，必须独立重新取证 |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA 证据映射规则

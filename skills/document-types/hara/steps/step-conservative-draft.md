@@ -49,6 +49,112 @@
 **自检底线**：缺证据的 HARA 章节只成稿可支撑内容，hazard / rating / ASIL / SG 结论保持 open / pending；任何 forbidden final claim 出现即 P0 阻断。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步把 ISO 26262-3 Clause 5/6 全部写作落点（Phase C/D/E/F）一次成稿。
+**严格性最高的一步**——下文 checklist 与 Step 10/11 审核完全一一对应。
+
+### SEC-ITEM（Clause 5，Item Definition）
+
+- [ ] 功能清单 F-xx ≥ 1，含具体描述（动作 + 对象）
+- [ ] 系统边界表（In / Out of scope）非空
+- [ ] 外部接口表 IF-xx **含信号方向**
+- [ ] 假设与依赖显式列出
+- [ ] 操作环境（速度 / 温度 / 车型）落表
+- [ ] 合理可预见的误用清单（§5.4.4 b）落节
+- [ ] 无字段来源指向 sample
+
+### SEC-OPS（Phase B，Operational Situations & Modes）
+
+- [ ] OS-xx 至少覆盖 4 类典型工况
+- [ ] 速度 / 频率引用 T1 source；缺失处标 `[PENDING]`
+- [ ] 操作模式（启动 / 待机 / 工作 / 降级 / 关机）落表
+- [ ] 降级模式与工况的耦合关系说明
+
+### SEC-HAZ（Phase C，Hazard Identification，§6.4.2）
+
+- [ ] 每个 F-xx **至少 2 种 HAZOP 引导词**
+- [ ] H-xx 描述**车辆层面危害行为**，**不**夹工况，**不**夹底层失效（如"传感器漂移"），**不**夹事故后果
+- [ ] H-xx 与 F-xx 多对多关系明确
+- [ ] H-xx 全部标 `NEEDS_USER_CONFIRMATION`
+- [ ] H-xx 来源**不**指向 sample
+
+### SEC-HE（Phase D，Hazardous Events）
+
+- [ ] HE = H-xx × OS-xx 组合枚举
+- [ ] 描述格式：「在 [工况]，[危害行为]，可能导致 [车辆/人员层面后果]」
+- [ ] 不成立组合可省略，但**可见排除依据**
+- [ ] 后果涵盖：车内乘员、其他道路使用者、行人、二次事故
+
+### SEC-SEC（Phase E，S/E/C/ASIL，§6.4.3）
+
+- [ ] 每个 HE 有 S（Table 1）/ E（Table 2）/ C（Table 3）候选值
+- [ ] S 依据含具体伤害类型（AIS / 碰撞速度 / 保护装置）
+- [ ] E 依据引用 T1 工况频率（非失效概率）
+- [ ] C 依据基于典型驾驶员的响应推理
+- [ ] **ASIL 候选 = S × E × C 经 ISO 26262-3 Table 4 查表得出**，逻辑可被独立人员重算
+- [ ] 全部标 `NEEDS_USER_CONFIRMATION`
+- [ ] 无 "ASIL is D" / "ASIL approved" / "已确认" 措辞
+
+### SEC-SG（Phase F，Safety Goals，§6.4.4 / §7.4）
+
+- [ ] **仅对 ASIL > QM 的 HE 生成 SG**
+- [ ] SG 用禁止性表述「item 不应在…条件下…，以防止…」
+- [ ] **不**含「保证」/「确保」/「ensure」/「guarantee」
+- [ ] SG 措辞**独立于**具体技术方案（不写"应通过冗余传感器…"——那是 FSC 工作）
+- [ ] 每条 SG 含 **Safe State** 描述
+- [ ] 每条 SG 含 **FTTI**（§7.4.2.4 强制）
+- [ ] 若无法立即达 safe state，含 **Emergency Operation Interval** 与降级目标
+- [ ] 相似 SG 已聚合，ASIL 取最高（§7.4.4）
+- [ ] SG ↔ HE 追溯关系建立
+
+### SEC-OPEN
+
+- [ ] 汇总全部 `NEEDS_USER_CONFIRMATION` 与 [PENDING]
+
+### Differences from Reference HARA（仅 With-Reference 情景，强制）
+
+- [ ] **Item 范围 Δ**：本项目 item 包含 / 不包含哪些功能
+- [ ] **工况 Δ**：目标市场 / 车型工况频率与 sample 差异
+- [ ] **用户群体 Δ**：驾驶员年龄 / 经验对 C 评级的影响
+- [ ] **法规 Δ**：适用 ISO 26262 版本（2011 vs 2018）、地区法规
+- [ ] **架构 Δ**：新接口、新失效模式
+- [ ] 输出：保留 / 修改 / 新增 / 删除四类条目，逐项说明
+
+### 全文级 Checklist
+
+- [ ] 无 forbidden final claim：`ASIL is approved` / `risk is acceptable` / `the rating is S1` / `HARA 完成`
+- [ ] 未移除任何 `NEEDS_USER_CONFIRMATION`
+- [ ] 草稿与 sample 的具体 H-xx / HE-xxx / S-E-C / ASIL / SG 文字**无高度雷同段落**
+
+### Review 要点（关键 P0）
+
+| 失效 | 级别 |
+|---|---|
+| H-xx 描述底层失效或事故后果（抽象层次错误） | **P0** |
+| HE 后果只考虑本车乘员（缺外部人员） | **P0** |
+| ASIL 候选与 S/E/C 算术不一致 | **P0** |
+| ASIL > QM 的 HE 无 SG | **P0** |
+| ASIL = QM 的 HE 被错误生成 SG | **P2** |
+| SG 含具体技术方案（越界到 FSC） | **P1** |
+| SG 用正面义务表述（"应保证"） | **P1** |
+| FTTI 未声明 | **P0**（§7.4.2.4） |
+| FTTI 与 item 物理特性不匹配 | **P0** |
+| Safe State 描述模糊 | **P1** |
+| 草稿任一行内容与 sample 文字高度雷同 | **P0** |
+| With-Reference 情景缺 "Differences from Reference HARA" 节 | **P0** |
+| With-Reference 该节仅写"同 sample"无具体差异 | **P0** |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 主要风险 | 漏失效模式、推断填值 | sample 文字与数据污染草稿 |
+| 写作姿态 | 从空白起草、措辞偏保守 | 独立成稿后再与 sample 对照；表格列定义可借用，**内容必须独立**；Δ-Analysis 节强制 |
+| 评级倾向 | 缺基线时取较严值 | 即使 sample 显示相同 HE 为 ASIL B，本项目也必须独立查 Table 4 |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### 各章节写作指引与标准表格格式

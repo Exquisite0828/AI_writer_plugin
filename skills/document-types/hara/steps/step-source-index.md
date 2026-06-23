@@ -37,6 +37,36 @@ HARA 报告须做到「每个 critical claim 可追溯到一条 T0/T1 证据」�
 **自检底线**：每条 chunk 都能回溯到具体 file 的具体位置；任何 sample / reference chunk 不得越级为后续 hazard / 评级 / ASIL / SG 的支撑。
 
 
+
+## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
+
+本步对应 Clause 5/6 工作产物的**可追溯性基础**：每条 chunk 必须可回到具体文件的具体位置，以支持 Step 10 审查、Step 11 验证、Step 13 追溯矩阵。
+
+### Checklist（索引完备性）
+
+- [ ] 每条 SRC-xxx 含 `file_id + 章节 / 行号 / 段落位置`
+- [ ] chunk 按**语义边界**切分（功能 / 工况 / 接口 / 约束 / 误用 / 失效模式段落各自独立）
+- [ ] 适用标准引用（如 ISO 26262-3 Table 1/2/3/4）已建独立 SRC 条目
+- [ ] 参考文档**版本号**写入 SRC 元数据
+- [ ] 缺失关键信息显式登入 `knowledge_gaps.md`（不推断填值）
+- [ ] sample / reference 的 SRC 条目带 tier 标记（T3/T4）
+
+### Review 要点
+
+| 失效 | 级别 |
+|---|---|
+| chunk provenance 为空（无章节/行号） | **P1** |
+| 标准引用无版本号 | **P1** |
+| 知识缺口未登记 | **P1** |
+| sample / reference 的 SRC 条目无 tier 标识 | **P0**（后续易污染 critical claim） |
+
+### 情景差异
+
+| 维度 | From-Scratch | With-Reference |
+|---|---|---|
+| 主要动作 | 项目 source 全量索引、knowledge gap 频繁 | 项目 source 与 sample 报告**分库索引**；sample 的 SRC tier 强制 T4 |
+
+
 ## ISO 26262 HARA 方法论（本步专属执行指引）
 
 ### HARA 来源分块策略（chunk 语义边界）
