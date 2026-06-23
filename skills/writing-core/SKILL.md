@@ -55,10 +55,8 @@ input materials
 -> material inventory
 -> document navigation index
 -> template outline
--> research questions
--> evidence map
--> citation plan
--> section tasks
+-> section writing plans (outline analysis)
+-> evidence map + citation plan + section tasks (merged step)
 -> conservative draft
 -> review
 -> verification
@@ -68,7 +66,7 @@ input materials
 -> candidate profile update / candidate skill patch
 ```
 
-Equivalent stage words include init run, ingest, document navigation index, template outline, research questions, evidence map, citation plan, section tasks, draft, review, verify, finalize, trace, and learning.
+Equivalent stage words include init run, ingest, document navigation index, template outline, section writing plans, evidence map (merged with citation plan and section tasks), draft, review, verify, finalize, trace, and learning.
 
 ## Artifact Contract
 
@@ -86,7 +84,7 @@ Core artifacts include:
 - `plans/template_structure.json`
 - `plans/outline_l1.md`
 - `plans/outline_l2.md`
-- `plans/research_questions.json`
+- `plans/section_writing_plans.json`
 - `plans/evidence_map.json`
 - `plans/unresolved_questions.md`
 - `plans/citation_plan.json`

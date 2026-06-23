@@ -1,234 +1,184 @@
-# HARA 子 skill · Step 5 · 研究问题 (Research Questions)
+# HARA 子 skill · Step 5 · 大纲分析与写作计划
 
-本文件是通用骨架 `skills/workflow-steps/step-research-questions/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
+本文件是通用骨架 `skills/workflow-steps/step-research-questions/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
-## 本步目的要点（HARA 自主重新驱动）
+## 本步目的要点（HARA）
 
-- 依 Step 3 的 `topic_index` 与 `knowledge_gaps.md` 判断：哪些 HARA 主题已有 L1/L2/L3 入口、哪些仍缺失。
-- 依 Step 4 的 **L1 章**（`outline_l1.md`）与 **L2 小节**（`outline_l2.md`）展开：对每个 L2 构造需由来源回答的研究问题；critical 章（SEC-ITEM/OPS/HAZ/HE/SEC/SG）须覆盖 hazard identification、hazardous event 分析、S/E/C rating、ASIL candidate、safety goals、open issues 等意图。
-- 为每个问题分配 question_id、推断 question_type，并标注 `section_id`（L2）与 `parent_section_id`（L1）。
-- HARA critical claims（hazard、hazardous event、S/E/C、ASIL、safety goal、final acceptability）对应的问题必须明确，等待 T0/T1 证据或 HITL，否则保持 open。
-- 依证据候选判定 status（supported/weak/unsupported），写入 `plans/research_questions.json`。
-- 只描述待答问题、不预设结论；不引入 RAG/向量库/复杂 agent 框架来"自动回答"。
-- **底线**：不得由 sample HARA 报告或 reference 方法学直接生成 hazard/rating/ASIL/safety goal 的"已确认"问题答案。
+- 对 Step 4 的 **L1 章 + L2 小节**（`outline_l1.md` + `outline_l2.md`）**逐段分析研究**，为 HARA 报告每一小段产出**写作计划**。
+- 按 L2 登记分析子任务（`sp-*`）于 `research_state.subtasks`，**顺序执行**：读该段 intent → 读 T0/T1 材料（L1→L2→L3）→ 结合 ISO 26262-3 / HARA 经验 → 写出该段写作计划。
+- 每完成一段，追加到 `section_writing_plans.json`，子任务 `done` 并**立即写回 state.json**。
+- **底线**：计划可描述表格形状、引导词扫描步骤、需 HITL 的 critical 项；**不得**在计划中写入已确认的 hazard/rating/ASIL/SG 结论；不得用 T4 sample 当事实依据。
 
-## HARA 报告过程总览（本步定位）
+## HARA 默认分析子任务（初始化 research_state）
 
-HARA 危害识别的核心是引导词法（HAZOP-style）：对每个功能逐一应用 6 种失效引导词，系统识别潜在危害行为。本步为该方法生成驱动性问题。
+按 `outline_l2.md` 顺序生成 `sp-*`；与下表不一致时**以 outline_l2 为准**。
 
-**HARA 6 种危害识别引导词**：
+| id | section_id（L2 示例） | parent | desc |
+|---|---|---|---|
+| sp-01 | SEC-DOC L2 | SEC-DOC | 分析文档元信息/修订历史段，产出表格写作计划 |
+| sp-02 | SEC-SCOPE L2 | SEC-SCOPE | 分析范围与目的段，产出范围声明写作计划 |
+| sp-03 | SEC-REF L2 | SEC-REF | 分析参考文件段，产出引用清单写作计划 |
+| sp-04 | SEC-TERMS L2 | SEC-TERMS | 分析术语段，产出术语表写作计划 |
+| sp-05 | 功能清单 L2 | SEC-ITEM | 读 item T1 材料，产出 F-xx 功能表写作计划 |
+| sp-06 | 系统边界 L2 | SEC-ITEM | 读边界材料，产出 In/Out scope 表写作计划 |
+| sp-07 | 外部接口 L2 | SEC-ITEM | 读接口材料，产出 IF-xx 表写作计划 |
+| sp-08 | 运行约束 L2 | SEC-ITEM | 读 ODD/约束材料，产出约束表写作计划 |
+| sp-09 | OS-xx 工况表 L2 | SEC-OPS | 读工况 T1 材料，产出 OS-xx 表与暴露基础写作计划 |
+| sp-10 | H-xx 危害表 L2 | SEC-HAZ | 读功能/失效材料，产出引导词法危害表写作计划 |
+| sp-11 | HE-xxx 表 L2 | SEC-HE | 产出 H×OS 危害事件表写作计划 |
+| sp-12 | S 评级 L2 | SEC-SEC | 产出 S 评级列写作计划（Table 1 框架 + T1 依据位） |
+| sp-13 | E 评级 L2 | SEC-SEC | 产出 E 评级列写作计划（Table 2 + T1 工况频率位） |
+| sp-14 | C 评级 L2 | SEC-SEC | 产出 C 评级列写作计划（Table 3 + 驾驶员响应位） |
+| sp-15 | ASIL 候选 L2 | SEC-SEC | 产出 ASIL 查表列写作计划（Table 4，全部 HITL） |
+| sp-16 | SG-xx 表 L2 | SEC-SG | 产出安全目标表写作计划（含 Safe State / FTTI 列） |
+| sp-17 | SEC-OPEN | SEC-OPEN | 产出开放项汇总段写作计划 |
+| sp-18 | SEC-REVIEW | SEC-REVIEW | 产出审查总结段写作计划 |
 
-| 引导词 | 失效类型 | 分析提问 |
-|---|---|---|
-| No Function | 无功能 / 完全失效 | 该功能完全不工作时会发生什么？|
-| More Function | 功能过强 | 输出超过预期（力度 / 速度 / 幅度）时会发生什么？|
-| Less Function | 功能过弱 | 输出低于预期时会发生什么？|
-| Wrong Direction | 错误方向 | 方向相反（如制动变加速）时会发生什么？|
-| Unintended Function | 非预期激活 | 未被指令时意外激活会发生什么？|
-| Too Early / Too Late | 时序错误 | 激活时机不对时会发生什么？|
+With-Reference 须增 **sp-DIFF**：差异分析段写作计划（sample 只借结构）。
 
-**本步定位**：把章节意图与导航缺口转译为研究问题；**不在此步读原文**（读原文须 Step 6 起按 L1→L2→L3）。
+## 单子任务执行指引
 
+### 通用步骤（每个 sp-*）
 
-## 本步将被审查的关键点（Review / Verification 自检清单）
+1. 读 `outline_l2.md` 该节 `intent`、`evidence` 预期。
+2. `topic_index` → `document_tocs` L1→L2→L3 → 读 T0/T1/T3 原文。
+3. 填写该段写作计划字段（见主 skill）；HARA critical 段 `requires_human_confirmation: true`。
+4. 可选写 `plans/section_plans/<section_id>.md`；子任务 `done`；更新 state.json。
 
-本步输出（`research_questions.json`）将在 Step 10/11 被以下检查点定位。subagent 交付前应自检：
+### SEC-HAZ（sp-10）· 危害表写作计划要点
 
-| 关联检查 | 检查项 | 自检方法 |
-|---|---|---|
-| RD-3 | 每个功能 F-xx 至少覆盖 ≥ 2 种引导词 | 遍历 F-xx，确认 Q-HAZ 中对应该功能的引导词数 ≥ 2 |
-| RD-3 | 引导词覆盖度均衡 | 不仅有 No Function，应同时考虑 Unintended / Wrong Direction 等 |
-| RD-6 | 知识缺口可见 | 问题 status 为 `weak / unsupported` 的条目登记到 unresolved |
-| 根 skill | 问题不预设答案 | Q-xx 中无 hazard / rating / ASIL / SG 的结论性措辞 |
+计划须包含：
 
-**自检底线**：本步只描述待答问题、不预设结论；不得由 sample HARA 报告或 reference 方法学直接给出 hazard / rating / ASIL / SG 的"已确认"答案。
-
-
-
-## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
-
-本步统一覆盖 Phase A3（方法选择）+ Phase B1/B2（运行工况与模式）+ Phase C1（HAZOP 引导词法）所需的问题框架。
-研究问题集只设问、**不预设答案**，对应的事实将在 Step 6（证据映射）/ Step 9（草稿）中由 T1 source 给出。
-
-### A3 · 方法选择 Checklist
-
-- [ ] 危害识别方法声明 ≥ 2 种（HAZOP 引导词法 + FMEA / FTA / Brainstorming），ISO 26262 推荐方法多样性
-- [ ] S/E/C 评级方法声明（ISO 26262-3 Table 1/2/3）
-- [ ] ASIL 确定方法声明（ISO 26262-3 Table 4）
-- [ ] 团队组成跨学科（系统 / 电控 / 软件 / 测试 / 用户研究 / Safety）
-
-### B1 · 运行工况问题集（Operational Situations）
-
-须覆盖（缺一即 P1）：
-- [ ] 道路类型：高速 / 城市 / 乡村 / 停车场 / 越野
-- [ ] 速度范围分段（0、低速、中速、高速）
-- [ ] 交通密度（无 / 低 / 中 / 高）
-- [ ] 环境条件（晴 / 雨 / 雪 / 雾 / 夜间）
-- [ ] 路面条件（干 / 湿 / 冰雪 / 砂石）
-- [ ] 驾驶员状态（正常 / 疲劳 / 分心，与 Controllability 相关）
-- [ ] 车辆载重 / 牵引状态（如适用）
-- [ ] 维护场景（充电 / 停放 / 维修）
-- [ ] 故障 / 降级场景
-
-### B2 · 运行模式问题集（Operating Modes）
-
-- [ ] item 操作模式枚举（启动 / 待机 / 工作 / 降级 / 关机）
-- [ ] 模式间转换条件
-- [ ] 模式与工况的耦合
-
-### C1 · HAZOP 引导词覆盖（对每个 F-xx）
+- `content_outline`：H-xx 表列（ID / 危害描述 / 相关功能 F-xx / 失效类型 / 状态）
+- `writing_steps`：对每个 F-xx 按 **≥2 种** HAZOP 引导词组织行（必含 Unintended / Spurious 之一）
+- `required_evidence`：每项 H-xx 需 T1 功能/失效描述或 HITL
+- `writing_mode_hint`：`confirmation_required`
 
 | 引导词 | 失效类型 |
 |---|---|
-| No / Loss of Function | 功能缺失 |
-| More / Excess Function | 功能过强 |
-| Less / Insufficient Function | 功能过弱 |
-| Wrong / Reverse Direction | 错误方向 |
-| Unintended / Spurious | 非预期激活 |
-| Too Early / Too Late / Stuck | 时序错误 |
+| No Function | 功能缺失 |
+| More Function | 功能过强 |
+| Less Function | 功能过弱 |
+| Wrong Direction | 错误方向 |
+| Unintended Function | 非预期激活 |
+| Too Early / Too Late | 时序错误 |
 
-- [ ] 每个 F-xx **至少 ≥ 2** 种引导词
-- [ ] 必覆盖 Unintended / Spurious（常见漏项）
-- [ ] 组合失效与瞬态状态相关失效已设问
-- [ ] 误用场景（reasonably foreseeable misuse）单独设问
+## HARA 各 L2 写作计划参考（content_outline 示例）
 
-### Review 要点
+#### SEC-ITEM · 功能清单（sp-05）
+
+- `writing_intent`：列出 item 全部主要功能 F-xx
+- `content_outline`：表格列 ID / 功能名称 / 功能描述 / 来源 / 状态
+- `writing_steps`：① 从 T1 提取功能名 ② 逐行填描述 ③ 缺项标 NEEDS_USER_CONFIRMATION
+- `writing_mode_hint`：`conservative_candidate`
+
+#### SEC-OPS · OS-xx 工况表（sp-09）
+
+- `content_outline`：OS-xx 表：ID / 描述 / 道路 / 速度 / 交通 / 天气 / 驾驶员 / 暴露说明
+- `required_evidence`：T1 工况定义、ODD、场景分析
+- Checklist：道路类型、速度分段、交通、环境、路面、驾驶员、载重、维护、降级（B1）
+
+#### SEC-SEC · S/E/C/ASIL（sp-12–15）
+
+- 各列独立计划；ASIL 计划须引用 Table 4 查表步骤，**不写最终 ASIL 值**
+- SG（sp-16）：仅 ASIL>QM 的 HE；禁止性表述；Safe State + FTTI 列（§7.4.2.4）
+
+#### SEC-OPEN / SEC-REVIEW（sp-17–18）
+
+- OPEN：按 item/危害/评级/SG 分类汇总 NEEDS_USER_CONFIRMATION
+- REVIEW：覆盖度统计、开放项数量、Confirmation Review 占位
+
+### 计划 status 规则
+
+- `ready`：T0/T1 材料足以按计划成稿（非 critical 或已有充分 T1）
+- `partial`：有部分材料，critical 或部分行须 HITL
+- `blocked`：gap 或无 L3 入口，仅能写 stub / open 列表
+
+## 本步将被审查的关键点
+
+| 检查 | 方法 |
+|---|---|
+| 流程 | research_state 全部 `done` |
+| 覆盖 | 每个 outline_l2 有对应计划条目 |
+| RD-3 | sp-10 计划含 ≥2 引导词步骤 / F-xx |
+| 根 skill | 计划无 hazard/ASIL/SG **结论性**措辞 |
+| sample | source_hints 无 T4 作事实 |
+
+## ISO 26262-3 覆盖（写入各段计划）
+
+- **A3**（sp-02/04）：方法声明、团队组成 → 写入 SCOPE/TERMS 或独立 L2 计划
+- **B1/B2**（sp-09）：工况与模式 → OS 表计划 Checklist
+- **C1**（sp-10）：HAZOP 引导词 → H 表 writing_steps
+- **E/F**（sp-12–16）：S/E/C/ASIL/SG 表形状与 HITL 要求
 
 | 失效 | 级别 |
 |---|---|
-| 仅用单一危害识别方法 | **P1** |
-| 团队学科缺失 | **P1** |
-| 工况覆盖类别 < 4 | **P1** |
-| 某 F-xx 仅有 No Function 单一引导词 | **P0** |
-| 未考虑 Unintended Function | **P0** |
-| 降级模式未设问 | **P0** |
-| 问题预设 hazard / ASIL / SG 答案 | **P0** |
-
-### 情景差异
-
-| 维度 | From-Scratch | With-Reference |
-|---|---|---|
-| 主要风险 | 工况覆盖不全、引导词漏项 | 直接拿 sample 答案当本项目答案 |
-| 本步动作 | 用引导词法对每个 F-xx 强制扫描；Q-OPEN 优先 | 增设独立类 **Q-DIFF**：本项目与 sample 在 item 范围、工况频率、用户群体、车型、法规、架构上的潜在差异；问题集独立成稿后再与 sample 对照 |
-
-
-## ISO 26262 HARA 方法论（本步专属执行指引）
-
-### HARA 标准研究问题模板
-
-按 **L1 章 + L2 小节**（`outline_l2.md`）构造以下研究问题；每个 L2 宜有至少一条对应问题（`evidence: pending` 的 L2 对应问题须标 open）。为每个问题分配 question_id、推断 question_type，并关联 `section_id` / `parent_section_id`：
-
-#### Item 定义类（Q-ITEM，对齐 SEC-ITEM 下 L2：功能清单 / 系统边界 / 外部接口 / 运行约束）
-| question_id | 问题 | question_type | requires_human_confirmation |
-|---|---|---|---|
-| Q-ITEM-01 | Item 的名称与版本号是什么？ | item_info | false |
-| Q-ITEM-02 | Item 执行哪些主要功能（功能 F-xx 清单）？ | item_function | true |
-| Q-ITEM-03 | Item 的系统边界如何界定（包含/排除哪些子系统）？ | item_boundary | true |
-| Q-ITEM-04 | Item 有哪些关键外部接口（传感器/执行器/CAN信号/机械接口）？ | item_interface | true |
-| Q-ITEM-05 | Item 的运行约束是什么（速度范围、环境温度、应用车型）？ | item_constraint | false |
-
-#### 运行工况类（Q-OPS）
-| question_id | 问题 | question_type | requires_human_confirmation |
-|---|---|---|---|
-| Q-OPS-01 | 与本 item 相关的典型运行工况有哪些（道路类型、车速、交通）？ | operational_situation | true |
-| Q-OPS-02 | 每个运行工况的暴露频率/概率如何（对应 E0-E4 判定依据）？ | exposure_basis | true |
-| Q-OPS-03 | 是否存在特殊工况（恶劣天气、紧急情况、驾驶员分心等）？ | operational_situation | true |
-
-#### 危害识别类（Q-HAZ，对每个功能 F-xx 逐一展开）
-| question_id | 问题 | question_type | requires_human_confirmation |
-|---|---|---|---|
-| Q-HAZ-01 | 功能 [F-xx] 发生"无功能（No Function）"时产生何种危害？ | hazard_no_function | true |
-| Q-HAZ-02 | 功能 [F-xx] 发生"功能过强（More Function）"时产生何种危害？ | hazard_more | true |
-| Q-HAZ-03 | 功能 [F-xx] 发生"功能过弱（Less Function）"时产生何种危害？ | hazard_less | true |
-| Q-HAZ-04 | 功能 [F-xx] 发生"错误方向（Wrong Direction）"时产生何种危害？ | hazard_wrong_dir | true |
-| Q-HAZ-05 | 功能 [F-xx] 发生"非预期功能（Unintended Function）"时产生何种危害？ | hazard_unintended | true |
-| Q-HAZ-06 | 功能 [F-xx] 发生"时序错误（Too Early/Too Late）"时产生何种危害？ | hazard_timing | true |
-
-#### 危害事件类（Q-HE，对每个 H-xx × OS-xx 组合）
-| question_id | 问题 | question_type | requires_human_confirmation |
-|---|---|---|---|
-| Q-HE-01 | 危害 [H-xx] 在工况 [OS-xx] 下是否构成危害事件？具体场景如何？ | hazardous_event | true |
-| Q-HE-02 | 危害事件 [HE-xxx] 最严重的潜在后果是什么（伤亡类型/程度）？ | harm_consequence | true |
-
-#### S/E/C 评级类（Q-SEC）
-| question_id | 问题 | question_type | requires_human_confirmation |
-|---|---|---|---|
-| Q-SEV-01 | 危害事件 [HE-xxx] 最坏情况下的伤亡程度如何（S0/S1/S2/S3 判定依据）？ | severity | true |
-| Q-EXP-01 | 工况 [OS-xx] 在车辆生命周期中出现的概率/时间比例如何（E0/E1/E2/E3/E4 依据）？ | exposure | true |
-| Q-CTR-01 | 危害事件 [HE-xxx] 发生时驾驶员或其他使用者能否有效规避（C0/C1/C2/C3 依据）？ | controllability | true |
-
-#### ASIL 与安全目标类（Q-ASIL / Q-SG）
-| question_id | 问题 | question_type | requires_human_confirmation |
-|---|---|---|---|
-| Q-ASIL-01 | 根据 S/E/C 候选值，危害事件 [HE-xxx] 对应的 ASIL 候选等级是什么（ISO 26262-3 Table 4）？ | asil | true |
-| Q-SG-01 | 危害事件 [HE-xxx]（ASIL候选 > QM）对应的安全目标描述是什么？ | safety_goal | true |
-| Q-SG-02 | 是否所有 ASIL候选 > QM 的危害事件均已生成对应安全目标？ | safety_goal_coverage | true |
-
-#### 开放问题类（Q-OPEN）
-| question_id | 问题 | question_type | requires_human_confirmation |
-|---|---|---|---|
-| Q-OPEN-01 | 哪些危害/评级/安全目标无法由现有 source 支撑，需要 HITL 确认？ | open_item | true |
-| Q-OPEN-02 | 是否存在需要进一步工程调查才能确定的危害场景或工况？ | open_item | true |
-
-### 问题 status 判定规则
-- `supported`：有 T0/T1 source 直接对应内容支撑
-- `weak`：仅有 T3（reference方法）或 T4（sample）支撑，不能单独成立 critical claim
-- `unsupported`：无任何 source 支撑，保持 open，写入 unresolved_questions.md
-- HARA critical claim 类问题（Q-HAZ/Q-HE/Q-SEV/Q-EXP/Q-CTR/Q-ASIL/Q-SG）一律 `requires_human_confirmation: true`
+| 某 F-xx 计划仅 No Function 一种引导词 | **P0** |
+| 计划写入已确认 ASIL/SG | **P0** |
+| outline_l2 缺对应计划 | **P0** |
 
 ## A1 审核任务（HARA）
 
-### 候选方案（示例）
-- 方案A 按检查维度逐项核对。
-- 方案B 按 artifact/章节逐项核对。
-- 方案C 先扫高风险约束（HARA critical claim 相关问题是否明确、无证据问题是否标 open）再补其余。
-
 ### 典型审核子任务
-1. 核对问题是否覆盖 HARA 大纲与 critical claims（S/E/C、ASIL、safety goal 等）。
-2. 核对是否只描述待答问题而未预设 hazard/rating/ASIL 结论。
-3. 核对 critical claim 相关问题是否标 requires_human_confirmation、无证据问题是否标 open。
-4. 核对 research_questions 是否符合 artifact 契约。
+
+1. `research_state` 全部 `done` 且与 outline_l2 一一对应。
+2. 每段计划含 `writing_intent`、`content_outline`、`writing_steps`、`required_evidence`。
+3. critical 段标 `requires_human_confirmation`；blocked/partial 有 `gaps`。
+4. `section_writing_plans.json` 字段完整、无预设 hazard/rating/ASIL 结论。
 
 ## A2 修订任务（HARA）
 
-### 候选方案（示例）
-- 方案A 逐章节遍历生成问题。
-- 方案B 先聚合 HARA critical claims（hazard/S-E-C/ASIL/safety goal）再补普通章节。
-- 方案C 按 question_type 分组生成。
-
-### 典型修订子任务
-1. 遍历 `outline_l2.md` 各 L2 小节构造问题草稿（build_question_drafts）；L1 仅作 `parent_section_id` 分组。
-2. 为每个问题分配 question_id 并推断 question_type。
-3. 判定 requires_human_confirmation 与 status（supported/weak/unsupported）。
-4. HARA critical claim 无证据问题保持 open。
+1. 失败 `sp-*` 置 `not_run`，顺序重跑。
+2. 重读材料 L1→L2→L3，更新该段计划条目。
+3. 合并 `section_writing_plans.json`。
 
 ## state.json 示例（HARA）
 
 ```json
 {
   "step": "research-questions",
-  "review_state": {
-    "chosen_plan": "<选定审核方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
+  "research_state": {
     "subtasks": [
-      {"id": "rv-1", "desc": "核对问题覆盖 HARA 大纲与 critical claims", "status": "done"},
-      {"id": "rv-2", "desc": "核对未预设 hazard/rating/ASIL 结论", "status": "running"},
-      {"id": "rv-3", "desc": "核对 critical claim 无证据问题标 open", "status": "not_run"}
+      {"id": "sp-05", "section_id": "SEC-ITEM-L2-01", "parent_section_id": "SEC-ITEM", "desc": "功能清单：产出 F-xx 表写作计划", "status": "done"},
+      {"id": "sp-06", "section_id": "SEC-ITEM-L2-02", "parent_section_id": "SEC-ITEM", "desc": "系统边界：产出 scope 表写作计划", "status": "running"},
+      {"id": "sp-10", "section_id": "SEC-HAZ-L2-01", "parent_section_id": "SEC-HAZ", "desc": "危害表：引导词法写作计划", "status": "not_run"}
     ]
   },
-  "revision_state": {
-    "chosen_plan": "<选定修订方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
+  "review_state": {
     "subtasks": [
-      {"id": "rt-1", "desc": "遍历 outline_l2 各 L2 小节构造问题草稿", "status": "done"},
-      {"id": "rt-2", "desc": "分配 question_id 并推断 question_type", "status": "running"},
-      {"id": "rt-3", "desc": "判定 requires_human_confirmation 与 status", "status": "not_run"},
-      {"id": "rt-4", "desc": "HARA critical claim 无证据问题保持 open", "status": "not_run"}
+      {"id": "rv-1", "desc": "核对每 L2 有写作计划且字段完整", "status": "not_run"}
     ]
-  }
+  },
+  "revision_state": { "subtasks": [] }
+}
+```
+
+## section_writing_plans.json 单条示例（HARA · SEC-ITEM 功能清单）
+
+```json
+{
+  "section_id": "SEC-ITEM-L2-01",
+  "parent_section_id": "SEC-ITEM",
+  "title": "功能清单",
+  "writing_intent": "列出 item 全部主要功能 F-xx，供后续 HAZOP 使用",
+  "content_outline": ["表格：F-ID", "功能名称", "功能描述", "T1 来源", "状态"],
+  "writing_steps": [
+    "从 item 定义 T1 材料提取功能列表",
+    "为每功能分配 F-xx ID",
+    "缺描述行标 NEEDS_USER_CONFIRMATION"
+  ],
+  "required_evidence": ["item 功能定义", "系统规格中的功能章节"],
+  "source_hints": [
+    {"file_id": "item-spec-01", "l1": "系统功能", "l2": "功能列表", "l3": "EPS 功能", "purpose": "提取 F-xx 名称与描述"}
+  ],
+  "research_notes": "材料含 5 项功能，第 3 项描述不完整",
+  "gaps": ["F-03 详细行为描述缺失"],
+  "writing_mode_hint": "conservative_candidate",
+  "requires_human_confirmation": true,
+  "status": "partial"
 }
 ```
 
 ## B 审核检查项（HARA）
 
-subagent 逐项核对：问题是否覆盖 HARA 大纲与 critical claims（S/E/C、ASIL、safety goal 等）；是否只描述待答问题而未预设 hazard/rating/ASIL 结论；HARA critical claim 相关问题是否标 requires_human_confirmation、无证据问题是否保持 open。
+subagent 核对：outline_l2 每段是否有计划；计划是否只描述「怎么写」而未写 hazard/rating/ASIL/SG 结论；critical 段是否标 HITL；是否未用 T4 sample 作事实；sp-10 是否含充分引导词写作步骤。

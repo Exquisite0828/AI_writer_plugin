@@ -9,12 +9,13 @@ description: 中文优先指导 workflow 第 9 步「保守草稿」：由 draft
 
 ## 何时使用
 
-- 已完成 Step 8（章节任务），run 处于 phase_4。
+- 已完成 Step 6（证据·引用·章节计划），run 处于 phase_4。
+- `plans/section_tasks.json`、`plans/outline_final.md`、`plans/writing_plan.md` 已由 Step 6 Phase C 产出。
 - 需要生成首版可审查草稿。
 
 ## 输入
 
-- `plans/section_tasks.json`、`plans/outline_final.md`（含 Step 4 L1+L2 经 Step 8 合并后的章节结构）、`plans/writing_plan.md`
+- `plans/section_tasks.json`、`plans/outline_final.md`（Step 6 合并 L1+L2 与引用计划后）、`plans/writing_plan.md`
 - `plans/citation_plan.json`、`plans/claim_support_matrix.json`、`plans/evidence_map.json`
 - `knowledge/document_tocs/`、`knowledge/provenance_index.json`（按需跳转原文核对 EVD 摘录）
 

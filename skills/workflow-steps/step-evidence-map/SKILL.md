@@ -1,120 +1,147 @@
 ---
 name: step-evidence-map
-description: 中文优先指导 workflow 第 6 步「证据映射」：由 evidence-run 生成 evidence_map.json 与 unresolved_questions.md；须按 L1→L2→L3 定位原文后摘录 EVD 证据，把研究问题映射到具体文档位置。
+description: 中文优先指导 workflow 第 6 步「证据·引用·章节计划」（合并原证据映射/引用计划/章节任务）：按 section_writing_plans 逐段映射 EVD、规划 citation、拆章节写作任务；产出 evidence_map、unresolved_questions、citation_plan、claim_support_matrix、section_tasks、outline_final、writing_plan。
 ---
 
-# Step 6 · 证据映射 (Evidence Map)
+# Step 6 · 证据·引用·章节计划 (Evidence, Citation & Section Tasks)
 
-工作流第 6 步。把研究问题映射到**具体文档位置**上的来源证据：须遵守 **L1 → L2 → L3 → 原文** 访问协议，在 L3（或 gap 说明下的 L2 叶子）精读并生成 `EVD-xxx`，标记哪些有支撑、哪些仍未解决。
+工作流第 6 步（**合并原 Step 6–8**）。基于 Step 5 的 `section_writing_plans.json` 与各段写作计划，**顺序完成三阶段**：
+
+1. **证据映射**：把各段 `required_evidence` 映射到 **L1→L2→L3→原文**，生成 `EVD-xxx`，标记已支撑/未解决项。
+2. **引用计划**：规划每个 claim 引用哪些来源，建立 claim–证据支撑矩阵。
+3. **章节任务**：把最终大纲拆成逐章节/逐小节写作任务，明确每节来源与引用。
+
+## 三阶段执行顺序（强制）
+
+| 阶段 | 原步骤 | 产出 |
+|---|---|---|
+| **Phase A · 证据映射** | 原 step-evidence-map | `evidence_map.json`、`unresolved_questions.md` |
+| **Phase B · 引用计划** | 原 step-citation-plan | `citation_plan.json`、`claim_support_matrix.json` |
+| **Phase C · 章节任务** | 原 step-section-tasks | `section_tasks.json`、`outline_final.md`、`writing_plan.md` |
+
+**规则**：Phase A 全部子任务 `done` 后才进入 Phase B；Phase B 全部 `done` 后才进入 Phase C。子任务状态仅 `not_run` / `running` / `done`，登记于 `execution_state`，每完成一条立即写回 state.json。
 
 ## 何时使用
 
-- 已完成 Step 5（研究问题）。
-- 需要在写作前确认每个关键问题是否有可回溯的文档位置与摘录支撑。
+- 已完成 Step 5（大纲分析与写作计划），run 处于 phase_2/phase_3。
+- 需要在成稿前完成：证据定位 → 引用编排 → 可执行章节任务。
 
 ## 输入
 
-- `plans/research_questions.json`
-- `plans/outline_l1.md`、`plans/outline_l2.md`（问题与章节/L2 小节对齐时参照）
+- `plans/section_writing_plans.json`（Step 5 各 L2 写作计划）
+- `plans/template_structure.json`、`plans/outline_l1.md`、`plans/outline_l2.md`
 - `knowledge/source_index.json`（`topic_index`）
 - `knowledge/provenance_index.json`（L1→L2→L3 目录树与 L3 `location`）
-- `knowledge/document_tocs/`
-- `knowledge/knowledge_gaps.md`
-- 已解析材料的原文或抽取文本（按 provenance 定位后读取）
+- `knowledge/document_tocs/`、`knowledge/knowledge_gaps.md`
+- 用户输入参考文档（按 provenance **逐级**定位后读取）
 
-## 输入文档访问约定（强制，见 writing-core）
+## Phase A · 证据映射
 
-对每个 research question：
+对 `section_writing_plans.json` 中每条计划的 `required_evidence` / `source_hints`：
 
-1. （可选）`topic_index` 命中 `file_id` + L1/L2/L3 候选路径
-2. 打开 `document_tocs/<file_id>.md`，**按 L1 → L2 → L3 逐级**选定目标叶子
-3. 从 `provenance_index` 取该 L3 的 `location`，**仅此时**打开原文
-4. 摘录生成 `EVD-xxx`：provenance = `file_id` + L1/L2/L3 + `location` + `snippet`（摘自原文）
-5. 无 L3 入口或 gap 已登记 → `unresolved_questions.md`
+1. （可选）`topic_index` 命中 `file_id` + L1/L2/L3
+2. `document_tocs/<file_id>.md` **L1 → L2 → L3** 选叶子
+3. `provenance_index` 取 `location` 后读原文
+4. 摘录生成 `EVD-xxx`：provenance = `file_id` + L1/L2/L3 + `location` + `snippet`
+5. 无法定位或无材料 → 写入 `unresolved_questions.md`，关联 `section_id`
 
-**禁止**：不经过三级目录直接打开输入文件；使用 `SRC-xxx` / `sources[]` chunk；把目录 `brief` 当作 EVD 正文。
+**禁止**：跳过三级目录全文盲读；`SRC-xxx` / chunk；目录 `brief` 当 EVD；T4 sample 作 critical claim 证据。
 
-## 产出 artifacts
+## Phase B · 引用计划
+
+基于 Phase A 的 `evidence_map.json` 与 `unresolved_questions.md`：
+
+- 按 outline L1/L2 顺序，把各段 claim 与 `EVD-xxx` 归并，生成 `citation_slots`
+- 建立 `claim_support_matrix.json`（含 tier、status、section_id）
+- critical claim 无 T0/T1 支撑 → `NEEDS_USER_CONFIRMATION` / pending / open
+- **不得**为缺证据 claim 编造引用
+
+## Phase C · 章节任务
+
+基于 Phase B 与 `section_writing_plans.json`：
+
+- 合并 Step 4 L1+L2 与引用计划 → `outline_final.md`
+- 每 L2（或 L1 唯一段）生成 `TASK-xxx`：`writing_mode`、`allowed_evidence`（EVD-xxx）、citation 槽
+- 汇总 `section_tasks.json`、`writing_plan.md`
+- **只规划不写正文**；保留 strict_template 强制章节
+
+## 产出 artifacts（本步一次性全部交付）
 
 - `plans/evidence_map.json`
 - `plans/unresolved_questions.md`
+- `plans/citation_plan.json`
+- `plans/claim_support_matrix.json`
+- `plans/section_tasks.json`
+- `plans/outline_final.md`
+- `plans/writing_plan.md`
+- `runs/<run_id>/subagent/evidence-map/state.json`
 
 ## 边界与约束
 
-- 证据候选必须经 **L1→L2→L3→阅读原文** 产生；`EVD-xxx` provenance 须含 `file_id` + L1/L2/L3 + `location`；宜可关联到 `research_questions` 的 L2 `section_id`；禁止旧版 chunk/SRC 或直接全文盲搜。
-- 只允许用 T0/T1 来源支撑 critical claim；T3/T4/T5 不能单独支撑。
-- 没有证据或无法定位原文的问题写入 `unresolved_questions.md`，保持 open，不得推断填补。
-- sample/reference 不能作为事实证据进入证据映射；sample 目录（T4）仅用于结构参考，不得从中摘录 hazard/rating 等作为 EVD。
+- `EVD-xxx` 须经 **L1→L2→L3→阅读原文**；只接受 T0/T1 支撑 critical claim。
+- `claim_support_matrix.json` 是 N4 核心溯源 artifact，须保留 tier 与 claim 状态。
+- `section_tasks.json` 中 `allowed_evidence` 须对应本步 Phase A 的 `EVD-xxx`。
+- sample/reference 不能作为事实证据；不得移除 NEEDS_USER_CONFIRMATION。
 
-## 加载任务专属子 skill（必做）
-
-本步是**通用骨架**，只定义流程、artifact 契约与角色边界。执行前，subagent 必须按 `task_type` 加载对应的任务专属子 skill：
-
-- 路径：`skills/document-types/<task_type>/steps/step-evidence-map.md`
-- 例：`task_type: hara` → `skills/document-types/hara/steps/step-evidence-map.md`，并配合根 skill `skills/document-types/<task_type>/SKILL.md`。
-
-从子 skill 获取本步的：本步目的要点、A1/A2 候选方案示例与典型子任务、state.json 子任务文案、B 审核检查项及领域规则。若该子 skill 文件缺失，必须显式报告并停下确认，不得用通用占位静默推进。
-
-## 子代理审核 (Subagent Review)
-
-本步执行结束前，必须由 Claude Code **新开一个独立 subagent**，审核并修订本步产出，直到满意后才能进入下一步。
-
-### A. 自主任务分解与进度跟踪（将 human 移出 loop）
-
-subagent 必须**自主**地分别对「审核任务」与「修订任务」做动态任务分解，并在同一 `state.json` 中以两个独立任务组（`review_state` / `revision_state`）各自跟踪进度，无需人工逐步介入。
-
-#### A1. 审核任务：自主分解与进度跟踪
-
-针对"审核本步产出是否满足边界与约束"这一任务，自主分解为逐项可判定的审核子任务并跟踪进度：
-
-1. **方案阶段（生成多方案、评估择优）**：自主生成 **≥2 种**不同的审核分解方案，对每种做评估与小规模试跑（按覆盖度、可靠性、成本、可验证性比较），择优选定；被放弃的方案与理由记入 state.json 的 review_state。**本步任务专属候选方案见所加载子 skill 的「A1 审核任务」。**
-2. **分解与执行（第一性原理：以「单条审核检查项」为自然单元）**：把审核沿检查项拆为多步子任务依次核对，子任务应足够小、可独立判定通过/不通过。**本步任务专属的典型审核子任务见所加载子 skill 的「A1 审核任务 · 典型审核子任务」。**
-3. **进度跟踪（state.json·review_state）**：在 `runs/<run_id>/subagent/<step>/state.json` 的 `review_state.subtasks` 为每个审核子任务登记一条记录，状态字段**仅三种取值**：`not_run` / `running` / `done`；全部审核子任务为 `done` 且无 P0/P1 后审核阶段才算结束。
-
-#### A2. 修订任务：自主分解与进度跟踪
-
-针对"修订本步产出"这一任务（提取脚本目的、重新驱动，而非机械重跑原脚本），自主分解为可执行修订子任务并跟踪进度：
-
-1. **方案阶段（生成多方案、评估择优）**：针对本步要完成的目的（见所加载子 skill 的「本步目的要点」）自主生成 **≥2 种**不同的任务分解方案，对每种方案做评估与小规模试跑（按覆盖度、可靠性、成本、可验证性比较），择优选定最终方案；被放弃的方案与选择理由记入 state.json 的 revision_state。**本步任务专属候选方案见所加载子 skill 的「A2 修订任务」。**
-2. **分解与执行（第一性原理：以本步的自然工作单元为单位）**：从本步要完成的任务出发，把长任务沿该自然单元拆为多步子任务（或多个并列子任务），依次遍历执行；子任务应足够小、可独立验证。**本步任务专属的典型修订子任务见所加载子 skill 的「A2 修订任务 · 典型修订子任务」。**
-3. **进度跟踪（state.json·revision_state）**：在同一 `state.json` 的 `revision_state.subtasks` 为每个修订子任务登记一条记录，状态字段**仅三种取值**：`not_run` / `running` / `done`；子任务开始时置 `running`，完成且自检通过后置 `done`；全部修订子任务为 `done` 后本步才算结束。
-
-state.json 最小结构（本步通用 schema；子任务 `desc` 文案见所加载子 skill 的「state.json 示例」）：
+## state.json · execution_state 结构
 
 ```json
 {
-  "step": "<step-id>",
-  "review_state": {
-    "chosen_plan": "<选定审核方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rv-1", "desc": "<本步审核子任务，见子 skill>", "status": "done"},
-      {"id": "rv-2", "desc": "<本步审核子任务，见子 skill>", "status": "running"},
-      {"id": "rv-3", "desc": "<本步审核子任务，见子 skill>", "status": "not_run"}
+  "step": "evidence-map",
+  "execution_state": {
+    "phases": [
+      {
+        "id": "phase-a",
+        "name": "证据映射",
+        "status": "running",
+        "subtasks": [
+          {"id": "em-05", "section_id": "SEC-ITEM-L2-01", "desc": "功能清单：映射 required_evidence → EVD", "status": "done"},
+          {"id": "em-06", "section_id": "SEC-ITEM-L2-02", "desc": "系统边界：映射 EVD", "status": "running"}
+        ]
+      },
+      {
+        "id": "phase-b",
+        "name": "引用计划",
+        "status": "not_run",
+        "subtasks": [
+          {"id": "cp-01", "desc": "按 L2 建立 citation_slots 与 claim_support_matrix", "status": "not_run"}
+        ]
+      },
+      {
+        "id": "phase-c",
+        "name": "章节任务",
+        "status": "not_run",
+        "subtasks": [
+          {"id": "st-01", "desc": "生成 section_tasks、outline_final、writing_plan", "status": "not_run"}
+        ]
+      }
     ]
   },
-  "revision_state": {
-    "chosen_plan": "<选定修订方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rt-1", "desc": "<本步修订子任务，见子 skill>", "status": "done"},
-      {"id": "rt-2", "desc": "<本步修订子任务，见子 skill>", "status": "running"},
-      {"id": "rt-3", "desc": "<本步修订子任务，见子 skill>", "status": "not_run"}
-    ]
-  }
+  "review_state": { "subtasks": [] },
+  "revision_state": { "subtasks": [] }
 }
 ```
 
-### B. 审核与修订要点
+Phase A 子任务默认**按 outline_l2 每 L2 一条** `em-*`；Phase B/C 粒度见所加载子 skill（HARA 可按 L1 或 L2 拆分 `cp-*` / `st-*`）。
 
-1. 派发新 subagent（fresh context），交付本步 artifact（见上「产出 artifacts」）与本文「边界与约束」+ 所加载子 skill 的「B 审核检查项」作为审核标准。
-2. subagent 按所加载子 skill 的「B 审核检查项」逐项核对本步产出。
-3. **发现问题时修订（提取本步目的、自主重新驱动）**：先从所加载子 skill 的「本步目的要点」读取本步要达成的目的，再由 subagent 围绕这些目的自主重新驱动完成本步任务。**底线**：修订后的产出须符合本步 artifact 契约与上述边界、保持可追溯，不得伪造或越权。
-4. 修订后重新审核，循环直到无 P0/P1 问题且满足全部边界，记录审核结论。
-5. subagent 审核满意后，再执行下方交接（并配合 workflow-orchestrator 的用户确认闸门）。
+## 加载任务专属子 skill（必做）
 
-subagent 约束：不得把 sample/reference 当事实、不得移除 NEEDS_USER_CONFIRMATION、不得输出专业批准结论。
+- 路径：`skills/document-types/<task_type>/steps/step-evidence-map.md`
+- 例：`task_type: hara` → `skills/document-types/hara/steps/step-evidence-map.md`
+
+**原 `step-citation-plan` / `step-section-tasks` 已合并入本步**，勿单独执行；领域规则见合并后的 HARA 子 skill 内 Phase B/C 章节。
+
+## 子代理审核 (Subagent Review)
+
+三阶段全部 `done` 且七类 artifact 初稿完成后，新 subagent 审核修订。
+
+### A1 / A2
+
+- **A1**：核对 Phase A/B/C 产出完整、EVD provenance、matrix tier、TASK allowed_evidence 一致；见子 skill「B 审核检查项」。
+- **A2**：失败阶段将有关子任务重置为 `not_run`，**从该 phase 起重跑**（不必重跑已通过 phase，除非上游 artifact 变更）。
+
+subagent 约束：不得把 sample 当事实、不得移除 NEEDS_USER_CONFIRMATION、不得输出专业批准结论。
 
 ## 交接到下一步
 
-进入 **Step 7 · 引用计划**（`citation_plan.json` + `claim_support_matrix.json`）。
+进入 **Step 9 · 保守草稿**（`draft/full_draft.md`）。草稿按 `section_tasks.json` + `outline_final.md` + `writing_plan.md` 执行。

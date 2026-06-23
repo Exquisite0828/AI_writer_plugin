@@ -64,7 +64,7 @@ examples/custom_technical_note_profile_demo_fixture/task.yaml
 
 ## 交互 workflow（由 workflow-orchestrator 总控 skill 编排）
 
-本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 `skills/workflow-steps/` 下的 15 个 step skill，并对每一步做到「**先子代理审核、后用户确认闸门**」。command 层只负责确认 task、把控制权交给总控 skill。各 step 的 artifacts 由对应 step skill 的 subagent 按 artifact 契约写入 `runs/<run_id>/`。
+本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 **13 个** step skill（原 Step 7–8 已合并入 `step-evidence-map`），并对每一步做到「**先子代理审核、后用户确认闸门**」。command 层只负责确认 task、把控制权交给总控 skill。各 step 的 artifacts 由对应 step skill 的 subagent 按 artifact 契约写入 `runs/<run_id>/`。
 
 1. 用中文确认 task file 路径和 `task_type`。**无 task.yaml 时先向用户索取路径与输入材料，不要凭空开跑**（自由文本如「写一份 HARA 报告」不能直接驱动 workflow）。
 2. 启用 **`workflow-orchestrator`** skill 作为总控，按其「编排主循环」逐 stage 推进；每个 stage 覆盖的 step 见下方映射表，逐 step 调用对应 step skill。
@@ -80,14 +80,17 @@ examples/custom_technical_note_profile_demo_fixture/task.yaml
 |---|---|
 | `ingest` | `step-input-materials` / `step-material-inventory` / `step-source-index` |
 | `outline` | `step-template-outline` |
-| `evidence` | `step-research-questions` / `step-evidence-map` |
-| `planning` | `step-citation-plan` / `step-section-tasks` |
+| `evidence_planning` | `step-research-questions` / `step-evidence-map` |
 | `draft` | `step-conservative-draft` |
 | `review` | `step-review` / `step-verification` |
 | `finalize` | `step-revision` / `step-final-report` |
 | `learning` | `step-run-summary` / `step-candidate-profile-update` |
 
-stage 顺序固定：`ingest → outline → evidence → planning → draft → review → finalize → learning`。多个 step 共用一个 stage 时，先逐个 step 完成「子代理审核 + 向用户呈现确认问题」，全部确认后再记录该 stage 的单一闸门决定，然后跑下一 stage。完整编排闭环见 `workflow-orchestrator` skill，各步边界与 A1/A2 分解见对应 step skill。
+stage 顺序固定：`ingest → outline → evidence_planning → draft → review → finalize → learning`。
+
+**已合并勿单独执行**：`step-citation-plan`、`step-section-tasks` → `step-evidence-map`（Step 6 Phase B/C）。
+
+多个 step 共用一个 stage 时，先逐个 step 完成「子代理审核 + 向用户呈现确认问题」，全部确认后再记录该 stage 的单一闸门决定，然后跑下一 stage。完整编排闭环见 `workflow-orchestrator` skill，各步边界与 A1/A2 分解见对应 step skill。
 
 ## Stage review 流程
 

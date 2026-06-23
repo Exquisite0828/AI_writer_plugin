@@ -1,104 +1,18 @@
 ---
 name: step-section-tasks
-description: 中文优先指导 workflow 第 8 步「章节任务」：由 plan-run 生成 section_tasks.json、outline_final.md 与 writing_plan.md；合并 outline_l1（L1）与 outline_l2（L2）分解为可执行写作任务。
+description: 【已合并】原 Step 8 章节任务已并入 step-evidence-map（Step 6 Phase C）。请勿单独执行；见 skills/workflow-steps/step-evidence-map/SKILL.md。
 ---
 
-# Step 8 · 章节任务 (Section Tasks)
+# Step 8 · 章节任务 — 已合并
 
-工作流第 8 步。把 Step 4 的 **L1 章 + L2 小节**（`outline_l1.md` + `outline_l2.md`）与引用计划合并，分解为逐章节/逐小节的写作任务，形成 `outline_final.md` 与写作计划。
+**本 step skill 已合并至 `step-evidence-map`（Workflow Step 6 · Phase C · 章节任务）。**
 
-## 何时使用
+编排器与 subagent **不得**再单独驱动本步。章节任务产出：
 
-- 已完成 Step 7（引用计划）。
-- 需要在草稿前确定每个章节的写作输入与边界。
-
-## 输入
-
-- `plans/citation_plan.json`、`plans/claim_support_matrix.json`
-- `plans/template_structure.json`、`plans/outline_l1.md`、`plans/outline_l2.md`、`plans/evidence_map.json`
-
-## 产出 artifacts
-
-- `plans/outline_final.md`
 - `plans/section_tasks.json`
+- `plans/outline_final.md`
 - `plans/writing_plan.md`
 
-## 边界与约束
+均在 Step 6 三阶段流程的 Phase C 一次性生成。HARA 领域规则见 `skills/document-types/hara/steps/step-evidence-map.md` 内「Phase C · 章节任务」章节。
 
-- `plans/outline_final.md` 须反映 Step 4 的 L1+L2 结构（经引用计划合并后）；`section_tasks.json` 中任务宜含 `section_id`（L2）与 `parent_section_id`（L1）。
-- 章节任务只规划"写什么、用哪些来源"，不在此步生成正文。
-- 保留 strict_template 的强制 L1 章节要求；章内可按 L2 小节拆分子任务（与 `outline_l2.md` 一致）。
-- 每节 `allowed_evidence` 须对应 Step 6 的 `EVD-xxx`，并可回溯 `file_id` + L1/L2/L3 + `location`；注明建议先经 `document_tocs/<file_id>.md` **逐级**浏览 L1/L2/L3，**禁止**直接打开输入文件全文。
-
-## 加载任务专属子 skill（必做）
-
-本步是**通用骨架**，只定义流程、artifact 契约与角色边界。执行前，subagent 必须按 `task_type` 加载对应的任务专属子 skill：
-
-- 路径：`skills/document-types/<task_type>/steps/step-section-tasks.md`
-- 例：`task_type: hara` → `skills/document-types/hara/steps/step-section-tasks.md`，并配合根 skill `skills/document-types/<task_type>/SKILL.md`。
-
-从子 skill 获取本步的：本步目的要点、A1/A2 候选方案示例与典型子任务、state.json 子任务文案、B 审核检查项及领域规则。若该子 skill 文件缺失，必须显式报告并停下确认，不得用通用占位静默推进。
-
-## 子代理审核 (Subagent Review)
-
-本步执行结束前，必须由 Claude Code **新开一个独立 subagent**，审核并修订本步产出，直到满意后才能进入下一步。
-
-### A. 自主任务分解与进度跟踪（将 human 移出 loop）
-
-subagent 必须**自主**地分别对「审核任务」与「修订任务」做动态任务分解，并在同一 `state.json` 中以两个独立任务组（`review_state` / `revision_state`）各自跟踪进度，无需人工逐步介入。
-
-#### A1. 审核任务：自主分解与进度跟踪
-
-针对"审核本步产出是否满足边界与约束"这一任务，自主分解为逐项可判定的审核子任务并跟踪进度：
-
-1. **方案阶段（生成多方案、评估择优）**：自主生成 **≥2 种**不同的审核分解方案，对每种做评估与小规模试跑（按覆盖度、可靠性、成本、可验证性比较），择优选定；被放弃的方案与理由记入 state.json 的 review_state。**本步任务专属候选方案见所加载子 skill 的「A1 审核任务」。**
-2. **分解与执行（第一性原理：以「单条审核检查项」为自然单元）**：把审核沿检查项拆为多步子任务依次核对，子任务应足够小、可独立判定通过/不通过。**本步任务专属的典型审核子任务见所加载子 skill 的「A1 审核任务 · 典型审核子任务」。**
-3. **进度跟踪（state.json·review_state）**：在 `runs/<run_id>/subagent/<step>/state.json` 的 `review_state.subtasks` 为每个审核子任务登记一条记录，状态字段**仅三种取值**：`not_run` / `running` / `done`；全部审核子任务为 `done` 且无 P0/P1 后审核阶段才算结束。
-
-#### A2. 修订任务：自主分解与进度跟踪
-
-针对"修订本步产出"这一任务（提取脚本目的、重新驱动，而非机械重跑原脚本），自主分解为可执行修订子任务并跟踪进度：
-
-1. **方案阶段（生成多方案、评估择优）**：针对本步要完成的目的（见所加载子 skill 的「本步目的要点」）自主生成 **≥2 种**不同的任务分解方案，对每种方案做评估与小规模试跑（按覆盖度、可靠性、成本、可验证性比较），择优选定最终方案；被放弃的方案与选择理由记入 state.json 的 revision_state。**本步任务专属候选方案见所加载子 skill 的「A2 修订任务」。**
-2. **分解与执行（第一性原理：以本步的自然工作单元为单位）**：从本步要完成的任务出发，把长任务沿该自然单元拆为多步子任务（或多个并列子任务），依次遍历执行；子任务应足够小、可独立验证。**本步任务专属的典型修订子任务见所加载子 skill 的「A2 修订任务 · 典型修订子任务」。**
-3. **进度跟踪（state.json·revision_state）**：在同一 `state.json` 的 `revision_state.subtasks` 为每个修订子任务登记一条记录，状态字段**仅三种取值**：`not_run` / `running` / `done`；子任务开始时置 `running`，完成且自检通过后置 `done`；全部修订子任务为 `done` 后本步才算结束。
-
-state.json 最小结构（本步通用 schema；子任务 `desc` 文案见所加载子 skill 的「state.json 示例」）：
-
-```json
-{
-  "step": "<step-id>",
-  "review_state": {
-    "chosen_plan": "<选定审核方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rv-1", "desc": "<本步审核子任务，见子 skill>", "status": "done"},
-      {"id": "rv-2", "desc": "<本步审核子任务，见子 skill>", "status": "running"},
-      {"id": "rv-3", "desc": "<本步审核子任务，见子 skill>", "status": "not_run"}
-    ]
-  },
-  "revision_state": {
-    "chosen_plan": "<选定修订方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rt-1", "desc": "<本步修订子任务，见子 skill>", "status": "done"},
-      {"id": "rt-2", "desc": "<本步修订子任务，见子 skill>", "status": "running"},
-      {"id": "rt-3", "desc": "<本步修订子任务，见子 skill>", "status": "not_run"}
-    ]
-  }
-}
-```
-
-### B. 审核与修订要点
-
-1. 派发新 subagent（fresh context），交付本步 artifact（见上「产出 artifacts」）与本文「边界与约束」+ 所加载子 skill 的「B 审核检查项」作为审核标准。
-2. subagent 按所加载子 skill 的「B 审核检查项」逐项核对本步产出。
-3. **发现问题时修订（提取本步目的、自主重新驱动）**：先从所加载子 skill 的「本步目的要点」读取本步要达成的目的，再由 subagent 围绕这些目的自主重新驱动完成本步任务。**底线**：修订后的产出须符合本步 artifact 契约与上述边界、保持可追溯，不得伪造或越权。
-4. 修订后重新审核，循环直到无 P0/P1 问题且满足全部边界，记录审核结论。
-5. subagent 审核满意后，再执行下方交接（并配合 workflow-orchestrator 的用户确认闸门）。
-
-subagent 约束：不得把 sample/reference 当事实、不得移除 NEEDS_USER_CONFIRMATION、不得输出专业批准结论。
-
-## 交接到下一步
-
-进入 **Step 9 · 保守草稿**（`draft/full_draft.md`）。
+请执行：`skills/workflow-steps/step-evidence-map/SKILL.md`

@@ -1,11 +1,11 @@
 ---
 name: workflow-orchestrator
-description: 中文优先总控 skill，按顺序编排 workflow 的 15 个 step skills。每个 step 执行完毕后，由 step skill 的 subagent 产出 stage-review 材料并弹出供用户确认的问题列表；必须用户审核通过（在 stage_reviews/<stage>/decision.json 落 accepted）才能进入下一步。不自动批准、不伪造 HITL。
+description: 中文优先总控 skill，按顺序编排 workflow 的 13 个 step skills（原 Step 7–8 已合并入 step-evidence-map）。每个 step 执行完毕后，由 step skill 的 subagent 产出 stage-review 材料并弹出供用户确认的问题列表；必须用户审核通过（在 stage_reviews/<stage>/decision.json 落 accepted）才能进入下一步。不自动批准、不伪造 HITL。
 ---
 
 # Workflow Orchestrator Skill
 
-总控 skill：按固定顺序驱动 `skills/workflow-steps/` 下的 15 个 step skills，并在**每一步执行完毕后弹出供用户确认的问题列表**，由用户审核该步产出后才允许进入下一步。
+总控 skill：按固定顺序驱动 `skills/workflow-steps/` 下的 **13 个** step skills（原 `step-citation-plan` / `step-section-tasks` 已合并入 `step-evidence-map`），并在**每一步执行完毕后弹出供用户确认的问题列表**，由用户审核该步产出后才允许进入下一步。
 
 本 skill 是编排指导层，不直接写最终文档。各 step 的 artifacts 由对应 step skill 的 subagent **提取该步目的、自主驱动**产出（须符合 artifact 契约）；stage-review 闸门通过 subagent 写入 `runs/<run_id>/stage_reviews/<stage>/decision.json` 记录，不自动批准、不伪造 HITL。
 
@@ -13,7 +13,7 @@ description: 中文优先总控 skill，按顺序编排 workflow 的 15 个 step
 
 - 用户希望「一步一步、每步人工确认」地走完整条专业文档写作流程。
 - 需要在每个步骤产出后做人工审核，未通过不得继续。
-- 作为 `/ai-writing-plugin:write` 命令「交互 workflow」的编排层：command 确认 task 后把控制权交给本 skill，由本 skill 逐 stage 驱动 `skills/workflow-steps/` 下的 15 个 step skill（每步先子代理审核、后用户确认闸门）。
+- 作为 `/ai-writing-plugin:write` 命令「交互 workflow」的编排层：command 确认 task 后把控制权交给本 skill，由本 skill 逐 stage 驱动 **13 个** step skill（每步先子代理审核、后用户确认闸门）。
 
 ## 核心原则
 
@@ -24,7 +24,7 @@ description: 中文优先总控 skill，按顺序编排 workflow 的 15 个 step
 - **修订靠提取目的、重新驱动**：发现问题时先提取该步脚本的执行目的，再由 subagent 围绕目的重新驱动完成任务，必要时为当前任务重新生成更适用的新脚本，产出仍须符合 artifact 契约与边界。
 - **真实闸门**：用户「审核通过」必须落地为 `runs/<run_id>/stage_reviews/<stage>/decision.json`（`decision=accepted`，固定 `decision_scope=stage_review_gate_only`、`professional_approval=false`），否则不得进入下一步。
 - **不自动批准**：禁止自动 `accepted`、禁止伪造 HITL、禁止把 sample/reference 当事实、禁止输出专业批准结论；subagent 不得移除 `NEEDS_USER_CONFIRMATION`、不得给出专业批准。
-- **15 步 vs 8 个 stage 闸门**：8 个 deterministic stage 处提供真实可记录的闸门；多个 step 共用一个 stage 时，先逐个 step 向用户呈现确认问题，全部确认后再记录该 stage 的单一闸门决定，然后才跑下一 stage。
+- **13 步 vs 7 个 stage 闸门**：7 个 deterministic stage 处提供真实可记录的闸门；多个 step 共用一个 stage 时，先逐个 step 向用户呈现确认问题，全部确认后再记录该 stage 的单一闸门决定，然后才跑下一 stage。
 
 ## Step → stage 映射
 
@@ -34,14 +34,15 @@ stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage �
 |---|---|
 | 1 输入材料 / 2 材料清单 / 3 文档目录索引 | `ingest` |
 | 4 模板大纲 | `outline` |
-| 5 研究问题 / 6 证据映射 | `evidence` |
-| 7 引用计划 / 8 章节任务 | `planning` |
+| 5 大纲分析与写作计划 / 6 证据·引用·章节计划 | `evidence_planning` |
 | 9 保守草稿 | `draft` |
 | 10 审查 / 11 验证 | `review` |
 | 12 修订 / 13 最终报告 | `finalize` |
 | 14 运行总结 / 15 候选 profile 更新 | `learning` |
 
-8 个 stage 顺序固定：`ingest → outline → evidence → planning → draft → review → finalize → learning`。
+7 个 stage 顺序固定：`ingest → outline → evidence_planning → draft → review → finalize → learning`。
+
+**已合并（勿单独驱动）**：原 Step 7 `step-citation-plan`、Step 8 `step-section-tasks` → 现 Step 6 `step-evidence-map` 的 Phase B/C。
 
 ## 编排主循环
 

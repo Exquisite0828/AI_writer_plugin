@@ -1,111 +1,140 @@
 ---
 name: step-research-questions
-description: 中文优先指导 workflow 第 5 步「研究问题」：由 evidence-run 生成 research_questions.json；按 outline_l1 的 L1 章与 outline_l2 的 L2 小节，结合 critical claims 列出待解答问题。
+description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划」：对 Step 4 大纲逐段分析研究，读参考文档与领域经验，为每一 L2 小节产出写作计划；state.json 顺序跟踪子任务，汇总 section_writing_plans.json。
 ---
 
-# Step 5 · 研究问题 (Research Questions)
+# Step 5 · 大纲分析与写作计划 (Outline Analysis & Section Writing Plans)
 
-工作流第 5 步。围绕 Step 4 产出的 **L1 章**（`outline_l1.md`）与 **L2 小节**（`outline_l2.md`），结合 `critical_claims`，生成需由输入材料回答的研究问题清单；问题应能关联到具体 L1/L2（`section_id` / `parent_section_id`）。
+工作流第 5 步。对 Step 4 产出的大纲（`outline_l1.md` + `outline_l2.md`）进行**分析与研究**，结合写作任务（`task_brief`）与用户参考文档，为大纲中**每一小段（L2 小节）**生成可执行的**写作计划**；顺序执行子任务，汇总为 `section_writing_plans.json`。
+
+## 本步核心逻辑
+
+1. **读取前步大纲**：理解 Step 4 的 L1 章 + L2 小节、`intent`、强制要求、证据预期。
+2. **逐段分析研究**：按大纲顺序（L1 → L2）遍历；对每个 L2（无 L2 的 L1 则按 L1 一条）登记一条**分析子任务**。
+3. **登记 state.json**：子任务写入 `runs/<run_id>/subagent/research-questions/state.json` 的 `research_state.subtasks`；状态**仅三种**：`not_run` / `running` / `done`。
+4. **顺序执行**：取第一条 `not_run` → `running` → 分析研究该段 → 写出该段写作计划 → `done` → 写回 state.json → 继续下一条。
+5. **汇总产出**：各段写作计划合并写入 `plans/section_writing_plans.json`（可选配套 `plans/section_plans/<section_id>.md` 可读稿）。
+
+## 单个子任务的职能
+
+针对当前大纲**小段**（L2 / 或唯一 L1）：
+
+1. **理解段落要求**：读取 `outline_l2.md` 中该节的 `intent`、表格/段落形状、`evidence: expected|pending`。
+2. **分析与研究**：结合大模型对该文档类型的写作经验，判断本节应写什么、怎么组织、需哪些事实依据、哪些须 HITL。
+3. **阅读参考文档**：经 `topic_index` 定位，按 **L1 → L2 → L3 → 原文** 阅读 T0/T1 事实源与 T3 方法学（见 writing-core）；**禁止** T4 sample 充当事实。
+4. **产出该段写作计划**（见下「单段写作计划字段」）：明确写前准备、内容骨架、证据需求、缺口与写作模式建议；**不在此步写正文结论**。
+
+## 单段写作计划字段（写入 section_writing_plans.json）
+
+每条计划对应一个大纲 L2 小节（或 L1 唯一段）：
+
+| 字段 | 说明 |
+|---|---|
+| `section_id` | L2 小节 id（或 L1 id） |
+| `parent_section_id` | 所属 L1 章 id |
+| `title` | 小节标题 |
+| `writing_intent` | 本节写作目的（来自大纲 intent + 分析结论） |
+| `content_outline` | 建议段落/表格结构（列、行类型、顺序） |
+| `writing_steps` | 建议写作子步骤（先写什么、后写什么） |
+| `required_evidence` | 本节需哪些 T0/T1 事实（描述性，非 EVD 编号） |
+| `source_hints` | 已读材料的导航路径：`file_id` + L1/L2/L3 + 用途说明 |
+| `research_notes` | 分析研究摘要（材料里有什么、缺什么） |
+| `gaps` | 知识缺口 / 待补材料 |
+| `writing_mode_hint` | 建议模式：`supported` / `conservative_candidate` / `confirmation_required` / `open_issue_list` / `unsupported_stub` |
+| `requires_human_confirmation` | 是否含 critical claim 或缺证据 |
+| `status` | `ready` / `partial` / `blocked`（材料是否足以支撑计划执行） |
 
 ## 何时使用
 
 - 已完成 Step 4（模板大纲），run 处于 phase_2。
-- 围绕 `outline_l1.md` 的 L1 章节与 `outline_l2.md` 的 L2 小节，结合 `critical_claims` 生成研究问题。
+- 需要在大纲骨架上，为每小段形成「写之前该怎么写」的计划，供后续证据映射与成稿使用。
 
 ## 输入
 
+- `task_brief`（或等效写作任务说明）
 - `plans/template_structure.json`、`plans/outline_l1.md`、`plans/outline_l2.md`
-- `knowledge/source_index.json`（`topic_index` 跨文档主题导航）
-- `knowledge/provenance_index.json`（L1→L2→L3 目录树与 L3 `location`）
-- `knowledge/document_tocs/`（单文档可读目录，按需查阅）
+- `knowledge/source_index.json`（`topic_index`）
+- `knowledge/provenance_index.json`
+- `knowledge/document_tocs/`
 - `knowledge/knowledge_gaps.md`
+- 用户输入参考文档（按 provenance **逐级**定位后读取）
 
-## 输入文档访问约定（与 Step 3 / writing-core 协调）
+## 输入文档访问约定（强制，见 writing-core）
 
-须遵守 **输入文档访问协议**：**L1 → L2 → L3 → 原文**。本步不打开原文，但须结合 `topic_index` 与 `knowledge_gaps.md` 判断哪些主题已有 L1/L2/L3 入口、哪些仍缺失（缺失则问题保持 open）。
+每个分析子任务读参考文档时：
 
-**禁止**：假设可直接打开 `input_inventory.path` 读全文；引用旧版 `SRC-xxx` chunk 作为问题依据。
+1. （可选）`topic_index` 命中 `file_id` + L1/L2/L3 候选
+2. `document_tocs/<file_id>.md` **L1 → L2 → L3** 选叶子
+3. `provenance_index` 取 `location` 后读原文
+4. 无入口或 gap → 该段计划标 `status: blocked` 或 `partial`，`gaps` 如实登记
+
+**禁止**：跳过三级目录全文盲读；`SRC-xxx` / chunk；目录 `brief` 当事实；T4 sample 支撑 critical claim 内容。
 
 ## 产出 artifacts
 
-- `plans/research_questions.json`
+- `plans/section_writing_plans.json`（**主产出**：每 L2 一条写作计划）
+- `plans/section_plans/<section_id>.md`（可选：单段可读计划）
+- `runs/<run_id>/subagent/research-questions/state.json`
 
-## 边界与约束
-
-- 研究问题只描述"需要被回答的问题"，不在此步给出结论。
-- 每个 `outline_l2.md` 中 `evidence: expected` 的 L2 宜有至少一条对应问题；`evidence: pending` 的 L2 对应问题须标 open。
-- critical claim 相关问题必须明确，等待 T0/T1 证据或 HITL，否则保持 open。
-- 不引入 RAG / 向量库 / 复杂 agent 框架来"自动回答"问题。
-
-## 加载任务专属子 skill（必做）
-
-本步是**通用骨架**，只定义流程、artifact 契约与角色边界。执行前，subagent 必须按 `task_type` 加载对应的任务专属子 skill：
-
-- 路径：`skills/document-types/<task_type>/steps/step-research-questions.md`
-- 例：`task_type: hara` → `skills/document-types/hara/steps/step-research-questions.md`，并配合根 skill `skills/document-types/<task_type>/SKILL.md`。
-
-从子 skill 获取本步的：本步目的要点、A1/A2 候选方案示例与典型子任务、state.json 子任务文案、B 审核检查项及领域规则。若该子 skill 文件缺失，必须显式报告并停下确认，不得用通用占位静默推进。
-
-## 子代理审核 (Subagent Review)
-
-本步执行结束前，必须由 Claude Code **新开一个独立 subagent**，审核并修订本步产出，直到满意后才能进入下一步。
-
-### A. 自主任务分解与进度跟踪（将 human 移出 loop）
-
-subagent 必须**自主**地分别对「审核任务」与「修订任务」做动态任务分解，并在同一 `state.json` 中以两个独立任务组（`review_state` / `revision_state`）各自跟踪进度，无需人工逐步介入。
-
-#### A1. 审核任务：自主分解与进度跟踪
-
-针对"审核本步产出是否满足边界与约束"这一任务，自主分解为逐项可判定的审核子任务并跟踪进度：
-
-1. **方案阶段（生成多方案、评估择优）**：自主生成 **≥2 种**不同的审核分解方案，对每种做评估与小规模试跑（按覆盖度、可靠性、成本、可验证性比较），择优选定；被放弃的方案与理由记入 state.json 的 review_state。**本步任务专属候选方案见所加载子 skill 的「A1 审核任务」。**
-2. **分解与执行（第一性原理：以「单条审核检查项」为自然单元）**：把审核沿检查项拆为多步子任务依次核对，子任务应足够小、可独立判定通过/不通过。**本步任务专属的典型审核子任务见所加载子 skill 的「A1 审核任务 · 典型审核子任务」。**
-3. **进度跟踪（state.json·review_state）**：在 `runs/<run_id>/subagent/<step>/state.json` 的 `review_state.subtasks` 为每个审核子任务登记一条记录，状态字段**仅三种取值**：`not_run` / `running` / `done`；全部审核子任务为 `done` 且无 P0/P1 后审核阶段才算结束。
-
-#### A2. 修订任务：自主分解与进度跟踪
-
-针对"修订本步产出"这一任务（提取脚本目的、重新驱动，而非机械重跑原脚本），自主分解为可执行修订子任务并跟踪进度：
-
-1. **方案阶段（生成多方案、评估择优）**：针对本步要完成的目的（见所加载子 skill 的「本步目的要点」）自主生成 **≥2 种**不同的任务分解方案，对每种方案做评估与小规模试跑（按覆盖度、可靠性、成本、可验证性比较），择优选定最终方案；被放弃的方案与选择理由记入 state.json 的 revision_state。**本步任务专属候选方案见所加载子 skill 的「A2 修订任务」。**
-2. **分解与执行（第一性原理：以本步的自然工作单元为单位）**：从本步要完成的任务出发，把长任务沿该自然单元拆为多步子任务（或多个并列子任务），依次遍历执行；子任务应足够小、可独立验证。**本步任务专属的典型修订子任务见所加载子 skill 的「A2 修订任务 · 典型修订子任务」。**
-3. **进度跟踪（state.json·revision_state）**：在同一 `state.json` 的 `revision_state.subtasks` 为每个修订子任务登记一条记录，状态字段**仅三种取值**：`not_run` / `running` / `done`；子任务开始时置 `running`，完成且自检通过后置 `done`；全部修订子任务为 `done` 后本步才算结束。
-
-state.json 最小结构（本步通用 schema；子任务 `desc` 文案见所加载子 skill 的「state.json 示例」）：
+## state.json 结构
 
 ```json
 {
-  "step": "<step-id>",
-  "review_state": {
-    "chosen_plan": "<选定审核方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
+  "step": "research-questions",
+  "research_state": {
     "subtasks": [
-      {"id": "rv-1", "desc": "<本步审核子任务，见子 skill>", "status": "done"},
-      {"id": "rv-2", "desc": "<本步审核子任务，见子 skill>", "status": "running"},
-      {"id": "rv-3", "desc": "<本步审核子任务，见子 skill>", "status": "not_run"}
+      {
+        "id": "sp-001",
+        "section_id": "SEC-ITEM-L2-01",
+        "parent_section_id": "SEC-ITEM",
+        "desc": "分析 Item 功能清单 L2：读 item 材料，产出功能表写作计划",
+        "status": "not_run"
+      }
     ]
   },
-  "revision_state": {
-    "chosen_plan": "<选定修订方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rt-1", "desc": "<本步修订子任务，见子 skill>", "status": "done"},
-      {"id": "rt-2", "desc": "<本步修订子任务，见子 skill>", "status": "running"},
-      {"id": "rt-3", "desc": "<本步修订子任务，见子 skill>", "status": "not_run"}
-    ]
-  }
+  "review_state": { "chosen_plan": "", "rejected_plans": [], "subtasks": [] },
+  "revision_state": { "chosen_plan": "", "rejected_plans": [], "subtasks": [] }
 }
 ```
 
-### B. 审核与修订要点
+**状态规则**：仅 `not_run` | `running` | `done`；同时最多一条 `running`；每完成一条立即写回 `done`。
 
-1. 派发新 subagent（fresh context），交付本步 artifact（见上「产出 artifacts」）与本文「边界与约束」+ 所加载子 skill 的「B 审核检查项」作为审核标准。
-2. subagent 按所加载子 skill 的「B 审核检查项」逐项核对本步产出。
-3. **发现问题时修订（提取本步目的、自主重新驱动）**：先从所加载子 skill 的「本步目的要点」读取本步要达成的目的，再由 subagent 围绕这些目的自主重新驱动完成本步任务。**底线**：修订后的产出须符合本步 artifact 契约与上述边界、保持可追溯，不得伪造或越权。
-4. 修订后重新审核，循环直到无 P0/P1 问题且满足全部边界，记录审核结论。
-5. subagent 审核满意后，再执行下方交接（并配合 workflow-orchestrator 的用户确认闸门）。
+## 执行顺序（主流程）
 
-subagent 约束：不得把 sample/reference 当事实、不得移除 NEEDS_USER_CONFIRMATION、不得输出专业批准结论。
+1. **初始化**：遍历 `outline_l2.md`（无 L2 的 L1 各一条），生成 `research_state.subtasks`（`sp-*`），全部 `not_run`。
+2. **顺序执行**（直至无 `not_run`）：
+   - 取第一条 `not_run` → `running`
+   - 分析研究该段 → 写出该段 `section_writing_plan` 条目（及可选 `.md`）
+   - `done` → 写 state.json
+3. **合并定稿**：全部 `done` 后写入 `section_writing_plans.json`。
+4. **子代理审核**：进入下方审核循环。
+
+## 边界与约束
+
+- 本步产出**写作计划**，不产出章节正文、不给出 hazard/rating/ASIL 等**最终专业结论**。
+- 计划中的 `content_outline` / `writing_steps` 可描述表格形状与写作顺序；critical 段须标 `requires_human_confirmation: true`。
+- 每个 L2 宜有一条对应计划；`evidence: pending` 的 L2 计划须 `status: partial` 或 `blocked` 并列出 `gaps`。
+- 子任务粒度默认 **outline L2 小节**；复杂 L2 可在子 skill 拆多条 `sp-*`（仍顺序执行）。
+- 不引入 RAG / 向量库 / 复杂 agent 框架。
+
+## 加载任务专属子 skill（必做）
+
+- 路径：`skills/document-types/<task_type>/steps/step-research-questions.md`
+- 例：`task_type: hara` → HARA 各 L2 的默认分析子任务表、单段计划模板、A1/A2、B 检查项
+
+## 子代理审核 (Subagent Review)
+
+`research_state` 全部 `done` 且 `section_writing_plans.json` 初稿完成后，新 subagent 审核修订。
+
+### A1 / A2
+
+- **A1**：按子 skill 典型审核子任务核对（覆盖 outline_l2、计划字段完整、无预设结论、无 sample 当事实）。
+- **A2**：失败段将对应 `sp-*` 重置为 `not_run`，顺序重跑后合并 JSON。
+
+### B
+
+交付 `section_writing_plans.json`、state.json、边界 + 子 skill「B 审核检查项」。不得伪造、不得用 sample 当事实、不得移除 NEEDS_USER_CONFIRMATION 相关提示。
 
 ## 交接到下一步
 
-进入 **Step 6 · 证据映射**（`evidence_map.json` + `unresolved_questions.md`）。
+进入 **Step 6 · 证据·引用·章节计划**（合并原 6–8）。Step 6 读取 `section_writing_plans.json`，三阶段产出 evidence_map、citation_plan、section_tasks 等全部写作前计划 artifact。

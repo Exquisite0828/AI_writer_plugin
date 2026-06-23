@@ -133,4 +133,4 @@ subagent 约束：不得把 sample/reference 当事实、不得移除 NEEDS_USER
 
 ## 交接到下一步
 
-进入 **Step 5 · 研究问题**（`research_questions.json`）。后续步骤应同时消费 `outline_l1.md` 与 `outline_l2.md` 作为章节与小节规划依据。
+进入 **Step 5 · 大纲分析与写作计划**（`section_writing_plans.json`）。后续 Step 6 消费各段写作计划完成证据·引用·章节任务。
