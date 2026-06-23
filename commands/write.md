@@ -99,7 +99,7 @@ helper 不能伪造 HITL approval。非交互运行会把缺失 gate 记录为 `
 
 ## 交互 workflow（由 workflow-orchestrator 总控 skill 编排）
 
-本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 `skills/workflow-steps/` 下的 15 个 step skill，并对每一步做到「**先子代理审核、后用户确认闸门**」。command 层只负责确认 task、准备 Python 环境、把控制权交给总控 skill；真实产出仍由下方 Python engine 命令完成。
+本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 `skills/workflow-steps/` 下的 15 个 step skill，并对每一步做到「**先子代理审核、后用户确认闸门**」。command 层只负责确认 task、准备运行环境、把控制权交给总控 skill。各 step 的 artifacts 由对应 step skill 的 subagent **自主重新驱动**产出（符合 artifact 契约）；stage-review 闸门仍由真实引擎命令记录。
 
 1. 用中文确认 task file 路径和 `task_type`。**无 task.yaml 时先向用户索取路径与输入材料，不要凭空开跑**（自由文本如「写一份 HARA 报告」不能直接驱动引擎）。
 2. 启用 **`workflow-orchestrator`** skill 作为总控，按其「编排主循环」逐 engine stage 推进；每个 stage 覆盖的 step 见下方映射表，逐 step 调用对应 step skill。

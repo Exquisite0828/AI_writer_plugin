@@ -7,7 +7,7 @@ description: 中文优先总控 skill，按顺序编排 workflow 的 15 个 step
 
 总控 skill：按固定顺序驱动 `skills/workflow-steps/` 下的 15 个 step skills，并在**每一步执行完毕后弹出供用户确认的问题列表**，由用户审核该步产出后才允许进入下一步。
 
-本 skill 是编排指导层，不替代 Python deterministic engine，也不直接写最终文档。所有产出与闸门都通过真实引擎命令完成。
+本 skill 是编排指导层，不直接写最终文档。各 step 的 artifacts 由对应 step skill 的 subagent **提取该步目的、自主重新驱动**产出（须符合 artifact 契约）；stage-review 闸门通过真实引擎命令记录，不自动批准、不伪造 HITL。
 
 ## 何时使用
 
@@ -25,32 +25,28 @@ description: 中文优先总控 skill，按顺序编排 workflow 的 15 个 step
 - **不自动批准**：禁止自动 `accepted`、禁止伪造 HITL、禁止把 sample/reference 当事实、禁止输出专业批准结论；subagent 不得移除 `NEEDS_USER_CONFIRMATION`、不得给出专业批准。
 - **15 步 vs 8 个引擎闸门**：引擎在 8 个 deterministic stage 处提供真实可记录的闸门；多个 step 共用一个 stage 时，先逐个 step 向用户呈现确认问题，全部确认后再记录该 stage 的单一闸门决定，然后才跑下一 stage。
 
-## Step → 引擎 stage → 命令 映射
+## Step → 引擎 stage 映射
 
-| Step | 引擎 stage | 该 stage 引擎命令 |
-|---|---|---|
-| 1 输入材料 / 2 材料清单 / 3 来源索引 | `ingest` | `ingest-run --task <task>` |
-| 4 模板大纲 | `outline` | `outline-run --run <run>` |
-| 5 研究问题 / 6 证据映射 | `evidence` | `evidence-run --run <run>` |
-| 7 引用计划 / 8 章节任务 | `planning` | `plan-run --run <run>` |
-| 9 保守草稿 | `draft` | `draft-run --run <run>` |
-| 10 审查 / 11 验证 | `review` | `review-run --run <run>` |
-| 12 修订 / 13 最终报告 | `finalize` | `finalize-run --run <run>` |
-| 14 运行总结 / 15 候选 profile 更新 | `learning` | `learning-run --run <run>` |
+stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage 时共享该 stage 的单一闸门决定。各 step 的产出由对应 step skill 的 subagent **自主重新驱动**完成，**不再调用内容生成引擎命令**。
+
+| Step | 引擎 stage |
+|---|---|
+| 1 输入材料 / 2 材料清单 / 3 来源索引 | `ingest` |
+| 4 模板大纲 | `outline` |
+| 5 研究问题 / 6 证据映射 | `evidence` |
+| 7 引用计划 / 8 章节任务 | `planning` |
+| 9 保守草稿 | `draft` |
+| 10 审查 / 11 验证 | `review` |
+| 12 修订 / 13 最终报告 | `finalize` |
+| 14 运行总结 / 15 候选 profile 更新 | `learning` |
 
 引擎 8 个 stage 顺序固定：`ingest → outline → evidence → planning → draft → review → finalize → learning`。
 
 ## 编排主循环
 
-对每个引擎 stage（按上表顺序），执行以下闭环；所有命令在仓库根目录运行（`$PYTHON` 为项目解释器，如 `.venv/bin/python`）：
+对每个引擎 stage（按上表顺序），执行以下闭环；其中 stage-review 闸门相关命令在仓库根目录运行（`$PYTHON` 为项目解释器，如 `.venv/bin/python`）：
 
-1. **运行该 stage**（带闸门保护，确保上一 stage 闸门已通过）：
-
-   ```bash
-   $PYTHON -m ai_writing_plugin <stage-command> --require-stage-review-gates
-   ```
-
-   `ingest` 是首个 stage，无上游闸门；其余 stage 启用 `--require-stage-review-gates` 后会先校验上一 stage 的 gate 是否 `passed`，未通过则拒绝运行。
+1. **驱动本 stage 产出（subagent 自主重新驱动，不调用内容生成引擎命令）**：进入本 stage 前先确认上一 stage 的 stage-review 闸门已 `passed`（即上一轮 `check-stage-review-gate` 通过；首个 stage `ingest` 无上游闸门）。随后对本 stage 覆盖的每个 step（见上表），由对应 step skill 的 subagent **提取该 step 目的、自主重新驱动**，在 `runs/<run_id>/` 产出符合 artifact 契约的 artifacts。
 
 2. **逐个 step 的子代理审核与修订（state.json 三态推进）**：对本 stage 覆盖的每个 step（见上表），按该 step skill 的「子代理审核」小节新开独立 subagent，自主完成 A1 审核任务与 A2 修订任务的分解与执行，在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` / `revision_state` 三态跟踪进度；修订采用「提取脚本目的、重新驱动」（不机械重跑原命令），循环直到无 P0/P1 且全部子任务 `done`。subagent 不得伪造 HITL、不得移除 `NEEDS_USER_CONFIRMATION`、不得输出专业批准结论。
 

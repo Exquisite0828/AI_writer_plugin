@@ -17,6 +17,19 @@ Use this skill for `task_type: hara`.
 
 HARA supports functional-safety hazard analysis report assistance. It helps create a traceable, review-ready HARA package with evidence boundaries, open confirmations, and conservative candidate wording. It must not automatically approve HARA professional judgments.
 
+## HARA 总过程概览
+
+HARA（Hazard Analysis and Risk Assessment，危害分析与风险评估）是 ISO 26262-3 规定的功能安全核心活动，目的是：
+
+- 识别 item（待分析系统）可能产生的危害行为
+- 评估危害事件的风险等级（S/E/C → ASIL）
+- 为需要功能安全措施的危害事件导出安全目标（Safety Goal）
+
+HARA 输出是功能安全概念的起点，后续所有功能安全需求都须可追溯至 HARA 的安全目标。
+
+本 plugin 通过 15 步流程驱动 HARA 报告写作；每步对应 `skills/document-types/hara/steps/step-*.md`，各步在总过程中的定位详见对应子 skill 的「HARA 报告过程总览（本步定位）」节。
+
+
 ## Supported Level And Positioning
 
 `hara` is an official L3 built-in document type backed by built-in `DocumentTypeRules`, fixtures, regression tests, and this domain guideline.
@@ -169,3 +182,11 @@ Valid conservative statuses include `finalized_with_open_items`, `ready_for_huma
 - Do not remove `NEEDS_USER_CONFIRMATION` without real HITL.
 - Do not convert a HARA final report into safety approval.
 - candidate update proposed/inactive; generated `candidate_profile_update.yaml` and `candidate_skill_patch.md` must not overwrite a stable skill.
+
+
+## 贯穿全程的核心原则
+
+1. **事实来源严格分离**：sample 报告（T4）中的 hazard / 评级 / ASIL / safety goal，任何情况下不得作为本项目分析依据。
+2. **所有 critical claim 保持 pending**：hazard、hazardous event、S/E/C 评级、ASIL candidate、safety goal，在未经具备资质工程师确认前统一保留 `NEEDS_USER_CONFIRMATION`。
+3. **知识缺口显式记录**：输入材料不完整时不推断填值，标 `[PENDING]` 并显式登记 `knowledge_gap`。
+4. **AI 不替代工程师判断**：HARA 报告是供人工审查的准备材料，不等于 ISO 26262 合规认证或专业 sign-off。
