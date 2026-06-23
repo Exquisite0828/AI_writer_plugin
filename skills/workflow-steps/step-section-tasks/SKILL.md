@@ -1,11 +1,11 @@
 ---
 name: step-section-tasks
-description: 中文优先指导 workflow 第 8 步「章节任务」：由 plan-run 生成 section_tasks.json、outline_final.md 与 writing_plan.md，把大纲分解为可执行写作任务。
+description: 中文优先指导 workflow 第 8 步「章节任务」：由 plan-run 生成 section_tasks.json、outline_final.md 与 writing_plan.md；合并 outline_l1（L1）与 outline_l2（L2）分解为可执行写作任务。
 ---
 
 # Step 8 · 章节任务 (Section Tasks)
 
-工作流第 8 步。把最终大纲分解为逐章节的写作任务，明确每节使用哪些来源与引用，形成写作计划。
+工作流第 8 步。把 Step 4 的 **L1 章 + L2 小节**（`outline_l1.md` + `outline_l2.md`）与引用计划合并，分解为逐章节/逐小节的写作任务，形成 `outline_final.md` 与写作计划。
 
 ## 何时使用
 
@@ -15,7 +15,7 @@ description: 中文优先指导 workflow 第 8 步「章节任务」：由 plan-
 ## 输入
 
 - `plans/citation_plan.json`、`plans/claim_support_matrix.json`
-- `plans/template_structure.json`、`plans/outline_l1.md`、`plans/evidence_map.json`
+- `plans/template_structure.json`、`plans/outline_l1.md`、`plans/outline_l2.md`、`plans/evidence_map.json`
 
 ## 产出 artifacts
 
@@ -25,8 +25,9 @@ description: 中文优先指导 workflow 第 8 步「章节任务」：由 plan-
 
 ## 边界与约束
 
+- `plans/outline_final.md` 须反映 Step 4 的 L1+L2 结构（经引用计划合并后）；`section_tasks.json` 中任务宜含 `section_id`（L2）与 `parent_section_id`（L1）。
 - 章节任务只规划"写什么、用哪些来源"，不在此步生成正文。
-- 保留 strict_template 的强制章节要求。
+- 保留 strict_template 的强制 L1 章节要求；章内可按 L2 小节拆分子任务（与 `outline_l2.md` 一致）。
 - 每节 `allowed_evidence` 须对应 Step 6 的 `EVD-xxx`，并可回溯 `file_id` + L1/L2/L3 + `location`；注明建议先经 `document_tocs/<file_id>.md` **逐级**浏览 L1/L2/L3，**禁止**直接打开输入文件全文。
 
 ## 加载任务专属子 skill（必做）

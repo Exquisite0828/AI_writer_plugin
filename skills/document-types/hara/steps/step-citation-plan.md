@@ -4,7 +4,7 @@
 
 ## 本步目的要点（HARA 自主重新驱动）
 
-- 按 outline 顺序把研究问题与证据映射归并到各 HARA 章节（group_research_questions / evidence_by_question）。
+- 按 **L1 章 + L2 小节**（`outline_l1.md` + `outline_l2.md`）顺序把研究问题与证据映射归并到各 HARA 章节与小节（group_research_questions / evidence_by_question）。
 - 为每节判定 requires_human_confirmation，生成 citation_slots、unsupported_claims、weak_notes。
 - 产出 `plans/citation_plan.json`（claim → 来源引用槽）与 `plans/claim_support_matrix.json`（N4 核心溯源矩阵，含 source tier 与 claim 状态）。
 - HARA critical claim（hazard、hazardous event、S/E/C、ASIL、safety goal、final acceptability）无 T0/T1 支撑时保持 `NEEDS_USER_CONFIRMATION` / pending / open。
@@ -74,18 +74,20 @@ HARA 报告中每个 critical claim 都需要可见的引用证据。本步把 e
 
 ### HARA 章节引用槽（citation_slots）设计
 
-| HARA 章节 | claim 类型 | citation_slot 类型 | 支撑来源 tier | 无支撑时的处理 |
+citation_slot 宜对齐 **L2 小节**（`outline_l2.md` / `template_structure` level=2 节点）；同一 L1 下多个 L2 可分别承载不同 claim 类型：
+
+| HARA L1 / L2 | claim 类型 | citation_slot 类型 | 支撑来源 tier | 无支撑时的处理 |
 |---|---|---|---|---|
-| SEC-ITEM（功能 F-xx 描述） | item_function | source_citation | T1 | unsupported_claim：F-xx 功能描述无 T1 支撑 |
-| SEC-ITEM（系统边界） | item_boundary | source_citation | T1 | unsupported_claim：系统边界无 T1 支撑 |
-| SEC-OPS（工况 OS-xx 描述）| operational_situation | source_citation | T1 | unsupported_claim：OS-xx 无 T1 source |
-| SEC-HAZ（危害 H-xx 存在性）| hazard_identification | source_citation + confirmation_slot | T1 + HITL | NEEDS_USER_CONFIRMATION |
-| SEC-HE（HE-xxx 成立性）| hazardous_event | source_citation + confirmation_slot | T1 + HITL | NEEDS_USER_CONFIRMATION |
-| SEC-SEC（S 候选值及依据）| severity_rating | confirmation_slot | T0/T1 + HITL | NEEDS_USER_CONFIRMATION；weak_note 若仅 T3 |
-| SEC-SEC（E 候选值及依据）| exposure_rating | confirmation_slot | T0/T1 + HITL | NEEDS_USER_CONFIRMATION；weak_note 若仅 T3 |
-| SEC-SEC（C 候选值及依据）| controllability_rating | confirmation_slot | T0/T1 + HITL | NEEDS_USER_CONFIRMATION；weak_note 若仅 T3 |
-| SEC-SEC（ASIL 候选）| asil_candidate | confirmation_slot | T3（矩阵方法）+ T0/T1（S/E/C值）+ HITL | NEEDS_USER_CONFIRMATION |
-| SEC-SG（安全目标 SG-xx）| safety_goal | confirmation_slot | T0/T1（HE/ASIL）+ HITL | NEEDS_USER_CONFIRMATION |
+| SEC-ITEM · 功能清单（L2） | item_function | source_citation | T1 | unsupported_claim：F-xx 功能描述无 T1 支撑 |
+| SEC-ITEM · 系统边界（L2） | item_boundary | source_citation | T1 | unsupported_claim：系统边界无 T1 支撑 |
+| SEC-OPS · OS-xx 工况表（L2）| operational_situation | source_citation | T1 | unsupported_claim：OS-xx 无 T1 source |
+| SEC-HAZ · H-xx 危害表（L2）| hazard_identification | source_citation + confirmation_slot | T1 + HITL | NEEDS_USER_CONFIRMATION |
+| SEC-HE · HE-xxx 表（L2）| hazardous_event | source_citation + confirmation_slot | T1 + HITL | NEEDS_USER_CONFIRMATION |
+| SEC-SEC · S 评级（L2）| severity_rating | confirmation_slot | T0/T1 + HITL | NEEDS_USER_CONFIRMATION；weak_note 若仅 T3 |
+| SEC-SEC · E 评级（L2）| exposure_rating | confirmation_slot | T0/T1 + HITL | NEEDS_USER_CONFIRMATION；weak_note 若仅 T3 |
+| SEC-SEC · C 评级（L2）| controllability_rating | confirmation_slot | T0/T1 + HITL | NEEDS_USER_CONFIRMATION；weak_note 若仅 T3 |
+| SEC-SEC · ASIL 候选（L2）| asil_candidate | confirmation_slot | T3（矩阵方法）+ T0/T1（S/E/C值）+ HITL | NEEDS_USER_CONFIRMATION |
+| SEC-SG · SG-xx 表（L2）| safety_goal | confirmation_slot | T0/T1（HE/ASIL）+ HITL | NEEDS_USER_CONFIRMATION |
 
 ### claim_support_matrix 核心字段
 
@@ -94,6 +96,7 @@ HARA 报告中每个 critical claim 都需要可见的引用证据。本步把 e
 ```
 claim_id:           H-01 / HE-001 / HE-001.S / HE-001.E / HE-001.C / HE-001.ASIL / SG-01
 claim_type:         hazard / hazardous_event / severity / exposure / controllability / asil / safety_goal
+section_id:         L2 小节 id（如 SEC-ITEM-L2-01）；parent_section_id: L1（如 SEC-ITEM）
 evidence_ids:       [EVD-001, EVD-002]  ← Step 6；须回溯 L1/L2/L3 + location
 provenance_ref:     { file_id, l1_title, l2_title, l3_title, location }
 tier:               T1 / T3 / weak / none

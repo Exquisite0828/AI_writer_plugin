@@ -15,7 +15,7 @@ description: 中文优先指导 workflow 第 7 步「引用计划」：由 plan-
 ## 输入
 
 - `plans/evidence_map.json`、`plans/unresolved_questions.md`
-- `plans/template_structure.json`、`plans/outline_l1.md`
+- `plans/template_structure.json`、`plans/outline_l1.md`、`plans/outline_l2.md`
 - `knowledge/source_index.json`、`knowledge/provenance_index.json`、`knowledge/document_tocs/`
 
 ## 输入文档访问约定（强制，见 writing-core）
@@ -30,6 +30,7 @@ description: 中文优先指导 workflow 第 7 步「引用计划」：由 plan-
 ## 边界与约束
 
 - `claim_support_matrix.json` 是 N4 核心溯源 artifact，须保留 source tier 与 claim 状态。
+- `claim_support_matrix.json` 中 claim 宜关联 L1 `section_id` 与 L2 小节（来自 `outline_l2.md` / `template_structure` level=2 节点）。
 - critical claim 必须有 T0/T1 支撑，否则保持 `NEEDS_USER_CONFIRMATION` / pending / open。
 - 不得为缺证据的 claim 编造引用。
 

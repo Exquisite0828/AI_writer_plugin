@@ -4,16 +4,16 @@
 
 ## 本步目的要点（HARA 自主重新驱动）
 
-- 把 citation_plan 各 HARA 章节转为逐章节写作任务 `TASK-xxx`，确定 writing_mode（supported / conservative_candidate / confirmation_required / open_issue_list / unsupported_stub）。
-- 为每个任务登记来源支撑、claim 状态（needs_confirmation/supported/…）与 future_output_path。
-- 渲染最终大纲 `plans/outline_final.md` 与写作计划 `plans/writing_plan.md`（含 supported/mixed/unsupported/需确认任务统计）。
+- 把 citation_plan 各 HARA **L1 章与 L2 小节**转为逐节写作任务 `TASK-xxx`，确定 writing_mode（supported / conservative_candidate / confirmation_required / open_issue_list / unsupported_stub）。
+- 为每个任务登记来源支撑、claim 状态（needs_confirmation/supported/…）、`section_id`（L2）/ `parent_section_id`（L1）与 future_output_path。
+- 渲染最终大纲 `plans/outline_final.md`（合并 Step 4 的 L1+L2 与引用计划后的可写结构）与写作计划 `plans/writing_plan.md`（含 supported/mixed/unsupported/需确认任务统计）。
 - HARA critical claim（hazard/S-E-C/ASIL/safety goal/final acceptability）相关章节无 T0/T1 支撑时 writing_mode 取 confirmation_required / open_issue_list，保持 open/pending。
 - 保留 strict_template 强制章节，只规划"写什么、用哪些来源"，不在此步生成正文。
 - **底线**：不得为缺证据的 HARA 章节预设 hazard/rating/ASIL/safety goal 结论。
 
 ## HARA 报告过程总览（本步定位）
 
-12 节 HARA 报告每节对应一个或多个写作任务。本步把章节 + citation_plan 拆解为可执行的 TASK-xxx 列表。
+12 节 HARA 报告每 L1 章对应一个或多个写作任务；章内 **L2 小节**（来自 `outline_l2.md`）可拆为子任务。本步把章节 + citation_plan 拆解为可执行的 TASK-xxx 列表。
 
 **HARA 写作任务与章节映射**：
 
@@ -84,25 +84,30 @@
 
 ### HARA 章节写作任务清单
 
-按 template_structure 章节顺序，应生成以下 TASK-xxx 写作任务：
+按 `outline_l2.md` 与 `template_structure`（L1 + level=2 节点）顺序生成 TASK-xxx；**SEC-ITEM 等多 L2 章宜按 L2 拆任务**：
 
-| TASK-ID | 章节 | writing_mode | 产出描述 | HITL 依赖 |
+| TASK-ID | L1 / L2 | writing_mode | 产出描述 | HITL 依赖 |
 |---|---|---|---|---|
 | TASK-01 | SEC-DOC | supported | 文档信息表（标题/版本/日期/作者/状态）+ 修订历史表格 | 否 |
 | TASK-02 | SEC-SCOPE | supported | item 名称确认、分析目的、适用标准（ISO 26262-3）、范围声明（包含/不包含）| 否 |
 | TASK-03 | SEC-REF | supported | 参考文件清单（来自 manifest 中的输入材料）+ ISO 26262 条款引用列表 | 否 |
 | TASK-04 | SEC-TERMS | supported | HARA 术语定义表：Hazard/HE/S/E/C/ASIL/SG/HITL/NEEDS_USER_CONFIRMATION 等 | 否 |
-| TASK-05 | SEC-ITEM | conservative_candidate | item 功能清单（F-xx）+ 系统边界表（In/Out of scope）+ 外部接口表（IF-xx）+ 运行约束；缺失项标 NEEDS_USER_CONFIRMATION | 是 |
-| TASK-06 | SEC-OPS | conservative_candidate | 运行工况表（OS-xx）：每行含 ID/描述/道路类型/速度/交通/天气/驾驶员状态；来自 T1 source；覆盖高速/城市/停车场/恶劣天气 | 是 |
-| TASK-07 | SEC-HAZ | confirmation_required | 危害识别表（H-xx）：对每个功能 F-xx 用引导词法分析；每行含 ID/危害描述/相关功能/失效类型/状态；缺 T1 支撑则 NEEDS_USER_CONFIRMATION | 是 |
-| TASK-08 | SEC-HE | confirmation_required | 危害事件表（HE-xxx）：H×OS 组合，每行含 ID/H-ID/OS-ID/危害事件描述/成立性；不成立组合注明理由 | 是 |
-| TASK-09 | SEC-SEC-S | confirmation_required | S 评级列：每个 HE 的 S 候选值及文字依据（ISO 26262-3 Table 1 框架 + T1 source 支撑）；标 NEEDS_USER_CONFIRMATION | 是 |
-| TASK-10 | SEC-SEC-E | confirmation_required | E 评级列：每个 HE 的 E 候选值及文字依据（ISO 26262-3 Table 2 框架 + T1 source 支撑）| 是 |
-| TASK-11 | SEC-SEC-C | confirmation_required | C 评级列：每个 HE 的 C 候选值及文字依据（ISO 26262-3 Table 3 框架 + T1 source 支撑）| 是 |
-| TASK-12 | SEC-ASIL | confirmation_required | ASIL 候选列：由 S/E/C 候选值依 ISO 26262-3 Table 4 查表；所有值标 NEEDS_USER_CONFIRMATION | 是 |
-| TASK-13 | SEC-SG | confirmation_required | 安全目标表（SG-xx）：仅对 ASIL候选 > QM 的 HE 生成；每行含 ID/描述/ASIL候选/相关HE-ID/状态 | 是 |
-| TASK-14 | SEC-OPEN | open_issue_list | 开放问题清单：汇总所有 NEEDS_USER_CONFIRMATION 项，分类（item定义/危害/评级/安全目标）| 否 |
-| TASK-15 | SEC-REVIEW | supported | 审查总结（保守措辞）：分析覆盖范围、已支撑项统计、开放项数量、状态声明 | 否 |
+| TASK-05a | SEC-ITEM · 功能清单（L2） | conservative_candidate | F-xx 功能清单；缺失项标 NEEDS_USER_CONFIRMATION | 是 |
+| TASK-05b | SEC-ITEM · 系统边界（L2） | conservative_candidate | In/Out of scope 边界表 | 是 |
+| TASK-05c | SEC-ITEM · 外部接口（L2） | conservative_candidate | IF-xx 外部接口表 | 是 |
+| TASK-05d | SEC-ITEM · 运行约束（L2） | conservative_candidate | 速度/环境/车型等运行约束 | 是 |
+| TASK-06 | SEC-OPS · OS-xx 工况表（L2） | conservative_candidate | 运行工况表（OS-xx）：每行含 ID/描述/道路类型/速度/交通/天气/驾驶员状态；来自 T1 source | 是 |
+| TASK-07 | SEC-HAZ · H-xx 危害表（L2） | confirmation_required | 危害识别表（H-xx）：对每个功能 F-xx 用引导词法分析 | 是 |
+| TASK-08 | SEC-HE · HE-xxx 表（L2） | confirmation_required | 危害事件表（HE-xxx）：H×OS 组合 | 是 |
+| TASK-09 | SEC-SEC · S 评级（L2） | confirmation_required | 每个 HE 的 S 候选值及文字依据 | 是 |
+| TASK-10 | SEC-SEC · E 评级（L2） | confirmation_required | 每个 HE 的 E 候选值及文字依据 | 是 |
+| TASK-11 | SEC-SEC · C 评级（L2） | confirmation_required | 每个 HE 的 C 候选值及文字依据 | 是 |
+| TASK-12 | SEC-SEC · ASIL 候选（L2） | confirmation_required | 由 S/E/C 依 ISO 26262-3 Table 4 查表 | 是 |
+| TASK-13 | SEC-SG · SG-xx 表（L2） | confirmation_required | 安全目标表：仅对 ASIL候选 > QM 的 HE 生成 | 是 |
+| TASK-14 | SEC-OPEN | open_issue_list | 开放问题清单：汇总所有 NEEDS_USER_CONFIRMATION 项 | 否 |
+| TASK-15 | SEC-REVIEW | supported | 审查总结（保守措辞）：分析覆盖范围、已支撑项统计、开放项数量 | 否 |
+
+若 Step 4 的 `outline_l2.md` 与上表 L2 划分不一致，**以 outline_l2 为准**映射 TASK，上表作 HARA 默认参考。
 
 ### TASK-07~12 的关联关系说明
 
@@ -134,7 +139,7 @@
 - 方案C 按证据充分度分组（充分/待证）排序任务。
 
 ### 典型修订子任务
-1. 遍历 outline_final 各章节。
+1. 遍历 `outline_final.md` 各 L1 章与 L2 小节。
 2. 为每节建写作任务（含引用槽与约束、确定 writing_mode）。
 3. 标注依赖与 HITL pending（critical claim 章节）。
 4. 汇总 writing_plan 并校验章节覆盖完整。

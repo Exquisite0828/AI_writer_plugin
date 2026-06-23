@@ -1,26 +1,26 @@
 ---
 name: step-research-questions
-description: 中文优先指导 workflow 第 5 步「研究问题」：由 evidence-run 生成 research_questions.json，针对大纲与 critical claims 列出待解答的问题。
+description: 中文优先指导 workflow 第 5 步「研究问题」：由 evidence-run 生成 research_questions.json；按 outline_l1 的 L1 章与 outline_l2 的 L2 小节，结合 critical claims 列出待解答问题。
 ---
 
 # Step 5 · 研究问题 (Research Questions)
 
-工作流第 5 步。围绕模板大纲和 critical claims，生成需要由来源材料回答的研究问题清单。
+工作流第 5 步。围绕 Step 4 产出的 **L1 章**（`outline_l1.md`）与 **L2 小节**（`outline_l2.md`），结合 `critical_claims`，生成需由输入材料回答的研究问题清单；问题应能关联到具体 L1/L2（`section_id` / `parent_section_id`）。
 
 ## 何时使用
 
 - 已完成 Step 4（模板大纲），run 处于 phase_2。
-- 需要在写作前明确"哪些问题必须有证据来支撑"。
+- 围绕 `outline_l1.md` 的 L1 章节与 `outline_l2.md` 的 L2 小节，结合 `critical_claims` 生成研究问题。
 
 ## 输入
 
-- `plans/template_structure.json`、`plans/outline_l1.md`
+- `plans/template_structure.json`、`plans/outline_l1.md`、`plans/outline_l2.md`
 - `knowledge/source_index.json`（`topic_index` 跨文档主题导航）
 - `knowledge/provenance_index.json`（L1→L2→L3 目录树与 L3 `location`）
 - `knowledge/document_tocs/`（单文档可读目录，按需查阅）
 - `knowledge/knowledge_gaps.md`
 
-## 文档导航消费约定（与 Step 3 / writing-core 协调）
+## 输入文档访问约定（与 Step 3 / writing-core 协调）
 
 须遵守 **输入文档访问协议**：**L1 → L2 → L3 → 原文**。本步不打开原文，但须结合 `topic_index` 与 `knowledge_gaps.md` 判断哪些主题已有 L1/L2/L3 入口、哪些仍缺失（缺失则问题保持 open）。
 
@@ -33,6 +33,7 @@ description: 中文优先指导 workflow 第 5 步「研究问题」：由 evide
 ## 边界与约束
 
 - 研究问题只描述"需要被回答的问题"，不在此步给出结论。
+- 每个 `outline_l2.md` 中 `evidence: expected` 的 L2 宜有至少一条对应问题；`evidence: pending` 的 L2 对应问题须标 open。
 - critical claim 相关问题必须明确，等待 T0/T1 证据或 HITL，否则保持 open。
 - 不引入 RAG / 向量库 / 复杂 agent 框架来"自动回答"问题。
 

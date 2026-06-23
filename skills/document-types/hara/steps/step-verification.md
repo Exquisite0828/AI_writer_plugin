@@ -49,7 +49,7 @@
 
 ### G1 · 5 类 REQUIRED_CHECKS（每项必须有 pass/fail）
 
-**VC-1 产物齐全**：manifest / source_index（topic_index）/ provenance_index（L1/L2/L3）/ template_structure / claim_support_matrix / draft / review_findings / unresolved_questions 全部存在
+**VC-1 产物齐全**：manifest / source_index（topic_index）/ provenance_index（L1/L2/L3）/ template_structure / outline_l1 / outline_l2 / claim_support_matrix / draft / review_findings / unresolved_questions 全部存在
 
 **VC-2 Source Tier 合规**
 - [ ] critical claim 无 T4 evidence（P0）
@@ -109,7 +109,8 @@
 |---|---|---|---|
 | VC-1-01 | manifest.yaml 存在且可解析 | 文件存在，role/tier/is_fact_source 字段完整 | FAIL: manifest 缺失或字段不完整 |
 | VC-1-02 | 文档导航索引存在 | `knowledge/source_index.json` 存在且含 `documents` 与 `topic_index` | FAIL: 导航索引缺失或不完整 |
-| VC-1-03 | template_structure 存在 | `artifacts/template_structure.json` 存在，含 12 个 section_id | FAIL: 模板结构缺失 |
+| VC-1-03 | template_structure 存在 | `artifacts/template_structure.json` 存在，含 12 个 L1 section_id 且 critical L1 下含 level=2 节点 | FAIL: 模板结构缺失或 L2 不完整 |
+| VC-1-03b | outline_l2 存在 | `plans/outline_l2.md` 存在，各 L2 有明确 parent L1，与 template_structure L2 节点一致 | FAIL: 二级大纲缺失或不一致 |
 | VC-1-04 | claim_support_matrix 存在 | `plans/claim_support_matrix.json` 存在 | FAIL: 引用矩阵缺失 |
 | VC-1-05 | draft 草稿存在 | `draft/hara_draft.md` 存在且非空 | FAIL: 草稿缺失 |
 | VC-1-06 | review 记录存在 | `review/review_findings.md` 存在 | FAIL: 未经审查 |

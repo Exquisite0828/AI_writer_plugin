@@ -14,7 +14,7 @@ description: 中文优先指导 workflow 第 9 步「保守草稿」：由 draft
 
 ## 输入
 
-- `plans/section_tasks.json`、`plans/outline_final.md`、`plans/writing_plan.md`
+- `plans/section_tasks.json`、`plans/outline_final.md`（含 Step 4 L1+L2 经 Step 8 合并后的章节结构）、`plans/writing_plan.md`
 - `plans/citation_plan.json`、`plans/claim_support_matrix.json`、`plans/evidence_map.json`
 - `knowledge/document_tocs/`、`knowledge/provenance_index.json`（按需跳转原文核对 EVD 摘录）
 

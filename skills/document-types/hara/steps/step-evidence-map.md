@@ -4,7 +4,7 @@
 
 ## 本步目的要点（HARA 自主重新驱动）
 
-- 对每个研究问题：**L1 → L2 → L3 → 原文**（可先经 `topic_index` 命中路径），在 L3 叶子精读后生成 `EVD-xxx`（provenance：`file_id` + L1/L2/L3 + `location` + `snippet`）。
+- 对每个研究问题：**L1 → L2 → L3 → 原文**（可先经 `topic_index` 命中路径），在 L3 叶子精读后生成 `EVD-xxx`；问题与 `outline_l2.md` 的 L2 小节对齐时，EVD 宜可回填到对应 `section_id`。
 - 依 tier 判定 status，写入 `plans/evidence_map.json`；weak/unsupported 汇入 `unresolved_questions.md`。
 - **底线**：禁止不经过 L1/L2/L3 直接打开输入文件；禁止 `SRC-xxx` / chunk；禁止把目录 brief 当 EVD 正文。
 

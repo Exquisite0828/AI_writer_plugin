@@ -4,8 +4,8 @@
 
 ## 本步目的要点（HARA 自主重新驱动）
 
-- 遍历 section_tasks 逐任务，匹配 citation_plan 章节并校验任务证据（只用任务携带的 allowed evidence ids）。
-- 逐节渲染保守草稿（来源支持、草稿正文、限制与开放问题、确认标记），汇编 `draft/full_draft.md`。
+- 遍历 section_tasks 逐任务（含 L2 粒度子任务），匹配 citation_plan 章节/小节并校验任务证据（只用任务携带的 allowed evidence ids）。
+- 逐节按 `outline_final.md` 的 L1 章与 L2 小节渲染保守草稿，汇编 `draft/full_draft.md`。
 - HARA critical claim（hazard/hazardous event/S-E-C rating/ASIL/safety goal/final acceptability）无 T0/T1 支撑时保持 `NEEDS_USER_CONFIRMATION` / pending，不写未支撑结论。
 - 不写 `final ASIL is approved`/`risk is acceptable`/`the rating is S1` 等 forbidden final claims（见根 skill）。
 - 保留 source tier、claim 状态与人工确认状态；不把 sample/reference 当作事实证据。

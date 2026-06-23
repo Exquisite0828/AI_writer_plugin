@@ -216,4 +216,4 @@ subagent 约束：不得把 sample/reference 当事实、不得移除 NEEDS_USER
 
 ## 交接到下一步
 
-进入 **Step 4 · 模板大纲**（产出 `template_structure.json` + `outline_l1.md`）。**Step 4 及以后**凡需读输入原文，须遵守 `writing-core` 与各领域 step skill 中的 **输入文档访问约定**：仅经 L1→L2→L3→原文，不得使用旧版 chunk/SRC 或直接全文盲搜方式。
+进入 **Step 4 · 模板大纲**（`template_structure.json` + `outline_l1.md` + `outline_l2.md`）。**Step 4 及以后**读 template/sample/reference 原文须 **L1→L2→L3→原文**（见 writing-core），不得 chunk/SRC/全文盲搜。

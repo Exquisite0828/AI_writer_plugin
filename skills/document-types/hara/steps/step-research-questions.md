@@ -5,8 +5,8 @@
 ## 本步目的要点（HARA 自主重新驱动）
 
 - 依 Step 3 的 `topic_index` 与 `knowledge_gaps.md` 判断：哪些 HARA 主题已有 L1/L2/L3 入口、哪些仍缺失。
-- 遍历 HARA 模板大纲章节（hazard identification、hazardous event 分析、S/E/C rating、ASIL candidate、safety goals、open issues 等），构造需由来源回答的研究问题。
-- 为每个问题分配 question_id、推断 question_type，并标注 requires_human_confirmation。
+- 依 Step 4 的 **L1 章**（`outline_l1.md`）与 **L2 小节**（`outline_l2.md`）展开：对每个 L2 构造需由来源回答的研究问题；critical 章（SEC-ITEM/OPS/HAZ/HE/SEC/SG）须覆盖 hazard identification、hazardous event 分析、S/E/C rating、ASIL candidate、safety goals、open issues 等意图。
+- 为每个问题分配 question_id、推断 question_type，并标注 `section_id`（L2）与 `parent_section_id`（L1）。
 - HARA critical claims（hazard、hazardous event、S/E/C、ASIL、safety goal、final acceptability）对应的问题必须明确，等待 T0/T1 证据或 HITL，否则保持 open。
 - 依证据候选判定 status（supported/weak/unsupported），写入 `plans/research_questions.json`。
 - 只描述待答问题、不预设结论；不引入 RAG/向量库/复杂 agent 框架来"自动回答"。
@@ -116,9 +116,9 @@ HARA 危害识别的核心是引导词法（HAZOP-style）：对每个功能逐�
 
 ### HARA 标准研究问题模板
 
-按大纲章节构造以下研究问题，为每个问题分配 question_id、推断 question_type：
+按 **L1 章 + L2 小节**（`outline_l2.md`）构造以下研究问题；每个 L2 宜有至少一条对应问题（`evidence: pending` 的 L2 对应问题须标 open）。为每个问题分配 question_id、推断 question_type，并关联 `section_id` / `parent_section_id`：
 
-#### Item 定义类（Q-ITEM）
+#### Item 定义类（Q-ITEM，对齐 SEC-ITEM 下 L2：功能清单 / 系统边界 / 外部接口 / 运行约束）
 | question_id | 问题 | question_type | requires_human_confirmation |
 |---|---|---|---|
 | Q-ITEM-01 | Item 的名称与版本号是什么？ | item_info | false |
@@ -197,7 +197,7 @@ HARA 危害识别的核心是引导词法（HAZOP-style）：对每个功能逐�
 - 方案C 按 question_type 分组生成。
 
 ### 典型修订子任务
-1. 遍历 template_structure 大纲章节构造问题草稿（build_question_drafts）。
+1. 遍历 `outline_l2.md` 各 L2 小节构造问题草稿（build_question_drafts）；L1 仅作 `parent_section_id` 分组。
 2. 为每个问题分配 question_id 并推断 question_type。
 3. 判定 requires_human_confirmation 与 status（supported/weak/unsupported）。
 4. HARA critical claim 无证据问题保持 open。
@@ -220,7 +220,7 @@ HARA 危害识别的核心是引导词法（HAZOP-style）：对每个功能逐�
     "chosen_plan": "<选定修订方案>",
     "rejected_plans": ["<方案及放弃理由>"],
     "subtasks": [
-      {"id": "rt-1", "desc": "遍历大纲章节构造问题草稿", "status": "done"},
+      {"id": "rt-1", "desc": "遍历 outline_l2 各 L2 小节构造问题草稿", "status": "done"},
       {"id": "rt-2", "desc": "分配 question_id 并推断 question_type", "status": "running"},
       {"id": "rt-3", "desc": "判定 requires_human_confirmation 与 status", "status": "not_run"},
       {"id": "rt-4", "desc": "HARA critical claim 无证据问题保持 open", "status": "not_run"}

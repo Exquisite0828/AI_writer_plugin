@@ -15,6 +15,7 @@ description: 中文优先指导 workflow 第 6 步「证据映射」：由 evide
 ## 输入
 
 - `plans/research_questions.json`
+- `plans/outline_l1.md`、`plans/outline_l2.md`（问题与章节/L2 小节对齐时参照）
 - `knowledge/source_index.json`（`topic_index`）
 - `knowledge/provenance_index.json`（L1→L2→L3 目录树与 L3 `location`）
 - `knowledge/document_tocs/`
@@ -40,7 +41,7 @@ description: 中文优先指导 workflow 第 6 步「证据映射」：由 evide
 
 ## 边界与约束
 
-- 证据候选必须经 **L1→L2→L3→阅读原文** 产生；`EVD-xxx` provenance 须含 `file_id` + L1/L2/L3 + `location`，禁止旧版 chunk/SRC 或直接全文盲搜。
+- 证据候选必须经 **L1→L2→L3→阅读原文** 产生；`EVD-xxx` provenance 须含 `file_id` + L1/L2/L3 + `location`；宜可关联到 `research_questions` 的 L2 `section_id`；禁止旧版 chunk/SRC 或直接全文盲搜。
 - 只允许用 T0/T1 来源支撑 critical claim；T3/T4/T5 不能单独支撑。
 - 没有证据或无法定位原文的问题写入 `unresolved_questions.md`，保持 open，不得推断填补。
 - sample/reference 不能作为事实证据进入证据映射；sample 目录（T4）仅用于结构参考，不得从中摘录 hazard/rating 等作为 EVD。

@@ -1,23 +1,39 @@
 # HARA 子 skill · Step 4 · 模板大纲 (Template Outline)
 
-本文件是通用骨架 `skills/workflow-steps/step-template-outline/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
+本文件是通用骨架 `skills/workflow-steps/step-template-outline/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用两阶段流程（**先 L1、后 L2**）与输入文档 L1→L2→L3 访问协议以骨架与 `writing-core` 为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
 ## 本步目的要点（HARA 自主重新驱动）
 
-- 从 inventory 选取 template 材料（select_template），结合 HARA `DocumentTypeRules` 建立 `plans/template_structure.json`。
-- 生成带 order/section_id/title/intent 的结构化章节，并标注 needs_human_confirmation；渲染一级大纲 `plans/outline_l1.md`。
-- HARA 期望章节（缺失须补全）：文档目的与范围、输入材料与假设、item definition 摘要、operational situations 与 modes、hazard identification、hazardous event 分析、S/E/C rating 表、ASIL candidate、safety goals candidate、open issues 与 required confirmations、review summary。
-- 保留 strict_template 的强制章节（mandatory sections），不删减或改名。
-- 只定义结构与章节意图，不写正文、不预设 hazard/rating/ASIL/safety goal 结论。
-- **底线**：保留 HARA 术语（hazard、S/E/C、ASIL、safety goal），但本步不得填入未经证据支撑的专业判断。
+### 阶段 A · 定 L1（文档结构与一级大纲）
+
+- 从 `task_brief` 读取 HARA 写作任务：`critical_claims`、是否 `strict_template`、目标读者、With-Reference / From-Scratch 情景。
+- 经 Step 3 三级目录 **L1→L2→L3** 阅读 `role=template` 的 HARA 模板（T2），提取强制章节与顺序。
+- 经三级目录阅读 `role=sample` 或用户提供的**同类型 HARA 参考报告**（T4），提取**章节划分与表格形状**（不提取 hazard/S-E-C/ASIL/SG 事实）。
+- 合并 HARA `DocumentTypeRules` 与 ISO 26262-3 期望的 12 个 L1 章（SEC-DOC … SEC-REVIEW），产出 `outline_l1.md` 与 `template_structure.json` 的 L1 节点。
+- **底线**：sample 只借结构；L1 不写 hazard/评级结论。
+
+### 阶段 B · 定 L2（二级大纲，L1 定稿后）
+
+- **逐 L1 章**展开 L2，依据：模板在该章下的子节/表格列、sample 同章的小节粒度、任务对该章的 critical claim、`topic_index` 中 Item/工况/接口等材料是否可支撑。
+- 例：SEC-ITEM 的 L2 可含「功能清单 F-xx」「系统边界表」「外部接口 IF-xx」「运行约束」；SEC-OPS 的 L2 可含「工况分类说明」「OS-xx 工况表」——**按模板与参考文档实际形状裁剪**，不机械硬套。
+- 材料缺口时 L2 保留占位并标 `evidence: pending`；写入 `outline_l2.md` 与 `template_structure.json` 的 `level=2` 节点（`parent_id` 指向 L1）。
+- **底线**：L2 只定义写作块与 intent，不填 S/E/C 数值或 ASIL 结论。
 
 ## HARA 报告过程总览（本步定位）
 
-HARA 报告在 ISO 26262-3 约束下有标准 12 节结构。本步从 HARA 模板（T2）建立大纲，进入「报告结构定义」阶段。
+| 输入 | 角色 | 本步如何使用 |
+|---|---|---|
+| `task_brief` | 写作任务 | 定范围、强制章、确认要求 |
+| template（HARA 模板） | T2 结构 | 定 L1 强制节、L2 子节与表格列 |
+| sample / 同类型 HARA 参考 | T4 形状 | 对照章节粒度与表格形状，不借事实 |
+| reference（ISO 26262-3 等） | T3 方法学 | 可选：标准章节/Table 引用位置，不借评级值 |
+| `topic_index` | 材料导航 | 判断某 L2 是否有 T1 材料可写 |
 
-**HARA 报告标准 12 节结构**（★ 为强制章节，须 HITL 确认）：
+**本步定位**：固化 HARA 交付报告的 L1 章 + L2 小节骨架；**不写正文**。
 
-| 节序 | 章节 ID | 标题 | 强制 |
+## HARA 标准 L1 章节（合并 template / 规则后的期望）
+
+| 节序 | section_id | L1 标题 | 强制 |
 |---|---|---|---|
 | 1 | SEC-DOC | 文档信息与修订历史 |  |
 | 2 | SEC-SCOPE | 文档目的与范围 |  |
@@ -32,166 +48,64 @@ HARA 报告在 ISO 26262-3 约束下有标准 12 节结构。本步从 HARA 模�
 | 11 | SEC-OPEN | 开放问题与待确认项 |  |
 | 12 | SEC-REVIEW | 审查总结 | ★ |
 
-**本步定位**：固化 12 节骨架、章节意图、强制章节标记，**不写正文、不预设 hazard / rating / ASIL / SG 结论**。
+With-Reference 情景须在 L1 增加 **Differences from Reference HARA**（可并入 SEC-SCOPE 或独立 L1，须在 `warnings` 说明）。
 
+## HARA 各 L1 下常见 L2 划分（阶段 B 参考，按 template/sample 实际情况取舍）
 
-## 本步将被审查的关键点（Review / Verification 自检清单）
-
-本步输出（`template_structure.json`、`outline_l1.md`）将在 Step 10/11 被以下检查点定位。subagent 交付前应自检：
-
-| 关联检查 | 检查项 | 自检方法 |
+| L1 | 常见 L2 小节（示例） | 主要结构来源 |
 |---|---|---|
-| VC-1-03 | template_structure 含 12 个 section_id | 遍历 SEC-DOC / SCOPE / REF / TERMS / ITEM / OPS / HAZ / HE / SEC / SG / OPEN / REVIEW |
-| RD-1 | 12 个 mandatory section 全部存在 | 缺一即 P0 |
-| RD-1 | 元数据字段就位 | 标题 / 版本 / 日期 / 作者 / 状态字段已留位 |
-| RD-1 | 修订历史预留位 | 至少 1 条修订记录占位（初版即为 v0.1） |
-| 根 skill | 强制章节不删减不改名 | mandatory section 的 section_id 与标题与契约一致 |
+| SEC-ITEM | 功能清单；系统边界；外部接口；运行约束 | template + item definition sample 形状 |
+| SEC-OPS | 工况分类；OS-xx 工况表；模式说明 | template + operational situations 形状 |
+| SEC-HAZ | 引导词说明；H-xx 危害表 | template HARA 表列 |
+| SEC-HE | HE-xxx 危害事件表 | template |
+| SEC-SEC | S 评级；E 评级；C 评级；ASIL 候选 | template + ISO Table 1–4 引用位 |
+| SEC-SG | SG-xx 安全目标表（含 Safe State / FTTI 列） | template + §7.4.2.4 字段要求 |
+| SEC-OPEN | 按类别汇总 open items | 任务 + checklist |
+| SEC-REVIEW | 覆盖度摘要；Confirmation Review 占位 | template |
 
-**自检底线**：本步只定义结构与章节意图，**不写正文、不预设 hazard / rating / ASIL / SG 结论**；模板章节缺失会在 Step 10 直接 P0 阻断。
+L2 的 `section_id` 建议：`{L1_id}-L2-{序号}` 或 `{L1_id}-{短名}`，与 `template_structure.nodes` 一致。
 
+## 本步将被审查的关键点（自检）
 
-
-## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
-
-本步对应 Phase H1（Documentation Completeness）。模板大纲必须为 Clause 5（Item Def）、Clause 6（HARA）、Clause 7（Functional Safety Concept 衔接）的所有强制章节预留位置。
-
-### H1 · 报告章节完整性 Checklist
-
-模板必须含以下章节占位（任一缺失即 **P0**）：
-
-- [ ] 文档信息（标题 / 版本 / 日期 / 作者 / 修订历史 / 状态）
-- [ ] 范围与适用标准（含 ISO 26262-3:2018 版本声明）
-- [ ] 参考文档与术语
-- [ ] **Item Definition 摘要**（SEC-ITEM ★）
-- [ ] **运行工况与模式**（SEC-OPS ★）
-- [ ] **危害识别 H-xx 表**（SEC-HAZ ★）
-- [ ] **危害事件 HE-xxx 表**（SEC-HE ★）
-- [ ] **S/E/C 评级表**（SEC-SEC ★）
-- [ ] **ASIL 候选表**（SEC-SEC ★，与 S/E/C 同节或子节）
-- [ ] **安全目标 SG-xx 表**（SEC-SG ★，含 Safe State / FTTI 字段）
-- [ ] **开放问题**（SEC-OPEN ★）
-- [ ] **验证记录**（SEC-REVIEW ★）
-- [ ] **Confirmation Review 记录**（ASIL ≥ B 强制，含审核员资质声明占位）
-- [ ] **追溯矩阵**（F → H → HE → S/E/C → ASIL → SG）
-- [ ] **签字栏**（作者 / 评审人 / Confirmation Reviewer / FSM / PM）
-- [ ] **Differences from Reference HARA**（仅 With-Reference 情景必备）
-
-### Review 要点
-
-| 失效 | 级别 |
+| 检查项 | 自检方法 |
 |---|---|
-| 任一强制章节缺失 | **P0** |
-| 追溯矩阵章节缺失 | **P1**（影响双向追溯） |
-| SG 表无 Safe State / FTTI 列 | **P0**（ISO 26262-3 §7.4.2.4） |
-| 签字栏缺 Confirmation Reviewer（ASIL ≥ B 场景） | **P0** |
-| With-Reference 情景缺 "Differences from Reference HARA" 节 | **P0** |
-
-### 情景差异
-
-| 维度 | From-Scratch | With-Reference |
-|---|---|---|
-| 模板复用 | 仅参考 ISO 26262-3 标准结构 | 可借用 sample 的章节顺序与表格列定义（结构），**不可**复用其文字 |
-| 必备额外节 | 无 | **Differences from Reference HARA**（强制） |
-
-
-## ISO 26262 HARA 方法论（本步专属执行指引）
-
-### ISO 26262-3 HARA 报告标准章节结构
-
-生成 `template_structure.json` 时，必须包含以下章节（`*` 为强制章节，`needs_human_confirmation=true`）：
-
-| order | section_id | title | intent | needs_human_confirmation |
-|---|---|---|---|---|
-| 1 | SEC-DOC | 文档信息与修订历史 | 标题、版本、日期、作者、状态、修订记录表 | false |
-| 2 | SEC-SCOPE* | 文档目的与范围 | 分析的 item 名称、适用标准（ISO 26262-3）、分析范围（包含/不包含）、预期用途 | false |
-| 3 | SEC-REF | 参考文件 | 引用的项目文件清单（来自 manifest）+ ISO 26262 条款引用 | false |
-| 4 | SEC-TERMS | 术语与缩略语 | HARA/ASIL/S/E/C/SG/HE/HITL 等术语定义，保留英文缩写 | false |
-| 5 | SEC-ITEM* | Item 定义摘要 | item 名称、功能列表（F-xx）、系统边界表（In/Out of scope）、外部接口表（IF-xx）、运行约束；来自 T1 source | true |
-| 6 | SEC-OPS* | 运行工况与模式 | 运行工况表（OS-xx）：ID/描述/道路类型/速度范围/交通密度/天气/驾驶员状态；来自 T1 source | true |
-| 7 | SEC-HAZ* | 危害识别 | 引导词法对每个功能分析失效模式；危害清单（H-xx）：ID/危害描述/相关功能/失效类型 | true |
-| 8 | SEC-HE* | 危害事件分析 | 危害×工况组合分析，危害事件表（HE-xxx）：ID/H-ID/OS-ID/危害事件描述 | true |
-| 9 | SEC-SEC* | S/E/C 评级与 ASIL 候选 | 每个 HE 的 Severity/Exposure/Controllability 评级及文字依据；ASIL 候选（依 ISO 26262-3 Table 4）；全部标 NEEDS_USER_CONFIRMATION | true |
-| 10 | SEC-SG* | 安全目标候选 | 对 ASIL 候选 > QM 的每个 HE 生成安全目标（SG-xx）：ID/描述/ASIL候选/相关HE-ID/状态 | true |
-| 11 | SEC-OPEN | 开放问题与待确认项 | 汇总所有 NEEDS_USER_CONFIRMATION 项；分类：item定义待确认/危害待确认/评级待确认/安全目标待确认 | false |
-| 12 | SEC-REVIEW | 审查总结 | 保守措辞：分析覆盖范围、已支撑项摘要、开放项数量；状态：finalized_with_open_items / blocked_pending_confirmation | false |
-
-### 各强制章节内容结构说明
-
-**SEC-ITEM 内部结构：**
-- 功能清单：`F-01 [功能名称]：[描述]`（≥3 条）
-- 系统边界表：两列（系统内 In scope / 系统外 Out of scope）
-- 外部接口表：IF-ID / 接口名 / 类型（CAN/电气/机械）/ 信号方向 / 说明
-- 运行约束：速度范围、温度范围、应用车型/场景限制
-
-**SEC-OPS 内部结构（表格列）：**
-OS-ID | 工况描述 | 道路类型 | 速度范围 | 交通密度 | 天气/能见度 | 驾驶员状态
-至少覆盖：高速行驶 / 城市驾驶 / 低速机动（停车场）/ 恶劣天气或紧急工况
-
-**SEC-HAZ 内部结构（表格列）：**
-H-ID | 危害描述 | 相关功能（F-xx）| 失效类型 | 失效来源 | 状态
-
-失效类型引导词（对每个功能逐一检查）：
-- 无功能（No Function）/ 功能过强（More Function）/ 功能过弱（Less Function）
-- 错误方向（Wrong Direction）/ 非预期功能（Unintended Function）
-- 时序过早/过晚（Too Early / Too Late）
-
-**SEC-HE 内部结构（表格列）：**
-HE-ID | H-ID | OS-ID | 危害事件描述 | 是否成立 | 说明
-
-**SEC-SEC 内部结构（表格列）：**
-HE-ID | 危害事件描述（简） | S候选 | S依据 | E候选 | E依据 | C候选 | C依据 | ASIL候选 | 状态
-
-**SEC-SG 内部结构（表格列）：**
-SG-ID | 安全目标描述 | ASIL候选 | 相关HE-ID | 来自H-ID | 状态
+| L1 完整 | 12 个 SEC-* L1 齐全（+ With-Reference 差异节） |
+| L2 在 L1 之后 | `outline_l2.md` 每个 L2 有明确 `parent` L1 |
+| template 已读 | `template_source` 指向实际 template；经 document_tocs 读取 |
+| sample 仅形状 | L2 intent 无 sample 中的具体 hazard/评级事实 |
+| strict_template | mandatory L1 未删改 |
+| 三 artifact 一致 | JSON nodes ↔ outline_l1 ↔ outline_l2 |
 
 ## A1 审核任务（HARA）
 
-### 候选方案（示例）
-- 方案A 按检查维度逐项核对。
-- 方案B 按 artifact/章节逐项核对。
-- 方案C 先扫高风险约束（strict_template 强制章节保留与 HARA 期望章节覆盖）再补其余。
-
 ### 典型审核子任务
-1. 核对 HARA 期望章节覆盖是否完整（S/E/C、ASIL、safety goals、open issues 等）。
-2. 核对 strict_template 强制章节是否保留。
-3. 核对大纲是否非空且非敷衍、未预设结论。
-4. 核对 template_structure/outline_l1 是否符合 artifact 契约。
+
+1. 核对 L1 覆盖 HARA 12 章 + 情景必备节。
+2. 核对 L2 仅出现在 L1 定稿之后，且每 L1 下 L2 与 template/sample 形状一致或 gap 已说明。
+3. 核对 sample/reference 未升格为事实。
+4. 核对三份 artifact 字段一致。
 
 ## A2 修订任务（HARA）
 
-### 候选方案（示例）
-- 方案A 直接套用 HARA 内置模板骨架。
-- 方案B 从 inventory 选取的 template 材料提取章节结构。
-- 方案C 二者合并去重（strict_template 强制章节优先）。
-
 ### 典型修订子任务
-1. 选取 template 材料并解析其章节。
-2. 与 HARA 规则合并建 template_structure。
-3. 逐节生成 order/section_id/title/intent。
-4. 标注 strict_template 强制章节与 needs_human_confirmation。
+
+1. 读 task_brief + template（L1→L2→L3）提取 L1 骨架。
+2. 读 sample/同类型参考（L1→L2→L3）对照章节形状。
+3. 写入 L1 → `outline_l1.md` + JSON L1 节点。
+4. **L1 定稿后**逐章定 L2 → `outline_l2.md` + JSON L2 节点。
+5. 标注 `needs_human_confirmation` 与 `evidence: pending`。
 
 ## state.json 示例（HARA）
 
 ```json
 {
   "step": "template-outline",
-  "review_state": {
-    "chosen_plan": "<选定审核方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rv-1", "desc": "核对 HARA 期望章节覆盖完整", "status": "done"},
-      {"id": "rv-2", "desc": "核对 strict_template 强制章节保留", "status": "running"},
-      {"id": "rv-3", "desc": "核对大纲非空且未预设结论", "status": "not_run"}
-    ]
-  },
   "revision_state": {
-    "chosen_plan": "<选定修订方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
     "subtasks": [
-      {"id": "rt-1", "desc": "选取 template 材料并解析章节", "status": "done"},
-      {"id": "rt-2", "desc": "与 HARA 规则合并建 template_structure", "status": "running"},
-      {"id": "rt-3", "desc": "逐节生成 order/section_id/title/intent", "status": "not_run"},
-      {"id": "rt-4", "desc": "标注强制章节与 needs_human_confirmation", "status": "not_run"}
+      {"id": "rt-1", "desc": "读 task+template+sample 定 L1", "status": "done"},
+      {"id": "rt-2", "desc": "写入 outline_l1 与 L1 节点", "status": "done"},
+      {"id": "rt-3", "desc": "逐 L1 章定 L2 大纲", "status": "running"},
+      {"id": "rt-4", "desc": "写入 outline_l2 与 L2 节点", "status": "not_run"}
     ]
   }
 }
@@ -199,4 +113,4 @@ SG-ID | 安全目标描述 | ASIL候选 | 相关HE-ID | 来自H-ID | 状态
 
 ## B 审核检查项（HARA）
 
-subagent 逐项核对：HARA 期望章节覆盖是否完整（含 S/E/C rating 表、ASIL candidate、safety goals candidate、open issues 与 required confirmations）；`strict_template` 强制章节是否保留；大纲是否非空且非敷衍、是否未预设 hazard/rating/ASIL/safety goal 结论。
+subagent 逐项核对：L1 是否综合任务+template+同类型参考且覆盖 HARA 强制章；L2 是否在 L1 定稿后按实际情况展开；template/sample 是否经三级目录读取；sample 是否仅借结构；`outline_l1` / `outline_l2` / `template_structure.json` 是否一致；是否未预设 hazard/rating/ASIL/SG 结论。

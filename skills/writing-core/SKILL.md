@@ -85,6 +85,7 @@ Core artifacts include:
 - `knowledge/knowledge_gaps.md`
 - `plans/template_structure.json`
 - `plans/outline_l1.md`
+- `plans/outline_l2.md`
 - `plans/research_questions.json`
 - `plans/evidence_map.json`
 - `plans/unresolved_questions.md`
