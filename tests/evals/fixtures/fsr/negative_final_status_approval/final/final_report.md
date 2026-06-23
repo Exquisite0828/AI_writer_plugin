@@ -1,3 +1,0 @@
-# FSR Fixture
-
-Status: approved

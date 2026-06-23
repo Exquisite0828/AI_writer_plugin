@@ -1,4 +1,0 @@
-# Final Outline
-
-- Background
-- Architecture

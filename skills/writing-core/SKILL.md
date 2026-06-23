@@ -46,28 +46,9 @@ Claude Code command:
 /ai-writing-plugin:write "Run the writing workflow with examples/custom_technical_note_profile_demo_fixture/task.yaml"
 ```
 
-CLI smoke-test examples:
-
-```bash
-.venv/bin/python -m ai_writing_plugin write-run --task examples/hara_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/technical_solution_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/test_report_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/fsr_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/generic_document_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/custom_technical_note_profile_demo_fixture/task.yaml
-```
-
-Profile maintenance entry:
-
-```bash
-.venv/bin/python -m ai_writing_plugin profile-from-spec --spec docs/document_types/generic_document_SPEC.md --out /tmp/candidate-profile
-```
-
-`profile-from-spec` creates candidate profile material only. It must not overwrite an active profile.
-
 ## Generic Workflow
 
-The generic workflow is deterministic and artifact-first:
+The generic workflow is artifact-first:
 
 ```text
 input materials
@@ -87,11 +68,11 @@ input materials
 -> candidate profile update / candidate skill patch
 ```
 
-Equivalent engine phase words include init run, ingest, source index, template outline, research questions, evidence map, citation plan, section tasks, draft, review, verify, finalize, trace, and learning.
+Equivalent stage words include init run, ingest, source index, template outline, research questions, evidence map, citation plan, section tasks, draft, review, verify, finalize, trace, and learning.
 
 ## Artifact Contract
 
-The artifact contract is maintained in `docs/CURRENT_ARTIFACT_CONTRACTS.md` and enforced by the Python engine and tests. Skill.md can explain the contract but must not invent a parallel schema.
+The artifact contract is maintained in `docs/CURRENT_ARTIFACT_CONTRACTS.md` and enforced by each step skill's subagent against its declared schema. Skill.md can explain the contract but must not invent a parallel schema.
 
 Core artifacts include:
 
@@ -197,7 +178,7 @@ Final boundary:
 
 ## Profiles, Generic Mode, And Markdown Spec
 
-Official L3 document types are implemented through built-in `DocumentTypeRules`:
+Official L3 document types are implemented through built-in document-type skills under `skills/document-types/`:
 
 - `hara`
 - `technical_solution`
@@ -209,7 +190,7 @@ Official L3 document types are implemented through built-in `DocumentTypeRules`:
 External `document_profile.yaml` is an L2 / customer profile mechanism. It must pass validation before use. `custom_technical_note` is an external profile demo, not an official L3 document type.
 TSC / Technical Safety Concept remains deferred and is not an official built-in document type.
 
-Markdown Spec is a human-readable upstream explanation layer. It is not the runtime machine rule and must not be treated as the only execution rule. `profile-from-spec` may turn a Markdown Spec into a candidate profile, but that candidate profile stays inactive until separately reviewed and activated through a controlled process.
+Markdown Spec is a human-readable upstream explanation layer. It is not the runtime machine rule and must not be treated as the only execution rule. A Markdown Spec may be converted into a candidate profile, but that candidate profile stays inactive until separately reviewed and activated through a controlled process.
 
 ## Candidate Learning Policy
 
