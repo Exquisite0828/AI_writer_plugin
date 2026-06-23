@@ -1,0 +1,57 @@
+task_type: ItemDefinitionDocument
+task_title: 基于 EPS Demo 输入生成 Item Definition 文档
+display_name: ISO 26262 Item Definition 文档
+target_audience: 功能安全工程师 / 系统工程师
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - item function description completeness and accuracy
+  - system boundary In scope / Out of scope finality
+  - external interface direction and completeness
+  - operational situation and mode description adequacy
+  - assumption and dependency completeness
+  - reasonably foreseeable misuse scenario completeness
+  - item dependency and interaction completeness
+  - final item definition approval or ISO 26262 compliance conclusion
+inputs:
+  - path: inputs/syrs_source.md
+    role: source
+    title: EPS Demo SyRS Extract
+    notes: "Fact source for F-xx function descriptions and intended behavior."
+  - path: inputs/system_architecture.md
+    role: source
+    title: EPS Demo System Architecture
+    notes: "Fact source for In scope / Out of scope and subsystem decomposition."
+  - path: inputs/interface_spec.md
+    role: source
+    title: EPS Demo Interface Specification
+    notes: "Fact source for IF-xx interfaces, signal names, types, and directions."
+  - path: inputs/odd_scenarios.md
+    role: source
+    title: EPS Demo ODD and Operational Scenarios
+    notes: "Fact source for operating environment, constraints, and OS-xx context."
+  - path: inputs/assumptions_constraints.md
+    role: source
+    title: EPS Demo Assumptions and Constraints
+    notes: "Fact source for assumptions, dependencies, and operational constraints."
+  - path: inputs/misuse_input.md
+    role: source
+    title: EPS Demo Foreseeable Misuse Input
+    notes: "Fact source for reasonably foreseeable misuse scenarios per ISO 26262-3 §5.4.4 b."
+  - path: inputs/idd_template.md
+    role: template
+    title: IDD Demo Document Template
+    notes: "Structure source only. Do not use as factual evidence."
+  - path: inputs/idd_checklist.md
+    role: checklist
+    title: IDD Demo Review Checklist
+    notes: "Review criteria only. Do not use as factual evidence."
+  - path: inputs/clause5_reference.md
+    role: reference
+    title: ISO 26262-3 Clause 5 Method Reference
+    notes: "Methodology reference only. Do not use as project-specific EPS facts."
+  - path: inputs/sample_idd.md
+    role: sample
+    title: IDD Demo Sample Shape
+    notes: "Style and table-shape sample only. Never use as facts, functions, boundaries, interfaces, or conclusions for this project."

@@ -204,6 +204,7 @@ Official L3 document types are implemented through built-in document-type skills
 - `technical_solution`
 - `test_report`
 - `fsr`
+- `ItemDefinitionDocument`
 
 `generic_document` is L1 generic mode. It helps run the shared workflow for documents that have source, template, checklist, sample, reference, or profile guidance, but it does not promise complete domain professional judgment.
 
