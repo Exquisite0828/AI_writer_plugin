@@ -27,7 +27,7 @@ HARA（Hazard Analysis and Risk Assessment，危害分析与风险评估）是 I
 
 HARA 输出是功能安全概念的起点，后续所有功能安全需求都须可追溯至 HARA 的安全目标。
 
-本 plugin 通过 15 步流程驱动 HARA 报告写作；每步对应 `skills/document-types/hara/steps/step-*.md`，各步在总过程中的定位详见对应子 skill 的「HARA 报告过程总览（本步定位）」节。
+本 plugin 通过 **13 个** step skill 驱动 HARA 报告写作（逻辑 Step 编号 1–6、9–15；引用计划与章节任务已并入 Step 6）；每步对应 `skills/document-types/hara/steps/step-*.md`，各步定位详见对应子 skill。
 
 
 ## Supported Level And Positioning

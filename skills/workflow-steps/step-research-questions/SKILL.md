@@ -137,4 +137,4 @@ description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划
 
 ## 交接到下一步
 
-进入 **Step 6 · 证据·引用·章节计划**（合并原 6–8）。Step 6 读取 `section_writing_plans.json`，三阶段产出 evidence_map、citation_plan、section_tasks 等全部写作前计划 artifact。
+进入 **Step 6 · 证据·引用·章节计划**。Step 6 读取 `section_writing_plans.json`，三阶段产出 evidence_map、citation_plan、section_tasks 等全部写作前计划 artifact。
