@@ -18,6 +18,7 @@ description: 中文优先总控 skill，按顺序编排 workflow 的 15 个 step
 ## 核心原则
 
 - **顺序、单向、artifact-first**：每步只消费上游 `runs/<run_id>/` 下的 artifacts。
+- **输入文档仅经 L1→L2→L3 访问**：Step 4 及以后读原始输入须遵守 `writing-core` 输入文档访问协议；禁止 chunk/SRC/直接全文盲搜。
 - **每步先子代理审核、再人工确认**：每个 step 执行后先由独立 subagent 自主审核并修订（见各 step skill 的「子代理审核」小节），通过后才向用户弹出确认问题列表。确认问题列表来自该 step 的 subagent 产出（`stage_reviews/<stage>/review_prompt.md` + `review_units.json` + `issues.json`），不是凭空生成。
 - **子代理审核双轨 + 进度跟踪**：subagent 对「审核任务」与「修订任务」分别自主分解（各 ≥2 方案择优），在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` / `revision_state` 两组任务、三态字段（`not_run` / `running` / `done`）各自跟踪进度；全部子任务 `done` 且无 P0/P1 才算本步审核结束。
 - **修订靠提取目的、重新驱动**：发现问题时先提取该步脚本的执行目的，再由 subagent 围绕目的重新驱动完成任务，必要时为当前任务重新生成更适用的新脚本，产出仍须符合 artifact 契约与边界。
@@ -31,7 +32,7 @@ stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage �
 
 | Step | stage |
 |---|---|
-| 1 输入材料 / 2 材料清单 / 3 来源索引 | `ingest` |
+| 1 输入材料 / 2 材料清单 / 3 文档目录索引 | `ingest` |
 | 4 模板大纲 | `outline` |
 | 5 研究问题 / 6 证据映射 | `evidence` |
 | 7 引用计划 / 8 章节任务 | `planning` |

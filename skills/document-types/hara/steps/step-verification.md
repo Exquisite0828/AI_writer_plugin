@@ -18,7 +18,7 @@
 
 | 类别 | 核心检查 |
 |---|---|
-| 产物齐全 | manifest / source index / 草稿 / 审查记录 / 开放项汇总 全部存在 |
+| 产物齐全 | manifest / 文档目录索引 / 草稿 / 审查记录 / 开放项汇总 全部存在 |
 | Source Tier 合规 | 无 T4（sample）或 T5（推断）作为 critical claim 证据 |
 | Critical Claim 状态 | 全部 H-xx / HE-xxx / S/E/C / ASIL / SG 标 `NEEDS_USER_CONFIRMATION` |
 | ASIL 逻辑 | ASIL 候选由 S/E/C 经 Table 4 查表得出，逻辑一致 |
@@ -49,7 +49,7 @@
 
 ### G1 · 5 类 REQUIRED_CHECKS（每项必须有 pass/fail）
 
-**VC-1 产物齐全**：manifest / source_index / template_structure / claim_support_matrix / draft / review_findings / unresolved_questions 全部存在
+**VC-1 产物齐全**：manifest / source_index（topic_index）/ provenance_index（L1/L2/L3）/ template_structure / claim_support_matrix / draft / review_findings / unresolved_questions 全部存在
 
 **VC-2 Source Tier 合规**
 - [ ] critical claim 无 T4 evidence（P0）
@@ -108,7 +108,7 @@
 | CHECK-ID | 检查项 | 通过条件 | 失败处理 |
 |---|---|---|---|
 | VC-1-01 | manifest.yaml 存在且可解析 | 文件存在，role/tier/is_fact_source 字段完整 | FAIL: manifest 缺失或字段不完整 |
-| VC-1-02 | source_index 存在 | `artifacts/source_index.json` 存在 | FAIL: source index 缺失 |
+| VC-1-02 | 文档导航索引存在 | `knowledge/source_index.json` 存在且含 `documents` 与 `topic_index` | FAIL: 导航索引缺失或不完整 |
 | VC-1-03 | template_structure 存在 | `artifacts/template_structure.json` 存在，含 12 个 section_id | FAIL: 模板结构缺失 |
 | VC-1-04 | claim_support_matrix 存在 | `plans/claim_support_matrix.json` 存在 | FAIL: 引用矩阵缺失 |
 | VC-1-05 | draft 草稿存在 | `draft/hara_draft.md` 存在且非空 | FAIL: 草稿缺失 |
@@ -121,7 +121,9 @@
 | VC-2-01 | 无 T4（sample）作为 critical claim 支撑 | claim_support_matrix 中无任何 H-xx/HE-xxx/S/E/C/ASIL/SG 的 evidence_ids 指向 tier=T4 | P0 FAIL: sample 被用作事实 source |
 | VC-2-02 | 无 T5（推断）作为任何 claim 支撑 | 无 tier=T5 的 evidence 进入 claim_support_matrix | P0 FAIL: 推断作为 source |
 | VC-2-03 | reference（T3）不单独支撑具体评级值 | claim_support_matrix 中 S/E/C 的 tier 字段不为单纯 T3 | P1 FAIL: 评级仅由方法框架支撑 |
-| VC-2-04 | 每条 SRC-xxx 记录含 provenance | source_index 每条有 file_id + 章节/行号/段落位置 | P1 FAIL: provenance 为空 |
+| VC-2-04 | 每条 EVD-xxx 含 L1/L2/L3 provenance | EVD 有 file_id + l1/l2/l3 + location | P1 FAIL |
+| VC-2-05 | provenance_index L3 完整 | 每个 L3（或 gap 下 L2 叶子）含 location | P1 FAIL |
+| VC-2-06 | 无旧式输入访问 | 无 EVD 来自 SRC/chunk 或未走三级目录的全文摘录 | P1 FAIL |
 
 #### VC-3 Critical Claims 状态检查
 | CHECK-ID | 检查项 | 通过条件 | 失败处理 |

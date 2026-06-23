@@ -21,7 +21,7 @@ HARA 流程把各类输入材料拆解为可索引的 inventory 记录。本步�
 - sample 报告只可提取格式 / 表格形状 / 措辞风格，**绝不抽取其中的 hazard / rating / ASIL / SG 作为本项目内容**
 - reference 方法学可抽取 S/E/C/ASIL 评定方法，但不能为本项目事实背书
 
-**本步定位**：把每份材料解析为可被后续 source-index / evidence-map / citation-plan 引用的 chunk 与字段，保持 role 与事实边界。
+**本步定位**：把每份材料解析为可被后续 **L1/L2/L3 文档目录索引** 引用的结构化记录；**不在此步**用旧方式 chunk/SRC 或直接全文当证据。
 
 
 ## 本步将被审查的关键点（Review / Verification 自检清单）

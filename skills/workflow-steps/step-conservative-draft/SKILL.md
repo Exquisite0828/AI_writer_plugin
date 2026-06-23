@@ -16,6 +16,7 @@ description: 中文优先指导 workflow 第 9 步「保守草稿」：由 draft
 
 - `plans/section_tasks.json`、`plans/outline_final.md`、`plans/writing_plan.md`
 - `plans/citation_plan.json`、`plans/claim_support_matrix.json`、`plans/evidence_map.json`
+- `knowledge/document_tocs/`、`knowledge/provenance_index.json`（按需跳转原文核对 EVD 摘录）
 
 ## 产出 artifacts
 
@@ -24,6 +25,7 @@ description: 中文优先指导 workflow 第 9 步「保守草稿」：由 draft
 ## 边界与约束
 
 - "保守"：不超出证据范围，不把 sample/reference 当事实，不写未支撑的 critical claim。
+- 撰写某节需核对证据时，经 `EVD-xxx` 回溯 L1/L2/L3 + `location` 后读原文；**禁止**跳过三级目录或直接打开 `input_inventory.path` 全文；不得用目录 `brief` 写正文。
 - critical claim 无 T0/T1 支撑时保持 `NEEDS_USER_CONFIRMATION` / pending。
 - 不写 `approved` / `validated` / `compliant` / `risk accepted` / `production ready` 等批准类措辞。
 - 保留 source tier、claim 状态与人工确认状态。

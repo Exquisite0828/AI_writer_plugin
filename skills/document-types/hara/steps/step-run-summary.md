@@ -127,7 +127,7 @@ run_summary 是本次 HARA run 的可追溯记录，**只描述发生了什么�
    确保危害识别完整性
 2. **工况 × 危害交叉矩阵**：不必列出所有 H×OS 组合，只列成立的危害事件，不成立的注明原因后省略
 3. **NEEDS_USER_CONFIRMATION 传播规则**：从 hazard → HE → S/E/C → ASIL → SG 依次传播，无例外
-4. **分段知识缺口记录**：在 source index 阶段即识别 gap，避免草稿阶段静默推断填充
+4. **分段知识缺口记录**：在 document-index（Step 3）阶段即识别 gap，避免草稿阶段静默推断填充
 ```
 
 #### 5. Run 状态总结

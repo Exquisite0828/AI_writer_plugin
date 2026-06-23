@@ -36,7 +36,7 @@ HARA 报告完成时只能使用**保守状态声明**，不输出「合规 / �
 | VC-5-01 | 无专业批准措辞 | 全文 grep 无 `approved` / `validated` / `compliant` / `HARA 完成` / `ASIL D（已批准）` |
 | 元交付 | document_status 取保守值 | status ∈ `ready_for_human_review` / `finalized_with_open_items` / `blocked_pending_confirmation` |
 | 元交付 | open_items_registry 汇总完整 | 注册项数 ≥ 草稿中 `NEEDS_USER_CONFIRMATION` 数 |
-| 元交付 | evidence_traceability 可回溯 | 每条 critical claim 可追溯到 SRC-xxx + file_id |
+| 元交付 | evidence_traceability 可回溯 | claim → EVD → file_id + L1/L2/L3 + location |
 | 元交付 | 免责声明强制文本就位 | 含「本报告不等于 HARA 专业批准或 ISO 26262 合规认证」 |
 | VC-3-04 | ASIL 仅为候选 | 全文无 `ASIL is D` / `ASIL D（已批准）` 等最终断言 |
 
@@ -129,7 +129,7 @@ HARA 报告完成时只能使用**保守状态声明**，不输出「合规 / �
 |---|---|---|
 | `hara_report.md` | 修订后完整 HARA 报告正文（12 节结构） | 见下 |
 | `open_items_registry.md` | 所有 NEEDS_USER_CONFIRMATION 条目汇总，含类别/影响/等待什么 | 随报告交付 |
-| `evidence_traceability.md` | 每条 critical claim → 证据 SRC-xxx → source 文件的溯源矩阵 | 随报告交付 |
+| `evidence_traceability.md` | claim → EVD → file_id + L1/L2/L3 + location | 随报告交付 |
 | `review_verification_summary.md` | 审查（Step 10）+ 验证（Step 11）+ 修订（Step 12）的摘要与状态 | 随报告交付 |
 | `delivery_note.md` | 交付说明：本报告限制、未解决项数量、建议下一步 | 随报告交付 |
 
@@ -180,12 +180,10 @@ HARA 报告完成时只能使用**保守状态声明**，不输出「合规 / �
 ```
 ## Evidence Traceability Matrix
 
-| Claim ID | Claim 类型 | Evidence SRC-xxx | Source 文件 | tier | 状态 |
+| Claim ID | Claim 类型 | Evidence EVD-xxx | Source · L1/L2/L3 · location | tier | 状态 |
 |---|---|---|---|---|---|
-| H-01 | hazard | SRC-012 | item_definition.docx §3.2 | T1 | needs_confirmation |
-| HE-001.S | severity | SRC-015 | item_definition.docx §4.1 | T1 | needs_confirmation |
-| HE-001.E | exposure | SRC-021 | operational_situations.xlsx OS-01 | T1 | needs_confirmation |
-| SG-01 | safety_goal | SRC-012, SRC-021 | item_definition.docx + operational_situations.xlsx | T1 | needs_confirmation |
+| H-01 | hazard | EVD-012 | item_definition.docx · 系统概述 / 3.2 功能 / F-01 段落 · §3.2 L45–78 | T1 | needs_confirmation |
+| HE-001.E | exposure | EVD-021 | operational_situations.xlsx · 工况 / OS-01 / 城市工况 · OS-01 行 | T1 | needs_confirmation |
 ```
 
 ## A1 审核任务（HARA）

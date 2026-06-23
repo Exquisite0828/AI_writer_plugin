@@ -16,7 +16,11 @@ description: 中文优先指导 workflow 第 7 步「引用计划」：由 plan-
 
 - `plans/evidence_map.json`、`plans/unresolved_questions.md`
 - `plans/template_structure.json`、`plans/outline_l1.md`
-- `knowledge/source_index.json`、`knowledge/provenance_index.json`
+- `knowledge/source_index.json`、`knowledge/provenance_index.json`、`knowledge/document_tocs/`
+
+## 输入文档访问约定（强制，见 writing-core）
+
+引用计划须能回溯 **L1→L2→L3→原文**。规划 citation 时可查 `topic_index` / `document_tocs` 确认 EVD 对应的三级路径，**不得**把目录 brief 当证据正文，**不得**用旧方式直接打开输入文件取证。
 
 ## 产出 artifacts
 

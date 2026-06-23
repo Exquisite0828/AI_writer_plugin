@@ -28,7 +28,7 @@ description: 中文优先指导 workflow 第 14 步「运行总结」：由 lear
 
 - 运行总结只描述发生了什么，不重新下专业结论。
 - 真实 HITL 决策记录在 `trace/hitl_decisions.jsonl`，非交互 run 不得伪造确认。
-- `completed` 仅表示 engine lifecycle 完成，不表示专业批准。
+- 运行总结应记录三级目录索引质量（L1/L2/L3 覆盖、`knowledge_gaps`）及是否全程遵守 L1→L2→L3 访问协议（无直接全文读输入文件 / 无 SRC chunk）。
 
 ## 加载任务专属子 skill（必做）
 

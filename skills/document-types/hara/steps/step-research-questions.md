@@ -4,6 +4,7 @@
 
 ## 本步目的要点（HARA 自主重新驱动）
 
+- 依 Step 3 的 `topic_index` 与 `knowledge_gaps.md` 判断：哪些 HARA 主题已有 L1/L2/L3 入口、哪些仍缺失。
 - 遍历 HARA 模板大纲章节（hazard identification、hazardous event 分析、S/E/C rating、ASIL candidate、safety goals、open issues 等），构造需由来源回答的研究问题。
 - 为每个问题分配 question_id、推断 question_type，并标注 requires_human_confirmation。
 - HARA critical claims（hazard、hazardous event、S/E/C、ASIL、safety goal、final acceptability）对应的问题必须明确，等待 T0/T1 证据或 HITL，否则保持 open。
@@ -26,7 +27,7 @@ HARA 危害识别的核心是引导词法（HAZOP-style）：对每个功能逐�
 | Unintended Function | 非预期激活 | 未被指令时意外激活会发生什么？|
 | Too Early / Too Late | 时序错误 | 激活时机不对时会发生什么？|
 
-**本步定位**：把章节意图与知识缺口转译为 Q-ITEM / Q-OPS / Q-HAZ / Q-HE / Q-SEC / Q-SG 等问题，供 evidence-map 检索证据。问题本身不预设答案。
+**本步定位**：把章节意图与导航缺口转译为研究问题；**不在此步读原文**（读原文须 Step 6 起按 L1→L2→L3）。
 
 
 ## 本步将被审查的关键点（Review / Verification 自检清单）

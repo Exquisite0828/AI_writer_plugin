@@ -28,7 +28,7 @@ description: 中文优先指导 workflow 第 12 步「修订」：由 finalize-r
 
 - 修订是确定性的，依据审查/验证结果，不引入未支撑的新结论。
 - 无法解决的开放项继续带入最终交付的 open items，保持 pending。
-- 仍不输出批准类措辞；HITL pending 不得自动改为 confirmed。
+- 修订不得破坏 `EVD-xxx` → L1/L2/L3 + `location` 溯源链；补证据须 **L1→L2→L3→读原文**，禁止旧版 chunk/SRC 或直接打开输入文件摘录。
 
 ## 加载任务专属子 skill（必做）
 

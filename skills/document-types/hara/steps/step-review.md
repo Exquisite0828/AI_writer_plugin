@@ -5,7 +5,7 @@
 ## 本步目的要点（HARA 自主重新驱动）
 
 - 对 HARA 草稿做多维度结构化审查：模板符合性、HARA checklist 满足度、证据支撑情况。
-- 审查维度覆盖：模板完整性、hazard/S-E-C/ASIL/safety goal 等 critical claim 的证据支撑、sample/reference 误用、HITL 未确认项可见性。
+- 审查维度覆盖：critical claim 的 EVD 是否经 **L1/L2/L3** 可回溯原文；是否存在未走三级目录或直接全文读输入文件的情况。
 - 问题按 P0/P1/P2/info 分级，阻断类问题（P0/P1）显式标记。
 - 审查是机器辅助检查，不等于合格人工审查或专业批准；未确认项保持可见。
 - 发现的问题供 Step 12 修订使用，不在此步直接改稿。

@@ -27,7 +27,7 @@ description: 中文优先指导 workflow 第 13 步「最终报告」：由 fina
 - final report **不是批准**：它是 review-ready package，不替代合格人工审查或专业 sign-off。
 - 保守状态如 `finalized_with_open_items` / `ready_for_human_review` / `blocked_pending_confirmation`。
 - critical claim 与 open items 保持 pending，禁止输出最终批准类结论。
-- `runs/<run_id>/` 为本地 runtime output，不提交 git。
+- 交付溯源须保留「claim → EVD → file_id + L1/L2/L3 + location」；人工复核原文时亦须 L1→L2→L3→原文。
 
 ## 加载任务专属子 skill（必做）
 

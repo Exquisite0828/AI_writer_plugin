@@ -102,4 +102,4 @@ subagent 约束：不得把 sample/reference 当事实、不得移除 NEEDS_USER
 
 ## 交接到下一步
 
-清单建立后，进入 **Step 3 · 来源索引**（`source_index.json` + `provenance_index.json` + `knowledge_gaps.md`）。
+清单建立后，进入 **Step 3 · 文档目录索引**（L1/L2/L3 三级目录 + `source_index.json` + `provenance_index.json` + `document_tocs/` + `knowledge_gaps.md`）。

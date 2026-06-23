@@ -9,7 +9,8 @@ description: 中文优先指导 workflow 第 4 步「模板大纲」：由 outli
 
 ## 何时使用
 
-- 已完成 Step 3（来源索引），run 处于 phase_1。
+- 已完成 Step 3（文档目录索引），run 处于 phase_1。
+- 可选参考 `knowledge/source_index.json` 的 `topic_index` 了解输入材料三级目录覆盖情况（**不在此步按旧方式打开原文**；若需读原文须 L1→L2→L3，见 writing-core）。
 - 需要确定文档章节骨架后再进入证据与写作规划。
 
 ## 输入

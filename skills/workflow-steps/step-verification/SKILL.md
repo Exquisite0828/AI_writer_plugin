@@ -27,7 +27,7 @@ description: 中文优先指导 workflow 第 11 步「验证」：由 review-run
 
 - 验证是确定性检查，不替代专业判断或最终批准。
 - 失败项必须如实写入 `failures.md`，不得静默通过。
-- 验证 `status` 为保守状态，不输出 `validated` 等批准措辞。
+- 验证须包含：L1/L2/L3 目录完整性、`EVD-xxx` 是否经三级路径可回溯原文（禁止 SRC/chunk 或直接全文读输入文件），见任务专属子 skill。
 
 ## 加载任务专属子 skill（必做）
 

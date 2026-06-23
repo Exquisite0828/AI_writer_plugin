@@ -4,15 +4,13 @@
 
 ## 本步目的要点（HARA 自主重新驱动）
 
-- 对每个研究问题在 source_index 做术语匹配打分（match_evidence，score ≥ 2 取前 3），生成 `EVD-xxx` 证据候选。
-- 依候选来源 tier 判定支撑能力，定出问题 status（supported/weak/unsupported），写入 `plans/evidence_map.json`。
-- 只允许 T0/T1 来源支撑 HARA critical claim（hazard、hazardous event、S/E/C、ASIL、safety goal）；T3/T4/T5 不能单独支撑。
-- 把 weak/unsupported/需确认的 HARA 问题汇入 `plans/unresolved_questions.md` 并保持 open，不得推断填补。
-- **底线**：sample HARA 报告（T4）与 reference 方法学（T3）不能作为 hazard/rating/ASIL/safety goal 的事实证据进入证据映射。
+- 对每个研究问题：**L1 → L2 → L3 → 原文**（可先经 `topic_index` 命中路径），在 L3 叶子精读后生成 `EVD-xxx`（provenance：`file_id` + L1/L2/L3 + `location` + `snippet`）。
+- 依 tier 判定 status，写入 `plans/evidence_map.json`；weak/unsupported 汇入 `unresolved_questions.md`。
+- **底线**：禁止不经过 L1/L2/L3 直接打开输入文件；禁止 `SRC-xxx` / chunk；禁止把目录 brief 当 EVD 正文。
 
 ## HARA 报告过程总览（本步定位）
 
-HARA critical claim 须可追溯到 T0/T1 证据。本步把 research-questions 与 source-index 匹配为 evidence 记录，形成「问题 ↔ 证据 ↔ claim」映射。
+HARA critical claim 须可追溯到 T0/T1 及 **L1/L2/L3 原文位置**。本步把 research-questions 与三级目录导航衔接为 `EVD-xxx`。
 
 **HARA 证据映射规则**：
 
@@ -84,7 +82,7 @@ HARA critical claim 须可追溯到 T0/T1 证据。本步把 research-questions 
 
 各研究问题类型可接受的证据 tier 与匹配关键词：
 
-| 问题类型 | 可接受的证据 tier | source_index 中需匹配的主题/关键词 |
+| 问题类型 | 可接受的证据 tier | topic_index / L1/L2/L3 导航主题 |
 |---|---|---|
 | Q-ITEM（item 功能/边界/接口） | T1（item definition source）| 功能描述、系统边界、接口清单、运行约束 |
 | Q-OPS（运行工况描述） | T1（operational situations source）| 工况描述、道路类型、速度范围、驾驶场景 |
@@ -131,15 +129,16 @@ HARA critical claim 须可追溯到 T0/T1 证据。本步把 research-questions 
 ## A2 修订任务（HARA）
 
 ### 候选方案（示例）
-- 方案A 逐题在 source_index 检索匹配。
-- 方案B 先按 tier 过滤来源再对题匹配（优先锁定 T0/T1 支撑 critical claim）。
-- 方案C 按章节分组批量匹配。
+- 方案A 逐题经 topic_index 得 L1/L2/L3 路径，再 L1→L2→L3→读原文生成 EVD。
+- 方案B 先按 tier 过滤文档（优先 T1 source），再在 provenance_index 的 L2 中匹配主题。
+- 方案C 按章节分组批量定位 L2 后逐题精读原文。
 
 ### 典型修订子任务
 1. 遍历 research_questions 逐题。
-2. 在 source_index 检索候选证据并记 tier。
-3. 建立 question→evidence 映射并判定 status。
-4. 未命中/弱证据/HARA critical claim 缺 T0/T1 的问题标 open。
+2. 在 `document_tocs` 按 L1→L2→L3 选定叶子，读原文生成 EVD-xxx。
+3. 建立 question→evidence 映射并记 tier + L1/L2/L3 provenance。
+4. 建立 question→evidence 映射并判定 status。
+5. 未命中/弱证据/HARA critical claim 缺 T0/T1 的问题标 open。
 
 ## state.json 示例（HARA）
 
@@ -160,7 +159,7 @@ HARA critical claim 须可追溯到 T0/T1 证据。本步把 research-questions 
     "rejected_plans": ["<方案及放弃理由>"],
     "subtasks": [
       {"id": "rt-1", "desc": "遍历 research_questions 逐题", "status": "done"},
-      {"id": "rt-2", "desc": "在 source_index 检索候选证据并记 tier", "status": "running"},
+      {"id": "rt-2", "desc": "L1→L2→L3→读原文生成 EVD", "status": "running"},
       {"id": "rt-3", "desc": "建立 question→evidence 映射并判定 status", "status": "not_run"},
       {"id": "rt-4", "desc": "缺 T0/T1 的 critical claim 问题标 open", "status": "not_run"}
     ]

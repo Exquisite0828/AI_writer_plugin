@@ -15,7 +15,16 @@ description: 中文优先指导 workflow 第 5 步「研究问题」：由 evide
 ## 输入
 
 - `plans/template_structure.json`、`plans/outline_l1.md`
-- `knowledge/source_index.json`、`knowledge/provenance_index.json`
+- `knowledge/source_index.json`（`topic_index` 跨文档主题导航）
+- `knowledge/provenance_index.json`（L1→L2→L3 目录树与 L3 `location`）
+- `knowledge/document_tocs/`（单文档可读目录，按需查阅）
+- `knowledge/knowledge_gaps.md`
+
+## 文档导航消费约定（与 Step 3 / writing-core 协调）
+
+须遵守 **输入文档访问协议**：**L1 → L2 → L3 → 原文**。本步不打开原文，但须结合 `topic_index` 与 `knowledge_gaps.md` 判断哪些主题已有 L1/L2/L3 入口、哪些仍缺失（缺失则问题保持 open）。
+
+**禁止**：假设可直接打开 `input_inventory.path` 读全文；引用旧版 `SRC-xxx` chunk 作为问题依据。
 
 ## 产出 artifacts
 

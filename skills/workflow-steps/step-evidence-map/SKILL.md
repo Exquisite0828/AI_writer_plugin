@@ -1,21 +1,37 @@
 ---
 name: step-evidence-map
-description: 中文优先指导 workflow 第 6 步「证据映射」：由 evidence-run 生成 evidence_map.json 与 unresolved_questions.md，把研究问题映射到具体来源证据。
+description: 中文优先指导 workflow 第 6 步「证据映射」：由 evidence-run 生成 evidence_map.json 与 unresolved_questions.md；须按 L1→L2→L3 定位原文后摘录 EVD 证据，把研究问题映射到具体文档位置。
 ---
 
 # Step 6 · 证据映射 (Evidence Map)
 
-工作流第 6 步。把研究问题映射到来源索引中的具体证据，标记哪些有支撑、哪些仍未解决。
+工作流第 6 步。把研究问题映射到**具体文档位置**上的来源证据：须遵守 **L1 → L2 → L3 → 原文** 访问协议，在 L3（或 gap 说明下的 L2 叶子）精读并生成 `EVD-xxx`，标记哪些有支撑、哪些仍未解决。
 
 ## 何时使用
 
 - 已完成 Step 5（研究问题）。
-- 需要在写作前确认每个关键问题的证据状态。
+- 需要在写作前确认每个关键问题是否有可回溯的文档位置与摘录支撑。
 
 ## 输入
 
 - `plans/research_questions.json`
-- `knowledge/source_index.json`、`knowledge/provenance_index.json`
+- `knowledge/source_index.json`（`topic_index`）
+- `knowledge/provenance_index.json`（L1→L2→L3 目录树与 L3 `location`）
+- `knowledge/document_tocs/`
+- `knowledge/knowledge_gaps.md`
+- 已解析材料的原文或抽取文本（按 provenance 定位后读取）
+
+## 输入文档访问约定（强制，见 writing-core）
+
+对每个 research question：
+
+1. （可选）`topic_index` 命中 `file_id` + L1/L2/L3 候选路径
+2. 打开 `document_tocs/<file_id>.md`，**按 L1 → L2 → L3 逐级**选定目标叶子
+3. 从 `provenance_index` 取该 L3 的 `location`，**仅此时**打开原文
+4. 摘录生成 `EVD-xxx`：provenance = `file_id` + L1/L2/L3 + `location` + `snippet`（摘自原文）
+5. 无 L3 入口或 gap 已登记 → `unresolved_questions.md`
+
+**禁止**：不经过三级目录直接打开输入文件；使用 `SRC-xxx` / `sources[]` chunk；把目录 `brief` 当作 EVD 正文。
 
 ## 产出 artifacts
 
@@ -24,9 +40,10 @@ description: 中文优先指导 workflow 第 6 步「证据映射」：由 evide
 
 ## 边界与约束
 
+- 证据候选必须经 **L1→L2→L3→阅读原文** 产生；`EVD-xxx` provenance 须含 `file_id` + L1/L2/L3 + `location`，禁止旧版 chunk/SRC 或直接全文盲搜。
 - 只允许用 T0/T1 来源支撑 critical claim；T3/T4/T5 不能单独支撑。
-- 没有证据的问题写入 `unresolved_questions.md`，保持 open，不得推断填补。
-- sample/reference 不能作为事实证据进入证据映射。
+- 没有证据或无法定位原文的问题写入 `unresolved_questions.md`，保持 open，不得推断填补。
+- sample/reference 不能作为事实证据进入证据映射；sample 目录（T4）仅用于结构参考，不得从中摘录 hazard/rating 等作为 EVD。
 
 ## 加载任务专属子 skill（必做）
 

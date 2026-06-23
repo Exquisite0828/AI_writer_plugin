@@ -94,7 +94,8 @@ HARA 报告中每个 critical claim 都需要可见的引用证据。本步把 e
 ```
 claim_id:           H-01 / HE-001 / HE-001.S / HE-001.E / HE-001.C / HE-001.ASIL / SG-01
 claim_type:         hazard / hazardous_event / severity / exposure / controllability / asil / safety_goal
-evidence_ids:       [EVD-001, EVD-002]  ← source_index 中的 SRC-xxx EVD-xxx
+evidence_ids:       [EVD-001, EVD-002]  ← Step 6；须回溯 L1/L2/L3 + location
+provenance_ref:     { file_id, l1_title, l2_title, l3_title, location }
 tier:               T1 / T3 / weak / none
 status:             supported / weak / unsupported / pending
 requires_human_confirmation: true / false

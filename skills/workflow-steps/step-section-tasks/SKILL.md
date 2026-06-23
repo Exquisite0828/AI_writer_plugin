@@ -27,7 +27,7 @@ description: 中文优先指导 workflow 第 8 步「章节任务」：由 plan-
 
 - 章节任务只规划"写什么、用哪些来源"，不在此步生成正文。
 - 保留 strict_template 的强制章节要求。
-- 无证据章节须标注 open / pending，不预先下结论。
+- 每节 `allowed_evidence` 须对应 Step 6 的 `EVD-xxx`，并可回溯 `file_id` + L1/L2/L3 + `location`；注明建议先经 `document_tocs/<file_id>.md` **逐级**浏览 L1/L2/L3，**禁止**直接打开输入文件全文。
 
 ## 加载任务专属子 skill（必做）
 

@@ -11,7 +11,7 @@ Use this skill when working with the AI professional document writing Claude Cod
 
 默认用中文和用户沟通，尤其是任务确认、材料分类说明、运行进度、风险提醒、最终结果和后续动作。保留命令、路径、artifact 文件名、schema 字段、`task_type`、`source`、`sample`、`reference`、`HITL`、`NEEDS_USER_CONFIRMATION` 等英文关键术语。
 
-如果输入材料或引用片段是英文，可以保留原文；解释性文字优先中文。不要因为中文交互而弱化 Python deterministic engine、artifact contract、source index、provenance、review、verify、HITL trace 或 candidate update state control。
+如果输入材料或引用片段是英文，可以保留原文；解释性文字优先中文。不要因为中文交互而弱化 Python deterministic engine、artifact contract、document navigation index、provenance、review、verify、HITL trace 或 candidate update state control。
 
 This is not a normal chat writing assistant. It is not an automatic compliance, safety, architecture, quality, or release approval tool. It must not generate unattended final professional approval conclusions.
 
@@ -24,14 +24,14 @@ The Python deterministic engine is the trusted execution skeleton for:
 - schema validation
 - artifact generation
 - material classification
-- source index and provenance index construction
+- document navigation index construction (cross-document topic index, per-document L1/L2/L3 TOC, readable document_tocs)
 - evidence trace and citation planning
 - review and verify checks
 - HITL trace recording
 - final status handling
 - candidate update state control
 
-Skill.md must not replace artifact contract, schema validation, source index, evidence trace, review, verify, HITL trace, or candidate update state control.
+Skill.md must not replace artifact contract, schema validation, document navigation index, evidence trace, review, verify, HITL trace, or candidate update state control.
 
 ## Required Entry Points
 
@@ -53,7 +53,7 @@ The generic workflow is artifact-first:
 ```text
 input materials
 -> material inventory
--> source index
+-> document navigation index
 -> template outline
 -> research questions
 -> evidence map
@@ -68,7 +68,7 @@ input materials
 -> candidate profile update / candidate skill patch
 ```
 
-Equivalent stage words include init run, ingest, source index, template outline, research questions, evidence map, citation plan, section tasks, draft, review, verify, finalize, trace, and learning.
+Equivalent stage words include init run, ingest, document navigation index, template outline, research questions, evidence map, citation plan, section tasks, draft, review, verify, finalize, trace, and learning.
 
 ## Artifact Contract
 
@@ -79,8 +79,9 @@ Core artifacts include:
 - `manifest.json`
 - `task_brief.json`
 - `inputs/input_inventory.json`
-- `knowledge/source_index.json`
-- `knowledge/provenance_index.json`
+- `knowledge/source_index.json`（跨文档 `topic_index` 导航总索引）
+- `knowledge/provenance_index.json`（各文档 L1→L2→L3 语义目录树与 L3 位置锚点）
+- `knowledge/document_tocs/<file_id>.md`（单文档可读目录，Agent 优先访问）
 - `knowledge/knowledge_gaps.md`
 - `plans/template_structure.json`
 - `plans/outline_l1.md`
@@ -111,6 +112,26 @@ Core artifacts include:
 - `learning/promotion_report.md`
 
 Runtime artifacts are written under `runs/<run_id>/` and must not be committed to git.
+
+## 输入文档访问协议（Step 4 及以后强制）
+
+凡需阅读**原始输入文档**，**唯一允许**的路径为 **L1 → L2 → L3 → 原文**：
+
+1. 打开 `knowledge/document_tocs/<file_id>.md`（或 `provenance_index.json` 中该文档的 `toc`）
+2. 浏览并选定 **一级目录（L1）**
+3. 在 L1 下展开并选定 **二级目录（L2）**
+4. 在 L2 下展开并选定 **三级目录（L3）**（叶子节点；`location` 通常挂在 L3）
+5. 读取该 L3 的 `location`，**仅此时**打开原文对应段落
+
+跨文档检索可先用 `source_index.json` 的 `topic_index` 命中 `file_id` + L1/L2/L3，再按上序进入单文档目录。
+
+**禁止的旧方式**（不得再用）：
+
+- 不经过 L1/L2/L3 直接打开 task.yaml 声明路径或 `inputs/` 下文件全文盲搜
+- 使用旧版 `source_index.sources[]` / `SRC-xxx` chunk 索引跳读原文
+- 仅据 `input_inventory.json` 的 `path` 当作已读证据而不经三级目录
+- 跳过 L1、L2 或 L3 任意层级跳读原文
+- 把目录 `brief` 当作 evidence snippet 或草稿正文
 
 ## Source Roles
 
@@ -154,7 +175,7 @@ Interpretation:
 - T5 is unsupported inference and cannot support critical claim.
 - T3/T4/T5 cannot support critical claim by themselves.
 
-`knowledge/provenance_index.json` and `plans/claim_support_matrix.json` are the main N4 provenance artifacts. Draft, review, verify, final report, and delivery summary should preserve source tier, claim status, evidence status, human confirmation status, and profile version where applicable.
+`knowledge/provenance_index.json`（文档 L1/L2/L3 目录与 L3 `location`） and `plans/claim_support_matrix.json` are the main N4 provenance artifacts. Steps that read input materials must follow the L1→L2→L3→原文 protocol above; evidence and citations must trace to `file_id` + L1/L2/L3 + location. Draft, review, verify, final report, and delivery summary should preserve source tier, claim status, evidence status, human confirmation status, and profile version where applicable.
 
 ## Critical Claim, HITL, And Final Status
 

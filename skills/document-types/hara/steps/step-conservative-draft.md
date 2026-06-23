@@ -9,6 +9,7 @@
 - HARA critical claim（hazard/hazardous event/S-E-C rating/ASIL/safety goal/final acceptability）无 T0/T1 支撑时保持 `NEEDS_USER_CONFIRMATION` / pending，不写未支撑结论。
 - 不写 `final ASIL is approved`/`risk is acceptable`/`the rating is S1` 等 forbidden final claims（见根 skill）。
 - 保留 source tier、claim 状态与人工确认状态；不把 sample/reference 当作事实证据。
+- 核对 allowed evidence 时，经 EVD 回溯 **L1→L2→L3→原文**；禁止跳过三级目录或直接打开 `input_inventory.path`。
 - **底线**：缺证据的 HARA 章节只成稿可支撑内容，hazard/rating/ASIL/safety goal 结论保持 open/pending。
 
 ## HARA 报告过程总览（本步定位）
@@ -166,7 +167,7 @@
 **功能清单（每条一行）：**
 ```
 | 功能 ID | 功能描述 | 来源 |
-| F-01 | [功能名称]：[详细功能描述，说明 item 执行什么操作、向谁提供什么] | [source file_id，章节] |
+| F-01 | [功能名称]：[详细功能描述] | [file_id · L1/L2/L3 · location，来自 EVD] |
 | F-02 | ... | ... |
 ```
 若功能描述不完整或缺失：写 `[PENDING - NEEDS_USER_CONFIRMATION: 功能描述未在 source 中找到]`
