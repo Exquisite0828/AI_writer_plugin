@@ -29,7 +29,7 @@ There is no automatic professional approval in this workflow.
 
 The command layer remains generic. There is no fsr-specific pipeline, no `fsr_pipeline.py`, and no duplicated workflow. The project rule is one plugin, one pipeline.
 
-TSC deferred: Phase N8 does not create a TSC document type, TSC Skill, TSC fixture, TSC profile, or technical safety concept workflow.
+TSC is a separate downstream document type (`task_type: TechnicalSafetyConcept`). The FSR deliverable still must not contain TSC content: no technical safety requirements, no technical safety mechanisms, and no technical safety concept sections are emitted from the FSR workflow.
 
 ## Typical Inputs
 
@@ -150,17 +150,19 @@ Verification focus includes:
 - FSR claims require source or HITL
 - final report is not approval
 - candidate update inactive
-- TSC deferred and not emitted
+- TSC content not emitted from FSR (TSC is a separate downstream document type)
 
 ## TSC Boundary
 
-Do not create a TSC document.
+Within the FSR workflow (TSC is a separate document type produced under `task_type: TechnicalSafetyConcept`):
+
+Do not produce a TSC document from this workflow.
 Do not create technical safety requirements.
 Do not create a technical safety concept report.
 Do not create technical safety mechanisms as final facts.
 Do not create an FSR-specific pipeline.
 
-Downstream technical allocation may be listed as a future open item only when the source material justifies that boundary note. It must not become a TSC deliverable.
+Downstream technical allocation may be listed as a future open item only when the source material justifies that boundary note. It must not become a TSC deliverable here; it is handed off to the TSC workflow.
 
 ## Candidate Update Boundary
 

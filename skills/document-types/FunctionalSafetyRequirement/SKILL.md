@@ -36,7 +36,7 @@ Functional Safety Requirement（FSR，功能安全需求）支撑 **ISO 26262-3:
 
 `FunctionalSafetyRequirement` 为 **document-type skill 层**交付类型；通过 `task.yaml` 的 `task_type: FunctionalSafetyRequirement` 加载本子 skill 与各 step 子 skill。须遵守通用 `writing-core` 与 artifact 契约。
 
-与既有 `task_type: fsr` 共享同一文档语义；本目录为 PascalCase 技能路径与逐步子 skill 实现。TSC **deferred**：不创建 TSC 文档类型或 workflow。
+与既有 `task_type: fsr` 共享同一文档语义；本目录为 PascalCase 技能路径与逐步子 skill 实现。TSC 是**独立下游文档类型**（`task_type: TechnicalSafetyConcept`）：本 FSR workflow **不**产出 TSC 内容，止于功能层需求。
 
 ## Typical Inputs
 

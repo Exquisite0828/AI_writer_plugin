@@ -33,7 +33,7 @@
   → 规划（大纲、写作计划、SG 追溯矩阵）
   → 撰写（SG 追溯、FSR-xx、ASIL、验证方法）
   → 质量（追溯/tier/无 TSC 审查、验证修订、review-ready）
-  → TSC 概念阶段（deferred，非本 run）
+  → TSC 概念阶段（独立下游文档类型，非本 run）
 ```
 
 ### gap 分类（Clause 7 对齐）

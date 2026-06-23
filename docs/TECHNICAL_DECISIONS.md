@@ -81,7 +81,7 @@ document type 差异由 `ai_writing_plugin/document_types/` 下的 Python `Docum
 
 rules 目前保持为 Python dataclasses。除非未来 active phase/spec 明确要求，不新增 YAML rules loader。
 
-`generic_document` 是 L1 generic mode。validated external `document_profile.yaml` 是 L2 external profile mechanism。`custom_technical_note` 是 external profile demo，不是 official L3 built-in document type。TSC / Technical Safety Concept 仍 deferred。
+`generic_document` 是 L1 generic mode。validated external `document_profile.yaml` 是 L2 external profile mechanism。`custom_technical_note` 是 external profile demo，不是 official L3 built-in document type。`TechnicalSafetyConcept` 为 document-type skill 层类型（与 `FunctionalSafetyRequirement`、`ItemDefinitionDocument` 同级），已接入；其下游 HSC / SSC 仍 deferred。
 
 ## Test framework
 

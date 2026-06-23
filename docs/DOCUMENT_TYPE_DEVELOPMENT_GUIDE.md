@@ -5,7 +5,7 @@
 当前 official L3 built-in document types 是 `hara`、`technical_solution`、`test_report`、`fsr`。
 `generic_document` 是 L1 generic mode；validated external `document_profile.yaml` 是 L2 external profile mechanism。
 
-TSC / Technical Safety Concept 仍 deferred。不要在没有单独 active phase/spec 的情况下顺手实现 TSC。
+`TechnicalSafetyConcept`（TSC）已作为 document-type skill 层类型接入（PascalCase 路径 + 逐步子 skill + demo fixture，task_type: TechnicalSafetyConcept）。其下游 HSC / SSC（硬件/软件安全概念）仍 deferred；不要在没有单独 active phase/spec 的情况下顺手实现 HSC/SSC。
 
 ## 标准扩展流程
 

@@ -18,7 +18,7 @@
 |---|---|---|
 | SG 链接列强制 | FSR 表 Linked SG 列 | 追溯 |
 | ASIL 来源检查 | checklist 增强 | ASIL 继承 |
-| TSC 防泄漏 | 草稿扫描项 | TSC deferred |
+| TSC 防泄漏 | 草稿扫描项 | FSR 不写 TSC |
 | 验证方法「候选」默认 | writing_mode 提醒 | 验证 |
 | HARA 摘要边界 | 非 blanket 批准提醒 | 批准边界 |
 | sample 勿升格 | tier 提醒 | 事实来源 |

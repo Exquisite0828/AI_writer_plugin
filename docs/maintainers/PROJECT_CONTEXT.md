@@ -11,7 +11,7 @@ Status: Post-N8 current context brief.
 - `test_report`
 - `fsr`
 
-`generic_document` 是 L1 generic mode，不是 official L3。`custom_technical_note` 是 external `document_profile.yaml` demo，不是 official L3。TSC / Technical Safety Concept 仍 deferred。
+`generic_document` 是 L1 generic mode，不是 official L3。`custom_technical_note` 是 external `document_profile.yaml` demo，不是 official L3。`TechnicalSafetyConcept` 为 document-type skill 层类型，已接入（task_type: TechnicalSafetyConcept）；其下游 HSC / SSC 仍 deferred。
 
 ## 当前入口
 

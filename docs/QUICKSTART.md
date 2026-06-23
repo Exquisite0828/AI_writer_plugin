@@ -195,4 +195,4 @@ git ls-files runs/
 - `final_report.md` 不是专业批准文件；
 - eval passed 不是专业批准；
 - candidate updates 默认 proposed/inactive；
-- TSC / Technical Safety Concept 仍 deferred，没有 official demo fixture。
+- TSC / Technical Safety Concept 由 `task_type: TechnicalSafetyConcept` 支持，demo fixture 为 `examples/technical_safety_concept_demo_fixture/`；HSC / SSC（硬件/软件安全概念）仍 deferred。

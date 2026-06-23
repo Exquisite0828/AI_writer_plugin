@@ -1,0 +1,57 @@
+task_type: TechnicalSafetyConcept
+task_title: Generate Technical Safety Concept
+display_name: TSC 技术安全概念文档
+target_audience: Functional safety engineer / system architect review
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - technical safety requirement wording
+  - fsr linkage
+  - safety goal linkage
+  - architecture allocation
+  - safety mechanism concept
+  - fault handling strategy
+  - safe state and degradation linkage
+  - interface safety requirement
+  - ASIL inheritance or decomposition
+  - verification method adequacy
+  - requirement completeness and sufficiency conclusion
+  - final TSC approval or compliance conclusion
+inputs:
+  - path: inputs/item_definition_source.md
+    role: source
+    title: Steering Assist Item Definition
+    notes: "Fact source for item scope, operational context, interfaces, and known exclusions."
+  - path: inputs/safety_goals_source.md
+    role: source
+    title: Confirmed Safety Goals
+    notes: "Fact source for safety goal identifiers, ASIL values, and safe states."
+  - path: inputs/fsr_source.md
+    role: source
+    title: Confirmed Functional Safety Requirements
+    notes: "Core upstream fact source for FSR identifiers, wording, safety goal linkage, and ASIL. Not a blanket TSC approval."
+  - path: inputs/hara_summary_source.md
+    role: source
+    title: HARA Summary Extract (FTTI and Safe State)
+    notes: "Fact source only for the provided FTTI, safe state, and hazardous-event-to-safety-goal trace. Not a new HARA."
+  - path: inputs/architecture_source.md
+    role: source
+    title: Preliminary System Architecture
+    notes: "Fact source for safety-relevant architecture elements and allocation targets."
+  - path: inputs/tsc_template.md
+    role: template
+    title: TSC Document Template
+    notes: "Structure source only. Do not use as factual evidence."
+  - path: inputs/tsc_checklist.md
+    role: checklist
+    title: TSC Review Checklist
+    notes: "Review criteria only. Do not use as factual evidence."
+  - path: inputs/tsc_reference.md
+    role: reference
+    title: Technical Safety Concept Writing Reference
+    notes: "General methodology reference only. Do not use as project-specific TSR, mechanism, ASIL, allocation, verification, or approval evidence."
+  - path: inputs/tsc_sample.md
+    role: sample
+    title: Sample TSC Shape
+    notes: "Style and structure sample only. Never use as facts, TSR content, mechanism, ASIL, allocation, verification status, approval, or completeness conclusion."

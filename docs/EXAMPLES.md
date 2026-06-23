@@ -37,9 +37,10 @@ runs/<run_id>/final/delivery_summary.md
 2. `technical_solution_zh_demo_fixture`：中文优先的技术方案 workflow，适合作为中文用户第一个 self-service example。
 3. `technical_solution_demo_fixture`：英文材料取向的同类 technical solution regression demo。
 4. `test_report_demo_fixture`：展示基于测试结果材料的 test report workflow。
-5. `fsr_demo_fixture`：展示 Functional Safety Requirements 支持，同时保持 TSC deferred 边界。
-6. `generic_document_demo_fixture`：展示没有 official L3 built-in 时的 generic mode。
-7. `custom_technical_note_profile_demo_fixture`：展示通过校验的 external profile 运行。
+5. `fsr_demo_fixture`：展示 Functional Safety Requirements 支持，同时保持「FSR 不写 TSC」的文档纯净边界。
+6. `technical_safety_concept_demo_fixture`：展示 Technical Safety Concept（TSC）支持，在已确认 FSR/SG/架构之上派生 TSR、安全机制、故障处理与追溯。
+7. `generic_document_demo_fixture`：展示没有 official L3 built-in 时的 generic mode。
+8. `custom_technical_note_profile_demo_fixture`：展示通过校验的 external profile 运行。
 
 ## 每个 demo 检查什么
 
@@ -309,21 +310,20 @@ auto_applied: false
 
 对 `test_report`，sample text 可能包含不安全示例结论。这些短语不能变成本项目的 test conclusion。
 
-对 `fsr`，提供的 HARA summary 只能支持它明确包含的 trace，不能变成 blanket FSR approval 或 TSC output。
+对 `fsr`，提供的 HARA summary 只能支持它明确包含的 trace，不能变成 blanket FSR approval；FSR 输出不得变成 TSC output（TSC 是独立下游文档类型）。
+
+对 `TechnicalSafetyConcept`，提供的 FSR source 只能支持它明确包含的 FSR-xx 与 SG 链接，不能变成 blanket TSR approval；HARA summary 只能支持显式的 FTTI 与安全状态；sample/参考 TSC 不能支撑 TSR/机制/ASIL 事实。
 
 ## TSC 状态
 
-TSC / Technical Safety Concept 仍 deferred。
+TSC / Technical Safety Concept 由 document-type skill 层支持，通过 `task_type: TechnicalSafetyConcept` 加载。
 
-仓库没有：
+仓库提供：
 
-- `examples/tsc_demo_fixture/`
-- `ai_writing_plugin/document_types/tsc.py`
-- `skills/document-types/tsc/SKILL.md`
-- `profiles/document_types/tsc.yaml`
-- official TSC support statement
+- `examples/technical_safety_concept_demo_fixture/`
+- `skills/document-types/TechnicalSafetyConcept/SKILL.md` 与 13 个 `steps/step-*.md`
 
-FSR negative eval fixtures 可以提到 TSC，但用途只是防止 leakage。
+TSC 的下游 HSC / SSC（硬件/软件安全概念）仍 deferred。TSC 输出不得泄漏 HSC/SSC 终稿或详细实现。FSR negative eval fixtures 可以提到 TSC，用途是防止 FSR 阶段越权写入 TSC 内容。
 
 ## 预期输出状态
 

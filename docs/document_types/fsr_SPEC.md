@@ -116,7 +116,7 @@ Templates and checklists are non-fact inputs unless a future phase explicitly ch
 - critical claims confirmation
 - FSR claims require source evidence or HITL
 - candidate update inactive
-- TSC deferred and not emitted
+- TSC content not emitted from FSR (TSC is a separate downstream document type)
 
 ## 12. Final Status Policy
 
@@ -159,4 +159,4 @@ The fixture should include enough source material to support part of the FSR pac
 
 ## 15. TSC Boundary
 
-TSC / Technical Safety Concept is deferred. FSR output may identify downstream technical allocation as an open item, but it must not generate a Technical Safety Concept, technical safety requirements, technical safety mechanisms, or TSC approval content.
+TSC / Technical Safety Concept is a separate downstream document type (`task_type: TechnicalSafetyConcept`). FSR output may identify downstream technical allocation as an open item, but the FSR workflow itself must not generate a Technical Safety Concept, technical safety requirements, technical safety mechanisms, or TSC approval content.

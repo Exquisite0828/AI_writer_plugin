@@ -24,7 +24,7 @@ HARA（Clause 6）→ Safety Goal（SG）
     ↓
 功能安全概念 FSC（Clause 7）→ 功能安全需求 FSR  ← 本类型
     ↓
-技术安全概念 TSC（Clause 8）…  ← 本仓库 Phase N8 deferred，FSR 不写
+技术安全概念 TSC（Clause 8）…  ← 独立下游文档类型，FSR 不写
 ```
 
 **FSR 核心作用**：在已确认的 **Safety Goal** 之下，把「系统/Item 为实现安全目标必须满足的功能层面需求」写成 **可追溯、可验证、可审查** 的需求条目。

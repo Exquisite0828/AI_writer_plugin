@@ -101,7 +101,13 @@ inputs:
 - `test_report`
 - `fsr`
 
-如果你有 `source`、`template`、`checklist`，但没有合适的 official L3 document type，继续使用 `generic_document`。
+此外，以下 document-type skill 层类型也带有内置规则与逐步子 skill（PascalCase 路径），按需选择：
+
+- `ItemDefinitionDocument`（Item 定义，Clause 5）
+- `FunctionalSafetyRequirement`（功能安全需求，Clause 7）
+- `TechnicalSafetyConcept`（技术安全概念，Clause 8）
+
+如果你有 `source`、`template`、`checklist`，但没有合适的 document type，继续使用 `generic_document`。
 
 如果你有反复使用的自定义文档类型，并希望用结构化规则描述它，可以使用 external `document_profile.yaml`，而不是新增 built-in。
 
@@ -156,6 +162,20 @@ task_type: fsr
 FSR safety requirements、Safety Goal linkage、ASIL inheritance、verification method adequacy、completeness 和 final FSR conclusions 都是 critical claims，不能自动确认。
 
 HARA 输出不能自动转成 FSR 事实来源。用户提供的 HARA summary 只能支持其中明确包含的 trace。
+
+### TechnicalSafetyConcept
+
+使用：
+
+```yaml
+task_type: TechnicalSafetyConcept
+```
+
+用于 Technical Safety Concept（技术安全概念，ISO 26262-4 Clause 8）package，在已确认的 FSR/SG 与系统架构之上派生技术安全需求（TSR）、安全机制、故障检测与处理、接口安全需求与追溯矩阵。
+
+TSR wording、FSR/SG linkage、architecture allocation、safety mechanism concept、fault handling strategy、FTTI、ASIL inheritance/decomposition、verification method 与 final TSC conclusions 都是 critical claims，不能自动确认。
+
+上游 FSR source 只能支持其明确包含的 FSR-xx 与 SG 链接，不能变成 blanket TSR approval；HARA summary 只能支持显式的 FTTI 与安全状态。TSC 不写 HSC/SSC（硬件/软件安全概念）终稿或详细实现，也不做 TSC 批准或合规结论。demo fixture：`examples/technical_safety_concept_demo_fixture/`。
 
 ## generic_document mode
 

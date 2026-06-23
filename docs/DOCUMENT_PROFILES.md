@@ -9,6 +9,7 @@
 | 级别 | 机制 | 示例 |
 | --- | --- | --- |
 | official L3 built-in | 内置 `DocumentTypeRules`、fixtures、tests 和 Skill guideline | `hara`、`technical_solution`、`test_report`、`fsr` |
+| document-type skill 层 | PascalCase 路径下的 `SKILL.md` + 逐步子 skill + demo fixture | `ItemDefinitionDocument`、`FunctionalSafetyRequirement`、`TechnicalSafetyConcept` |
 | generic mode | 共享 generic rules，加用户声明的 task inputs | `generic_document` |
 | external profile | 由 task file 加载并通过校验的 `document_profile.yaml` | `custom_technical_note` demo |
 
@@ -186,4 +187,5 @@ Profiles 不应该：
 - 让 eval passed 变成专业批准；
 - 自动 promote candidate patches；
 - 覆盖 stable Skills；
-- 通过命名为 `technical_safety_concept` 来实现 TSC。
+- 用 external profile 重新实现 TSC（应直接使用内置 `task_type: TechnicalSafetyConcept`）；
+- 通过命名为 `hsc` / `ssc` 等方式实现下游 HSC/SSC（硬件/软件安全概念仍 deferred）。

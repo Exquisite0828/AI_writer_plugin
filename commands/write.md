@@ -41,6 +41,7 @@ task_type: test_report
 task_type: fsr
 task_type: FunctionalSafetyRequirement
 task_type: ItemDefinitionDocument
+task_type: TechnicalSafetyConcept
 task_type: generic_document
 ```
 
@@ -62,6 +63,7 @@ examples/test_report_demo_fixture/task.yaml
 examples/fsr_demo_fixture/task.yaml
 examples/functional_safety_requirement_demo_fixture/task.yaml
 examples/item_definition_demo_fixture/task.yaml
+examples/technical_safety_concept_demo_fixture/task.yaml
 examples/generic_document_demo_fixture/task.yaml
 examples/custom_technical_note_profile_demo_fixture/task.yaml
 ```

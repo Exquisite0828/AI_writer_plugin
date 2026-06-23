@@ -42,6 +42,7 @@ Claude Code command:
 /ai-writing-plugin:write "Run the writing workflow with examples/technical_solution_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/test_report_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/fsr_demo_fixture/task.yaml"
+/ai-writing-plugin:write "Run the writing workflow with examples/technical_safety_concept_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/generic_document_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/custom_technical_note_profile_demo_fixture/task.yaml"
 ```

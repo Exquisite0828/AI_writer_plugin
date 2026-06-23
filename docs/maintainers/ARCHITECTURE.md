@@ -35,7 +35,8 @@ Generalization Phase 0-6 已完成。
 Phase N8 已新增 fsr 作为第四个 official L3 built-in document type。
 当前 official L3 built-ins 为 hara、technical_solution、test_report、fsr。
 generic_document 仍是通用模式；custom_technical_note 仍是外部 document_profile demo，不是 official L3。
-TSC 仍 deferred。
+ItemDefinitionDocument、FunctionalSafetyRequirement、TechnicalSafetyConcept 为 document-type skill 层交付类型（PascalCase 路径 + 逐步子 skill + demo fixture），共享同一 pipeline，不引入独立 pipeline。
+TSC 已作为 document-type skill 层类型接入（task_type: TechnicalSafetyConcept）；其下游 HSC/SSC（硬件/软件安全概念）仍 deferred。
 历史 phase / process / handoff 材料不再作为 tracked public docs 保留；如本地存在 archive 目录，只作历史参考，不是当前 active phase docs。
 ```
 
