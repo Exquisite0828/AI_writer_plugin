@@ -1,0 +1,43 @@
+task_type: FunctionalSafetyRequirement
+task_title: Generate Functional Safety Requirements
+display_name: FSR 功能安全需求文档
+target_audience: Functional safety engineer / system requirements review
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - functional safety requirement wording
+  - safety goal linkage
+  - ASIL inheritance
+  - verification method adequacy
+  - requirement completeness and sufficiency conclusion
+  - final FSR approval or compliance conclusion
+inputs:
+  - path: inputs/item_definition_source.md
+    role: source
+    title: Steering Assist Item Definition
+    notes: "Fact source for item scope, operational context, interfaces, and known exclusions."
+  - path: inputs/safety_goals_source.md
+    role: source
+    title: Confirmed Safety Goals
+    notes: "Fact source for safety goal identifiers, ASIL values, safe states, and user-visible constraints."
+  - path: inputs/hara_summary_source.md
+    role: source
+    title: HARA Summary Extract
+    notes: "Fact source only for the provided HARA-derived safety goal trace, not a complete HARA approval."
+  - path: inputs/fsr_template.md
+    role: template
+    title: FSR Document Template
+    notes: "Structure source only. Do not use as factual evidence."
+  - path: inputs/fsr_checklist.md
+    role: checklist
+    title: FSR Review Checklist
+    notes: "Review criteria only. Do not use as factual evidence."
+  - path: inputs/fsr_reference.md
+    role: reference
+    title: Functional Safety Requirement Writing Reference
+    notes: "General methodology reference only. Do not use as project-specific requirement, ASIL, safety goal, verification, or approval evidence."
+  - path: inputs/fsr_sample.md
+    role: sample
+    title: Sample FSR Shape
+    notes: "Style and structure sample only. Never use as facts, requirement content, ASIL, safety goal linkage, verification status, approval, or completeness conclusion."

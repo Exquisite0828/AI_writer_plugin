@@ -19,6 +19,7 @@ description: 运行 AI 专业文档写作 workflow，支持通过 task YAML 选�
 ```text
 /ai-writing-plugin:write "Run the writing workflow with examples/hara_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/item_definition_demo_fixture/task.yaml"
+/ai-writing-plugin:write "Run the writing workflow with examples/functional_safety_requirement_demo_fixture/task.yaml"
 ```
 
 部分环境可能存在产品级快捷命令：
@@ -38,6 +39,7 @@ task_type: hara
 task_type: technical_solution
 task_type: test_report
 task_type: fsr
+task_type: FunctionalSafetyRequirement
 task_type: ItemDefinitionDocument
 task_type: generic_document
 ```
@@ -58,6 +60,7 @@ examples/hara_demo_fixture/task.yaml
 examples/technical_solution_demo_fixture/task.yaml
 examples/test_report_demo_fixture/task.yaml
 examples/fsr_demo_fixture/task.yaml
+examples/functional_safety_requirement_demo_fixture/task.yaml
 examples/item_definition_demo_fixture/task.yaml
 examples/generic_document_demo_fixture/task.yaml
 examples/custom_technical_note_profile_demo_fixture/task.yaml
