@@ -1,0 +1,65 @@
+task_type: SoftwareArchitecture
+task_title: 基于 EPS Demo 输入生成汽车控制器 Software Architecture 文档
+display_name: 汽车控制器 Software Architecture（SwAD）文档
+target_audience: 软件架构师 / 软件工程师 / ASPICE 审查人员
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - software architecture decomposition wording
+  - upstream SwRS and System Architecture linkage
+  - software component definition
+  - software interface architecture definition
+  - SwRS allocation rationale
+  - task and scheduling architecture linkage
+  - diagnostic and degradation software architecture linkage
+  - resource and timing budget allocation
+  - safety-related software architecture linkage
+  - verification method
+  - architecture completeness consistency and sufficiency
+  - final software architecture approval or ASPICE / ISO 26262 compliance conclusion
+inputs:
+  - path: inputs/swrs_source.md
+    role: source
+    title: EPS Demo Software Requirements Extract
+    notes: "Fact source for SWR-F / SWR-IF IDs, software functional intent, and allocation anchors."
+  - path: inputs/system_architecture.md
+    role: source
+    title: EPS Demo Current Project System Architecture
+    notes: "Fact source for system boundary, operating modes, and external interface context."
+  - path: inputs/software_context.md
+    role: source
+    title: EPS Demo Software Context and Layering
+    notes: "Fact source for App/RTE/BSW/OS scope, variants, and software boundary."
+  - path: inputs/interface_spec.md
+    role: source
+    title: EPS Demo Software Interface Specification
+    notes: "Fact source for RTE ports, service interfaces, directions, and counterparts."
+  - path: inputs/rte_bsw_constraints.md
+    role: source
+    title: EPS Demo RTE and BSW Constraints
+    notes: "Fact source for BSW modules, OS tasks, scheduling hints, and stack constraints."
+  - path: inputs/diagnostic_constraints.md
+    role: source
+    title: EPS Demo Diagnostic Software Constraints
+    notes: "Fact source for diagnostic chains and degraded software behavior."
+  - path: inputs/platform_constraints.md
+    role: source
+    title: EPS Demo Platform Resource Constraints
+    notes: "Fact source for memory, timing, and CPU budget clues."
+  - path: inputs/swad_template.md
+    role: template
+    title: SwAD Demo Document Template
+    notes: "Structure source only. Do not use as factual evidence."
+  - path: inputs/swe2_checklist.md
+    role: checklist
+    title: SWE.2 Demo Review Checklist
+    notes: "Review criteria only. Do not use as factual evidence."
+  - path: inputs/aspice_iso_reference.md
+    role: reference
+    title: ASPICE SWE.2 and ISO 26262-6 Interface Reference
+    notes: "Methodology reference only. Do not use as project-specific EPS facts."
+  - path: inputs/reference_swad_sample.md
+    role: sample
+    title: Reference SwAD Sample Shape
+    notes: "Style and table-shape sample only. Never use as components, interfaces, tasks, budgets, or conclusions for this project."
