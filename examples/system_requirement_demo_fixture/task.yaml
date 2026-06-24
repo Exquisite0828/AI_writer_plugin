@@ -1,0 +1,50 @@
+task_type: SystemRequirement
+task_title: 基于 EPS Demo 输入生成汽车控制器 System Requirement 文档
+display_name: 汽车控制器 System Requirement（SyRS）文档
+target_audience: 系统工程师 / 功能安全工程师 / ASPICE 审查人员
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - system requirement wording
+  - stakeholder and upstream requirement linkage
+  - interface direction and counterpart completeness
+  - performance and environmental limit values
+  - diagnostic and degradation requirement adequacy
+  - safety-related system requirement linkage
+  - verification method adequacy
+  - requirement completeness and sufficiency conclusion
+  - final SyRS approval or ASPICE / ISO 26262 compliance conclusion
+inputs:
+  - path: inputs/swrs_source.md
+    role: source
+    title: EPS Demo Stakeholder Requirements Extract
+    notes: "Fact source for customer and stakeholder requirements, upstream IDs, and functional intent."
+  - path: inputs/system_architecture.md
+    role: source
+    title: EPS Demo System Architecture Context
+    notes: "Fact source for ECU boundary, variants, and system context."
+  - path: inputs/interface_spec.md
+    role: source
+    title: EPS Demo Interface Specification
+    notes: "Fact source for interface names, signal/message context, directions, and counterparts."
+  - path: inputs/diagnostic_constraints.md
+    role: source
+    title: EPS Demo Diagnostic and Degradation Constraints
+    notes: "Fact source for diagnostic reporting and degraded operation constraints."
+  - path: inputs/syrs_template.md
+    role: template
+    title: SyRS Demo Document Template
+    notes: "Structure source only. Do not use as factual evidence."
+  - path: inputs/syrs_checklist.md
+    role: checklist
+    title: SyRS Demo Review Checklist
+    notes: "Review criteria only. Do not use as factual evidence."
+  - path: inputs/aspice_iso_reference.md
+    role: reference
+    title: ASPICE SYS.2 and ISO 26262 Interface Reference
+    notes: "Methodology reference only. Do not use as project-specific EPS facts."
+  - path: inputs/reference_syrs_sample.md
+    role: sample
+    title: Reference SyRS Sample Shape
+    notes: "Style and table-shape sample only. Never use as facts, requirements, interfaces, limits, or conclusions for this project."

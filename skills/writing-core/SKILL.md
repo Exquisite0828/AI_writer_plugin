@@ -43,6 +43,7 @@ Claude Code command:
 /ai-writing-plugin:write "Run the writing workflow with examples/test_report_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/fsr_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/technical_safety_concept_demo_fixture/task.yaml"
+/ai-writing-plugin:write "Run the writing workflow with examples/system_requirement_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/generic_document_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/custom_technical_note_profile_demo_fixture/task.yaml"
 ```
@@ -207,11 +208,13 @@ Official L3 document types are implemented through built-in document-type skills
 - `fsr`
 - `FunctionalSafetyRequirement`
 - `ItemDefinitionDocument`
+- `TechnicalSafetyConcept`
+- `SystemRequirement`
 
 `generic_document` is L1 generic mode. It helps run the shared workflow for documents that have source, template, checklist, sample, reference, or profile guidance, but it does not promise complete domain professional judgment.
 
 External `document_profile.yaml` is an L2 / customer profile mechanism. It must pass validation before use. `custom_technical_note` is an external profile demo, not an official L3 document type.
-TSC / Technical Safety Concept remains deferred and is not an official built-in document type.
+TechnicalSafetyConcept and SystemRequirement are document-type skill layer delivery types that use the shared workflow; HSC / SSC remain deferred.
 
 Markdown Spec is a human-readable upstream explanation layer. It is not the runtime machine rule and must not be treated as the only execution rule. A Markdown Spec may be converted into a candidate profile, but that candidate profile stays inactive until separately reviewed and activated through a controlled process.
 

@@ -20,7 +20,21 @@ description: 运行 AI 专业文档写作 workflow，支持通过 task YAML 选�
 /ai-writing-plugin:write "Run the writing workflow with examples/hara_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/item_definition_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/functional_safety_requirement_demo_fixture/task.yaml"
+/ai-writing-plugin:write "Run the writing workflow with examples/system_requirement_demo_fixture/task.yaml"
 ```
+
+自然语言快捷意图也可以被识别，但必须映射到明确的 `task_type` 与材料来源：
+
+```text
+/ai-writing-plugin:write "写一份 HARA 危害分析报告"
+/ai-writing-plugin:write "写一份汽车控制器产品 SystemRequirement 系统需求报告"
+/ai-writing-plugin:write "写一份汽车控制器产品 SyRS 系统需求报告"
+```
+
+若用户没有提供 task.yaml 或输入材料：
+
+- 明确说是 demo / 示例时，可提示并使用对应 `examples/*_demo_fixture/task.yaml`。
+- 真实项目写作时，先要求用户提供 task.yaml 或输入材料清单，不得凭空生成项目事实。
 
 部分环境可能存在产品级快捷命令：
 
@@ -42,6 +56,7 @@ task_type: fsr
 task_type: FunctionalSafetyRequirement
 task_type: ItemDefinitionDocument
 task_type: TechnicalSafetyConcept
+task_type: SystemRequirement
 task_type: generic_document
 ```
 
@@ -64,6 +79,7 @@ examples/fsr_demo_fixture/task.yaml
 examples/functional_safety_requirement_demo_fixture/task.yaml
 examples/item_definition_demo_fixture/task.yaml
 examples/technical_safety_concept_demo_fixture/task.yaml
+examples/system_requirement_demo_fixture/task.yaml
 examples/generic_document_demo_fixture/task.yaml
 examples/custom_technical_note_profile_demo_fixture/task.yaml
 ```
@@ -74,7 +90,7 @@ examples/custom_technical_note_profile_demo_fixture/task.yaml
 
 本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 **13 个** step skill，并对每一步做到「**先子代理审核、后用户确认闸门**」。command 层只负责确认 task、把控制权交给总控 skill。各 step 的 artifacts 由对应 step skill 的 subagent 按 artifact 契约写入 `runs/<run_id>/`。
 
-1. 用中文确认 task file 路径和 `task_type`。**无 task.yaml 时先向用户索取路径与输入材料，不要凭空开跑**（自由文本如「写一份 HARA 报告」不能直接驱动 workflow）。
+1. 用中文确认 task file 路径和 `task_type`。若用户只给自然语言意图，先映射到候选 `task_type`（例如 HARA → `hara`，SystemRequirement / SyRS / 系统需求 → `SystemRequirement`），再确认是使用 demo fixture 还是等待用户提供 task.yaml / 输入材料。真实项目**无 task.yaml 或输入材料时不要凭空开跑**。
 2. 启用 **`workflow-orchestrator`** skill 作为总控，按其「编排主循环」逐 stage 推进；每个 stage 覆盖的 step 见下方映射表，逐 step 调用对应 step skill。
 3. 每个 step 执行后，按该 step skill 的「子代理审核」小节**新开独立 subagent**：自主完成 A1 审核任务与 A2 修订任务的分解与执行，在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` / `revision_state` 三态（`not_run` / `running` / `done`）跟踪进度。循环直到无 P0/P1 且全部子任务 `done`。
 4. subagent 审核通过后，再向用户弹出 stage-review 确认问题列表；用户回复 `accepted` / `needs_revision` / `blocked` / `skipped` 后，由总控 skill 在 `runs/<run_id>/stage_reviews/<stage>/decision.json` 落盘决定。未获 `accepted` / `skipped` 不得进入下一 stage。
