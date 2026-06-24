@@ -1,0 +1,58 @@
+task_type: SoftwareRequirement
+task_title: 基于 EPS Demo 输入生成汽车控制器 Software Requirement 文档
+display_name: 汽车控制器 Software Requirement（SwRS）文档
+target_audience: 软件需求工程师 / 软件架构师 / ASPICE 审查人员
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - software requirement wording
+  - upstream system requirement and architecture linkage
+  - interface definition including direction and timing
+  - timing or resource limit values
+  - diagnostic behavior adequacy
+  - safety-related software linkage
+  - verification method adequacy
+  - requirement completeness and sufficiency
+  - final SwRS approval or ASPICE / ISO 26262 compliance conclusion
+inputs:
+  - path: inputs/syrs_source.md
+    role: source
+    title: EPS Demo System Requirements Extract
+    notes: "Fact source for upstream SYS-F / SYS-IF IDs and system-level intent for SwRS traceability."
+  - path: inputs/system_architecture.md
+    role: source
+    title: EPS Demo Current Project System Architecture
+    notes: "Fact source for allocation context, interface boundaries, and operating modes."
+  - path: inputs/interface_spec.md
+    role: source
+    title: EPS Demo Interface Specification
+    notes: "Fact source for SWR-IF direction, counterpart, and signal context."
+  - path: inputs/diagnostic_constraints.md
+    role: source
+    title: EPS Demo Diagnostic Software Behavior Constraints
+    notes: "Fact source for diagnostic and degraded software behavior requirements."
+  - path: inputs/platform_constraints.md
+    role: source
+    title: EPS Demo Platform and BSW Constraints
+    notes: "Fact source for timing, resource, and platform dependency constraints."
+  - path: inputs/swrs_template.md
+    role: template
+    title: SwRS Demo Document Template
+    notes: "Structure source only. Do not use as factual evidence."
+  - path: inputs/swe1_checklist.md
+    role: checklist
+    title: SWE.1 Demo Review Checklist
+    notes: "Review criteria only. Do not use as factual evidence."
+  - path: inputs/aspice_iso_reference.md
+    role: reference
+    title: ASPICE SWE.1 and ISO 26262-6 Interface Reference
+    notes: "Methodology reference only. Do not use as project-specific EPS facts."
+  - path: inputs/reference_system_architecture_sample.md
+    role: sample
+    title: Reference System Architecture Sample Shape
+    notes: "Historical project architecture shape only. Never use as facts for this project."
+  - path: inputs/reference_swrs_sample.md
+    role: sample
+    title: Reference SwRS Sample Shape
+    notes: "Style and table-shape sample only. Never use as SWR-F/IF, limits, or conclusions for this project."
