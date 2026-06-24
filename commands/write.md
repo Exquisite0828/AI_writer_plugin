@@ -21,6 +21,7 @@ description: 运行 AI 专业文档写作 workflow，支持通过 task YAML 选�
 /ai-writing-plugin:write "Run the writing workflow with examples/item_definition_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/functional_safety_requirement_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/system_requirement_demo_fixture/task.yaml"
+/ai-writing-plugin:write "Run the writing workflow with examples/system_architecture_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/software_requirement_demo_fixture/task.yaml"
 /ai-writing-plugin:write "Run the writing workflow with examples/software_architecture_demo_fixture/task.yaml"
 ```
@@ -29,12 +30,12 @@ description: 运行 AI 专业文档写作 workflow，支持通过 task YAML 选�
 
 ```text
 /ai-writing-plugin:write "写一份 HARA 危害分析报告"
+/ai-writing-plugin:write "写一份 SyRS 系统需求报告"
+/ai-writing-plugin:write "写一份系统架构报告"
+/ai-writing-plugin:write "写一份汽车控制器产品 SystemRequirement 系统需求报告"
+/ai-writing-plugin:write "写一份汽车控制器产品 SystemArchitecture 系统架构报告"
 /ai-writing-plugin:write "写一份 SwRS 软件需求报告"
 /ai-writing-plugin:write "写一份汽车控制器产品 SoftwareRequirement 软件需求报告"
-/ai-writing-plugin:write "写一份汽车控制器产品 SwRS 软件需求报告"
-/ai-writing-plugin:write "写一份汽车控制器产品 SystemRequirement 系统需求报告"
-/ai-writing-plugin:write "写一份汽车控制器产品 SyRS 系统需求报告"
-/ai-writing-plugin:write "写一份汽车控制器产品 SystemArchitecture 系统架构报告"
 /ai-writing-plugin:write "写一份汽车控制器产品 SoftwareArchitecture 软件架构报告"
 /ai-writing-plugin:write "写一份汽车控制器产品 SwAD 软件架构报告"
 ```
@@ -47,7 +48,7 @@ description: 运行 AI 专业文档写作 workflow，支持通过 task YAML 选�
 |---|---|
 | HARA、危害分析、危害分析报告 | `hara` |
 | SystemRequirement、SyRS、系统需求 | `SystemRequirement` |
-| SystemArchitecture、系统架构、SYS.3 | `SystemArchitecture` |
+| SystemArchitecture、系统架构、SYS.3、系统架构报告 | `SystemArchitecture` |
 | SoftwareRequirement、SwRS、软件需求、软件需求规格 | `SoftwareRequirement` |
 | SoftwareArchitecture、SwAD、软件架构、SWE.2 | `SoftwareArchitecture` |
 
@@ -105,6 +106,7 @@ examples/functional_safety_requirement_demo_fixture/task.yaml
 examples/item_definition_demo_fixture/task.yaml
 examples/technical_safety_concept_demo_fixture/task.yaml
 examples/system_requirement_demo_fixture/task.yaml
+examples/system_architecture_demo_fixture/task.yaml
 examples/software_requirement_demo_fixture/task.yaml
 examples/software_architecture_demo_fixture/task.yaml
 examples/generic_document_demo_fixture/task.yaml

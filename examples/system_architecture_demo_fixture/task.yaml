@@ -1,0 +1,56 @@
+task_type: SystemArchitecture
+task_title: 基于 EPS Demo 输入生成汽车控制器 System Architecture 文档
+display_name: 汽车控制器 System Architecture 文档
+target_audience: 系统架构师 / 系统工程师 / ASPICE 审查人员
+output_format: markdown
+strict_template: true
+allow_inference: false
+requires_human_confirmation:
+  - architecture decomposition wording
+  - upstream requirement linkage
+  - architecture element definition
+  - interface architecture definition
+  - allocation rationale
+  - diagnostic architecture linkage
+  - resource constraint allocation
+  - safety architecture linkage
+  - verification method
+  - architecture completeness consistency and sufficiency
+  - final architecture approval or ASPICE / ISO 26262 compliance conclusion
+inputs:
+  - path: inputs/syrs_source.md
+    role: source
+    title: EPS Demo System Requirements Extract
+    notes: "Fact source for upstream SYS-F / SYS-IF IDs and allocation anchors."
+  - path: inputs/system_context.md
+    role: source
+    title: EPS Demo System Context and Product Boundary
+    notes: "Fact source for ECU boundary, variants, and in/out of scope elements."
+  - path: inputs/interface_spec.md
+    role: source
+    title: EPS Demo Interface Specification
+    notes: "Fact source for interface names, directions, counterparts, and protocols."
+  - path: inputs/diagnostic_constraints.md
+    role: source
+    title: EPS Demo Diagnostic and Degradation Constraints
+    notes: "Fact source for diagnostic chains and degraded operation architecture."
+  - path: inputs/platform_constraints.md
+    role: source
+    title: EPS Demo Platform and Resource Constraints
+    notes: "Fact source for MCU, memory, bus, and timing constraints."
+  - path: inputs/system_architecture_template.md
+    role: template
+    title: System Architecture Demo Template
+    notes: "Structure source only. Do not use as factual evidence."
+  - path: inputs/sys3_checklist.md
+    role: checklist
+    title: SYS.3 Demo Review Checklist
+    notes: "Review criteria only. Do not use as factual evidence."
+  - path: inputs/aspice_iso_reference.md
+    role: reference
+    title: ASPICE SYS.3 and ISO 26262 Interface Reference
+    notes: "Methodology reference only. Do not use as project-specific EPS facts."
+  - path: inputs/reference_architecture_sample.md
+    role: sample
+    title: Reference System Architecture Sample Shape
+    notes: "Style and table-shape sample only. Never use as elements, interfaces, allocation, or conclusions for this project."
