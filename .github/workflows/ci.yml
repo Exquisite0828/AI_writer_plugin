@@ -5,26 +5,47 @@ on:
   pull_request:
 
 jobs:
-  test:
-    name: Python tests
+  plugin-checks:
+    name: Plugin checks
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-
-      - name: Install package
+      - name: Validate plugin manifests
         run: |
-          python -m pip install -U pip
-          python -m pip install -e ".[dev]"
+          python3 -m json.tool .claude-plugin/plugin.json >/dev/null
+          python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
 
-      - name: Run pytest
-        env:
-          PYTHONDONTWRITEBYTECODE: "1"
-        run: python -m pytest -q -p no:cacheprovider
+      - name: Validate plugin structure
+        run: |
+          test -f commands/write.md
+          test -f skills/workflow-orchestrator/SKILL.md
+          test -f skills/writing-core/SKILL.md
+          test -d skills/workflow-steps
+          test -d skills/document-types
+          test -f skills/document-types/hara/SKILL.md
+          test -f skills/document-types/technical_solution/SKILL.md
+          test -f skills/document-types/test_report/SKILL.md
+          test -f skills/document-types/fsr/SKILL.md
+
+      - name: Validate workflow step wrappers
+        run: |
+          steps="input-materials material-inventory source-index research-questions template-outline evidence-map conservative-draft review verification revision final-report run-summary candidate-profile-update"
+          for step in $steps; do
+            test -f "skills/step-${step}/SKILL.md"
+            test -f "skills/workflow-steps/step-${step}/SKILL.md"
+            grep -Fq "../workflow-steps/step-${step}/SKILL.md" "skills/step-${step}/SKILL.md"
+          done
+
+      - name: Validate plugin with Claude CLI when available
+        run: |
+          if command -v claude >/dev/null 2>&1; then
+            claude plugin validate .
+          else
+            echo "Claude CLI not installed on this runner; skipping plugin validation."
+          fi
