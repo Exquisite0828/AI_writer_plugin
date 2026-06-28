@@ -103,11 +103,13 @@ description: 中文优先指导 workflow 第 4 步「模板大纲」：综合用
 
 ## 子代理审核 (Subagent Review)
 
-本步执行结束前，必须由 Claude Code **新开一个独立 subagent**，审核并修订本步产出，直到满意后才能进入下一步。
+本步执行结束前，必须由 Claude Code **新开一个独立 subagent**，审核本步已产出的 artifacts。subagent 默认只审核，不重新生成 L1/L2 大纲；只有发现 P0/P1 时才允许进入局部修订。
+
+审核通过且无 P0/P1 时，subagent 只能写入 `runs/<run_id>/subagent/step-template-outline/state.json` 与本 stage 必需的 review artifacts；不得重写 `plans/template_structure.json`、`plans/outline_l1.md` 或 `plans/outline_l2.md`。P2/P3 只记录为待用户确认的问题，不得自动修订本步 artifacts。
 
 ### A. 自主任务分解与进度跟踪（将 human 移出 loop）
 
-subagent 必须**自主**地分别对「审核任务」与「修订任务」做动态任务分解，并在同一 `state.json` 中以两个独立任务组（`review_state` / `revision_state`）各自跟踪进度，无需人工逐步介入。
+subagent 必须先对「审核任务」做动态任务分解，并在同一 `state.json` 中以 `review_state` 跟踪进度。`revision_state` 只有在审核发现 P0/P1 时才执行；无 P0/P1 时记录 `revision_required=false`。P2/P3 不触发 A2 修订。
 
 #### A1. 审核任务：自主分解与进度跟踪
 
@@ -117,8 +119,8 @@ subagent 必须**自主**地分别对「审核任务」与「修订任务」做�
 
 #### A2. 修订任务：自主分解与进度跟踪
 
-1. **方案阶段**：针对本步目的生成 ≥2 种修订方案（建议区分「先 L1 后 L2」两阶段）。
-2. **分解与执行**：以「单个 L1 章」或「单份 template/参考文档」为自然单元。
+1. **方案阶段**：仅围绕已确认的 P0/P1 issue 生成 ≥2 种局部修订方案；P2/P3 不进入自动修订。
+2. **分解与执行**：每个修订子任务必须绑定 `issue_id`、`target_artifact`、`changed_paths`。只改受影响的 L1/L2 节点或对应 review artifact；不得重新生成整份大纲。
 3. **进度跟踪**：`revision_state.subtasks` 同上。
 
 state.json 最小结构见任务专属子 skill 的「state.json 示例」。
@@ -126,8 +128,8 @@ state.json 最小结构见任务专属子 skill 的「state.json 示例」。
 ### B. 审核与修订要点
 
 1. 交付三份 artifact + 边界 + 子 skill「B 审核检查项」作为审核标准。
-2. 发现问题时按「本步目的要点」重新驱动，**先修订 L1 再修订 L2**。
-3. 循环至无 P0/P1，再进入交接。
+2. 发现 P0/P1 时按 A2 局部修订；若无 P0/P1，只记录审核结论，不得重写大纲。P2/P3 只能进入 review artifacts，等待用户确认。
+3. 修订后只重审受影响 issue 与 artifact；无 P0/P1 后进入交接。
 
 subagent 约束：不得把 sample/reference 当事实、不得移除 NEEDS_USER_CONFIRMATION、不得输出专业批准结论。
 

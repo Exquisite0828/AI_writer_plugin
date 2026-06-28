@@ -11,7 +11,7 @@ description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划
 
 1. **读取前步大纲**：理解 Step 4 的 L1 章 + L2 小节、`intent`、强制要求、证据预期。
 2. **逐段分析研究**：按大纲顺序（L1 → L2）遍历；对每个 L2（无 L2 的 L1 则按 L1 一条）登记一条**分析子任务**。
-3. **登记 state.json**：子任务写入 `runs/<run_id>/subagent/research-questions/state.json` 的 `research_state.subtasks`；状态**仅三种**：`not_run` / `running` / `done`。
+3. **登记执行进度**：主执行上下文为本步维护 `research_state.subtasks`；状态**仅三种**：`not_run` / `running` / `done`。该进度不等于 subagent 审核 state。
 4. **顺序执行**：取第一条 `not_run` → `running` → 分析研究该段 → 写出该段写作计划 → `done` → 写回 state.json → 继续下一条。
 5. **汇总产出**：各段写作计划合并写入 `plans/section_writing_plans.json`（可选配套 `plans/section_plans/<section_id>.md` 可读稿）。
 
@@ -74,7 +74,7 @@ description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划
 
 - `plans/section_writing_plans.json`（**主产出**：每 L2 一条写作计划）
 - `plans/section_plans/<section_id>.md`（可选：单段可读计划）
-- `runs/<run_id>/subagent/research-questions/state.json`
+- 本步执行进度 state（由主执行上下文维护，不作为 subagent 审核 state）
 
 ## state.json 结构
 
@@ -124,16 +124,16 @@ description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划
 
 ## 子代理审核 (Subagent Review)
 
-`research_state` 全部 `done` 且 `section_writing_plans.json` 初稿完成后，新 subagent 审核修订。
+`research_state` 全部 `done` 且 `section_writing_plans.json` 初稿完成后，新 subagent 审核已产出的 artifacts。subagent 默认只审核；只有发现 P0/P1 或用户明确 `needs_revision` 时才允许进入局部修订。
 
 ### A1 / A2
 
 - **A1**：按子 skill 典型审核子任务核对（覆盖 outline_l2、计划字段完整、无预设结论、无 sample 当事实）。
-- **A2**：失败段将对应 `sp-*` 重置为 `not_run`，顺序重跑后合并 JSON。
+- **A2**：仅 P0/P1 或用户明确 `needs_revision` 时执行。修订必须绑定具体 `issue_id`、`target_artifact`、`changed_paths`，只修受影响段或对应 JSON 条目；P2/P3 只记录为待用户确认的问题，不得自动修订。
 
 ### B
 
-交付 `section_writing_plans.json`、state.json、边界 + 子 skill「B 审核检查项」。不得伪造、不得用 sample 当事实、不得移除 NEEDS_USER_CONFIRMATION 相关提示。
+交付 `section_writing_plans.json`、本步执行进度 state、边界 + 子 skill「B 审核检查项」。subagent 只能写入 `runs/<run_id>/subagent/step-research-questions/state.json` 与 stage-review 材料；无 P0/P1 时不得重写 `section_writing_plans.json` 或重跑本步。
 
 ## 交接到下一步
 

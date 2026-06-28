@@ -19,7 +19,7 @@ description: 中文优先指导 workflow 第 6 步「证据·引用·章节计�
 | **Phase B · 引用计划** | 引用计划 | `citation_plan.json`、`claim_support_matrix.json` |
 | **Phase C · 章节任务** | 章节任务 | `section_tasks.json`、`outline_final.md`、`writing_plan.md` |
 
-**规则**：Phase A 全部子任务 `done` 后才进入 Phase B；Phase B 全部 `done` 后才进入 Phase C。子任务状态仅 `not_run` / `running` / `done`，登记于 `execution_state`，每完成一条立即写回 state.json。
+**规则**：Phase A 全部子任务 `done` 后才进入 Phase B；Phase B 全部 `done` 后才进入 Phase C。子任务状态仅 `not_run` / `running` / `done`，由主执行上下文登记于 `execution_state`，每完成一条立即写回本步执行进度 state。该进度不等于 subagent 审核 state。
 
 ## 何时使用
 
@@ -74,7 +74,7 @@ description: 中文优先指导 workflow 第 6 步「证据·引用·章节计�
 - `plans/section_tasks.json`
 - `plans/outline_final.md`
 - `plans/writing_plan.md`
-- `runs/<run_id>/subagent/evidence-map/state.json`
+- 本步执行进度 state（由主执行上下文维护，不作为 subagent 审核 state）
 
 ## 边界与约束
 
@@ -133,14 +133,14 @@ Phase A 子任务默认**按 outline_l2 每 L2 一条** `em-*`；Phase B/C 粒�
 
 ## 子代理审核 (Subagent Review)
 
-三阶段全部 `done` 且七类 artifact 初稿完成后，新 subagent 审核修订。
+三阶段全部 `done` 且七类 artifact 初稿完成后，新 subagent 审核已产出的 artifacts。subagent 默认只审核；只有发现 P0/P1 或用户明确 `needs_revision` 时才允许进入局部修订。
 
 ### A1 / A2
 
 - **A1**：核对 Phase A/B/C 产出完整、EVD provenance、matrix tier、TASK allowed_evidence 一致；见子 skill「B 审核检查项」。
-- **A2**：失败阶段将有关子任务重置为 `not_run`，**从该 phase 起重跑**（不必重跑已通过 phase，除非上游 artifact 变更）。
+- **A2**：仅 P0/P1 或用户明确 `needs_revision` 时执行。修订必须绑定具体 `issue_id`、`target_artifact`、`changed_paths`，只修受影响 EVD / citation / task 条目；P2/P3 只记录为待用户确认的问题，不得自动修订或从某个 phase 起重跑。
 
-subagent 约束：不得把 sample 当事实、不得移除 NEEDS_USER_CONFIRMATION、不得输出专业批准结论。
+subagent 约束：只能写入 `runs/<run_id>/subagent/step-evidence-map/state.json` 与 stage-review 材料；无 P0/P1 时不得重写本步七类 artifacts，不得把 sample 当事实、不得移除 NEEDS_USER_CONFIRMATION、不得输出专业批准结论。
 
 ## 交接到下一步
 
