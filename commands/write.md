@@ -117,12 +117,12 @@ examples/custom_technical_note_profile_demo_fixture/task.yaml
 
 ## 交互 workflow（由 workflow-orchestrator 总控 skill 编排）
 
-本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 **13 个** step skill，并对每一步做到「**先子代理审核、后用户确认闸门**」。command 层只负责确认 task、把控制权交给总控 skill。各 step 的 artifacts 由对应 step skill 的 subagent 按 artifact 契约写入 `runs/<run_id>/`。
+本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 **13 个** step skill，并对每一步做到「**主执行上下文产出、子代理审核、后用户确认闸门**」。command 层只负责确认 task、把控制权交给总控 skill。各 step 的 artifacts 由当前主执行上下文按对应 step skill 和 artifact 契约写入 `runs/<run_id>/`；subagent 默认只审核这些已产出的 artifacts。
 
 1. 用中文确认 task file 路径和 `task_type`。若用户只给自然语言意图，先映射到候选 `task_type`（例如 HARA → `hara`；SystemRequirement / SyRS / 系统需求 → `SystemRequirement`；SystemArchitecture / 系统架构 / SYS.3 → `SystemArchitecture`；SoftwareRequirement / SwRS / 软件需求 → `SoftwareRequirement`；SoftwareArchitecture / SwAD / 软件架构 / SWE.2 → `SoftwareArchitecture`），再确认是使用 demo fixture 还是等待用户提供 task.yaml / 输入材料。真实项目**无 task.yaml 或输入材料时不要凭空开跑**。
 2. 启用 **`workflow-orchestrator`** skill 作为总控，按其「编排主循环」逐 stage 推进；每个 stage 覆盖的 step 见下方映射表，逐 step 调用对应 step skill。
-3. 每个 step 执行后，按该 step skill 的「子代理审核」小节**新开独立 subagent**：自主完成 A1 审核任务与 A2 修订任务的分解与执行，在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` / `revision_state` 三态（`not_run` / `running` / `done`）跟踪进度。循环直到无 P0/P1 且全部子任务 `done`。
-4. subagent 审核通过后，再向用户弹出 stage-review 确认问题列表；用户回复 `accepted` / `needs_revision` / `blocked` / `skipped` 后，由总控 skill 在 `runs/<run_id>/stage_reviews/<stage>/decision.json` 落盘决定。未获 `accepted` / `skipped` 不得进入下一 stage。
+3. 每个 step 执行后，按该 step skill 的「子代理审核」小节**新开独立 subagent**：默认只完成 A1 审核任务，在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` 三态（`not_run` / `running` / `done`）跟踪进度。无 P0/P1 时 `revision_required=false`，不得重写 step artifacts、不得重新驱动整步任务；只有发现 P0/P1 或用户明确 `needs_revision` 时，才执行 A2 局部修订，并把 `issue_id`、`target_artifact`、`changed_paths` 写入 `revision_state`。
+4. subagent 审核完成后，先确认 stage-review package 完整且 `issues.json` 可审查，再向用户弹出 stage-review 确认问题列表；用户回复 `accepted` / `needs_revision` / `blocked` / `skipped` 后，由总控 skill 在 `runs/<run_id>/stage_reviews/<stage>/decision.json` 落盘决定。未获 `accepted` / `skipped` 不得进入下一 stage；package 不完整、coverage 不完整，或存在 `severity=P0/P1` 且 `requires_revision=true` 的 issue 时，不得记录 `accepted`，也不得用 `skipped` 绕过。
 5. 只有在用户明确回复后，才记录真实 HITL decisions；非交互运行不得伪造，缺失 gate 记为 `not_collected_in_noninteractive_run` / `pending_user_confirmation`。
 6. 如果中途中断，下一次会话从仓库根目录重新调用本命令并指向同一 `runs/<run_id>/`，由总控 skill 读取既有 `run_state.json` / `manifest.yaml` / `subagent/<step>/state.json` 继续；不要从头创建新 run，除非 task/profile hash mismatch 或上一 stage 显式 dirty。
 7. 用中文报告 run directory、final artifacts、pending critical claims 和 candidate update 状态。
@@ -145,7 +145,7 @@ stage 顺序固定：`ingest → outline → evidence_planning → draft → rev
 
 ## Stage review 流程
 
-每个 stage 完成后，由对应 step skill 的 subagent 把 advisory review 材料写到：
+每个 stage 完成后，由对应 step skill 的 subagent 把 advisory review 材料写到；这些材料只服务于 stage-review gate，不得修改原 stage artifacts：
 
 ```text
 runs/<run_id>/stage_reviews/<stage>/review_prompt.md
@@ -162,6 +162,16 @@ issues[].unit_id
 ```
 
 必须按 `review_units.json` 中的 `unit_id` 逐项审查，不要只做整体总结。每个 required unit 都必须加入 `reviewed_unit_ids`；`unchecked_unit_ids` 非空、unknown unit id、missing coverage 或 reviewed/unchecked overlap 都视为 review 未完成。
+
+记录 `accepted` 前必须先满足以下硬条件：
+
+- `review_prompt.md`、`review_units.json`、`issues.json` 均存在且可读取；缺任一文件时 package 不完整，不得 `accepted`。
+- `review_units.json` 必须描述当前 artifact 状态；若 A2 修订过 artifact，必须同步刷新对应 unit。保留旧字段、旧 check id 或已废弃结论的 unit 视为 package 不完整。
+- `issues.json.coverage_complete=true`，且 `unchecked_unit_ids=[]`，无 unknown unit id，且 reviewed / unchecked 无重叠。
+- `issues[]` 中不存在 `severity=P0` 或 `severity=P1` 且 `requires_revision=true` 的 issue。
+- `professional_approval=false`；stage review 只能表示 gate decision，不表示专业批准。
+
+写 `decision.json` 前必须按当前文件系统重新检查上述文件，不得依赖记忆中的“已经生成”。任一硬条件不满足时，decision 必须为 `needs_revision` 或 `blocked`。缺 `review_prompt.md`、`review_units.json` 或 `issues.json` 时固定 `blocked`，notes 写明 `stage_review_package_incomplete` 和缺失文件名。非交互运行不得自动接受 P0/P1；只能显式报告阻断原因并停止在当前 stage。
 
 用户确认 gate decision 后，由总控 skill 在同目录写入 `decision.json`：
 
