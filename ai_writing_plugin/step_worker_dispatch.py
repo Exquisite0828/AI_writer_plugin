@@ -31,11 +31,30 @@ from .short_results import (
 )
 
 
-PILOT_STAGE = "ingest"
-PILOT_STEPS = {
-    "step-input-materials",
-    "step-material-inventory",
-    "step-source-index",
+WORKFLOW_STAGE_STEPS = {
+    "ingest": (
+        "step-input-materials",
+        "step-material-inventory",
+        "step-source-index",
+    ),
+    "outline": ("step-template-outline",),
+    "evidence_planning": (
+        "step-research-questions",
+        "step-evidence-map",
+    ),
+    "draft": ("step-conservative-draft",),
+    "review": (
+        "step-review",
+        "step-verification",
+    ),
+    "finalize": (
+        "step-revision",
+        "step-final-report",
+    ),
+    "learning": (
+        "step-run-summary",
+        "step-candidate-profile-update",
+    ),
 }
 DISPATCH_FIELDS = {
     "kind",
@@ -79,7 +98,7 @@ def prepare_step_worker_dispatch(
 ) -> dict[str, Any]:
     repo_root = Path(repo_root).expanduser().resolve()
     run_dir = Path(run_dir).expanduser().resolve()
-    validate_pilot_scope(stage, step)
+    validate_workflow_stage_step(stage, step)
     run_id = run_dir.name
     validate_run_id(run_id)
 
@@ -146,7 +165,7 @@ def complete_step_worker_dispatch(
     status: str | None = None,
 ) -> dict[str, Any]:
     run_dir = Path(run_dir).expanduser().resolve()
-    validate_pilot_scope(stage, step)
+    validate_workflow_stage_step(stage, step)
 
     dispatch_path = step_worker_dispatch_path(run_dir, stage, step)
     if not dispatch_path.is_file():
@@ -202,7 +221,7 @@ def validate_step_worker_dispatch(
     validate_literal(payload["kind"], "step_worker_dispatch", "kind")
     validate_literal(payload["schema_version"], 1, "schema_version")
     validate_run_id(payload["run_id"])
-    validate_pilot_scope(payload["stage"], payload["step"])
+    validate_workflow_stage_step(payload["stage"], payload["step"])
     validate_timestamp(payload["created_at"], "created_at")
     context_package_ref = validate_ref(payload["context_package_ref"], "context_package_ref")
     progress_ledger_ref = validate_ref(payload["progress_ledger_ref"], "progress_ledger_ref")
@@ -221,11 +240,14 @@ def validate_step_worker_dispatch(
     return payload
 
 
-def validate_pilot_scope(stage: Any, step: Any) -> None:
-    if stage != PILOT_STAGE or step not in PILOT_STEPS:
+def validate_workflow_stage_step(stage: Any, step: Any) -> None:
+    if not isinstance(stage, str) or stage not in WORKFLOW_STAGE_STEPS:
+        raise StepWorkerDispatchError(f"invalid stage: {stage!r}")
+    if not isinstance(step, str):
+        raise StepWorkerDispatchError(f"invalid step: {step!r}")
+    if step not in WORKFLOW_STAGE_STEPS[stage]:
         raise StepWorkerDispatchError(
-            "ingest worker pilot only supports stage='ingest' and steps "
-            "step-input-materials, step-material-inventory, step-source-index"
+            f"invalid stage-step pair: stage={stage!r}, step={step!r}"
         )
 
 

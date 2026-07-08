@@ -175,7 +175,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     step_worker_dispatch_prepare = subparsers.add_parser(
         "prepare-step-worker-dispatch",
-        help="Prepare an ingest-stage StepWorkerDispatch pilot file.",
+        help="Prepare a StepWorkerDispatch file for a workflow step.",
     )
     step_worker_dispatch_prepare.add_argument(
         "--repo-root",
@@ -205,7 +205,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     step_worker_dispatch_complete = subparsers.add_parser(
         "complete-step-worker-dispatch",
-        help="Complete an ingest-stage StepWorkerDispatch and update the ProgressLedger.",
+        help="Complete a StepWorkerDispatch and update the ProgressLedger.",
     )
     step_worker_dispatch_complete.add_argument("--run-dir", required=True, help="Run directory.")
     step_worker_dispatch_complete.add_argument("--stage", required=True, help="Workflow stage.")

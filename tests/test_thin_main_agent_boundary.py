@@ -55,7 +55,7 @@ def test_command_and_orchestrator_define_thin_controller_contract():
         "runs/<run_id>/orchestration/progress_ledger.json",
         "StepWorkerDispatch",
         "runs/<run_id>/orchestration/worker_dispatches/<stage>/<step>.json",
-        "ingest worker pilot",
+        "全 13 step worker handoff",
         "ReviewContextPackage",
         "runs/<run_id>/orchestration/review_context_packages/<stage>.json",
         "StageGateResult",
@@ -70,6 +70,24 @@ def test_command_and_orchestrator_define_thin_controller_contract():
     missing = [phrase for phrase in required_phrases if phrase not in combined]
 
     assert not missing, f"thin controller prompt contract is incomplete: {missing}"
+
+
+def test_thin_controller_prompts_do_not_keep_worker_pilot_escape_hatch():
+    forbidden_pilot_phrases = [
+        "ingest worker pilot",
+        "非 `ingest` stage 暂不宣称",
+        "非 `ingest` step 不扩大 worker pilot 范围",
+        "非 ingest 不扩大 worker pilot 范围",
+    ]
+
+    matches = []
+    for path in THIN_CONTROLLER_PROMPTS:
+        text = read(path)
+        for phrase in forbidden_pilot_phrases:
+            if phrase in text:
+                matches.append((path.relative_to(ROOT).as_posix(), phrase))
+
+    assert not matches, f"thin controller prompts still contain worker pilot escape hatch: {matches}"
 
 
 def test_thin_controller_prompts_do_not_expand_runtime_context_scope():
