@@ -11,6 +11,13 @@ from .context_packages import (
     context_package_path,
     validate_step_context_package,
 )
+from .progress_ledger import (
+    ProgressLedgerError,
+    init_progress_ledger,
+    progress_ledger_path,
+    record_step_progress,
+    validate_progress_ledger,
+)
 from .run_scaffold import RunScaffoldError, init_run
 from .short_results import (
     ShortResultError,
@@ -101,6 +108,52 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional run directory for run ref existence and sha256 checks.",
     )
 
+    progress_ledger_init = subparsers.add_parser(
+        "init-progress-ledger",
+        help="Create an empty ProgressLedger for a run.",
+    )
+    progress_ledger_init.add_argument("--run-dir", required=True, help="Run directory.")
+    progress_ledger_init.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite the existing progress ledger.",
+    )
+
+    progress_ledger_recorder = subparsers.add_parser(
+        "record-step-progress",
+        help="Upsert one step entry in the ProgressLedger.",
+    )
+    progress_ledger_recorder.add_argument("--run-dir", required=True, help="Run directory.")
+    progress_ledger_recorder.add_argument("--stage", required=True, help="Workflow stage.")
+    progress_ledger_recorder.add_argument("--step", required=True, help="Workflow step.")
+    progress_ledger_recorder.add_argument("--status", required=True, help="Ledger status.")
+    progress_ledger_recorder.add_argument(
+        "--context-package",
+        help="Run-relative or run-contained absolute StepContextPackage path.",
+    )
+    progress_ledger_recorder.add_argument(
+        "--step-result",
+        help="Run-relative or run-contained absolute StepResult path.",
+    )
+    progress_ledger_recorder.add_argument(
+        "--review-result",
+        help="Run-relative or run-contained absolute ReviewResult path.",
+    )
+
+    progress_ledger_validator = subparsers.add_parser(
+        "validate-progress-ledger",
+        help="Validate a compact ProgressLedger JSON file.",
+    )
+    progress_ledger_validator.add_argument(
+        "--path",
+        required=True,
+        help="Path to progress ledger JSON.",
+    )
+    progress_ledger_validator.add_argument(
+        "--run-dir",
+        help="Optional run directory for ref existence, sha256, and delegated checks.",
+    )
+
     return parser
 
 
@@ -186,6 +239,56 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
         print("step context package valid")
+        return 0
+
+    if args.command == "init-progress-ledger":
+        try:
+            init_progress_ledger(
+                run_dir=Path(args.run_dir),
+                overwrite=args.overwrite,
+            )
+        except (OSError, ProgressLedgerError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print(progress_ledger_path(Path(args.run_dir)))
+        return 0
+
+    if args.command == "record-step-progress":
+        try:
+            record_step_progress(
+                run_dir=Path(args.run_dir),
+                stage=args.stage,
+                step=args.step,
+                status=args.status,
+                context_package=Path(args.context_package) if args.context_package else None,
+                step_result=Path(args.step_result) if args.step_result else None,
+                review_result=Path(args.review_result) if args.review_result else None,
+            )
+        except (OSError, json.JSONDecodeError, ProgressLedgerError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print(progress_ledger_path(Path(args.run_dir)))
+        return 0
+
+    if args.command == "validate-progress-ledger":
+        try:
+            payload = load_json(Path(args.path))
+            validate_progress_ledger(
+                payload,
+                run_dir=Path(args.run_dir) if args.run_dir else None,
+            )
+        except (
+            OSError,
+            json.JSONDecodeError,
+            ShortResultError,
+            ProgressLedgerError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print("progress ledger valid")
         return 0
 
     parser.error(f"unsupported command: {args.command}")
