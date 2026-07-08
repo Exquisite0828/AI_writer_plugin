@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .context_packages import ContextPackageError, validate_step_context_package
 from .short_results import (
     RUN_ID_RE,
     SHA256_RE,
@@ -26,6 +27,7 @@ PACKAGE_FIELDS = {
     "stage",
     "steps",
     "created_at",
+    "context_package_refs",
     "step_result_refs",
     "stage_review_refs",
     "result_paths",
@@ -68,8 +70,7 @@ def build_review_context_package(
     steps: list[str],
     overwrite: bool = False,
 ) -> dict[str, Any]:
-    # repo_root is part of the public API for symmetry with other package builders.
-    Path(repo_root).expanduser().resolve()
+    repo_root = Path(repo_root).expanduser().resolve()
     run_dir = Path(run_dir).expanduser().resolve()
     validate_stage_or_raise(stage)
     validate_steps(steps)
@@ -80,8 +81,27 @@ def build_review_context_package(
     if package_path.exists() and not overwrite:
         raise ReviewContextPackageError(f"review context package already exists: {package_path}")
 
+    context_package_refs = []
     step_result_refs = []
     for step in steps:
+        context_path = run_dir / expected_context_package_path(stage, step)
+        if not context_path.is_file():
+            raise ReviewContextPackageError(
+                f"StepContextPackage does not exist: {expected_context_package_path(stage, step)}"
+            )
+        context_payload = validate_step_context_package_or_raise(
+            load_json(context_path),
+            repo_root=repo_root,
+            run_dir=run_dir,
+        )
+        if (
+            context_payload["run_id"] != run_id
+            or context_payload["stage"] != stage
+            or context_payload["step"] != step
+        ):
+            raise ReviewContextPackageError("StepContextPackage stage and step must match package")
+        context_package_refs.append(build_ref(run_dir, context_path))
+
         result_path = run_dir / expected_step_result_path(step)
         if not result_path.is_file():
             raise ReviewContextPackageError(
@@ -101,11 +121,12 @@ def build_review_context_package(
 
     payload: dict[str, Any] = {
         "kind": "review_context_package",
-        "schema_version": 1,
+        "schema_version": 2,
         "run_id": run_id,
         "stage": stage,
         "steps": list(steps),
         "created_at": utc_now(),
+        "context_package_refs": context_package_refs,
         "step_result_refs": step_result_refs,
         "stage_review_refs": stage_review_refs,
         "result_paths": expected_result_paths(stage),
@@ -130,15 +151,26 @@ def validate_review_context_package(
 
     validate_exact_fields(payload, PACKAGE_FIELDS)
     validate_literal(payload["kind"], "review_context_package", "kind")
-    validate_literal(payload["schema_version"], 1, "schema_version")
+    validate_literal(payload["schema_version"], 2, "schema_version")
     validate_run_id(payload["run_id"])
     validate_stage_or_raise(payload["stage"])
     steps = validate_steps(payload["steps"])
     validate_timestamp(payload["created_at"], "created_at")
+    context_package_refs = validate_ref_list(
+        payload["context_package_refs"],
+        "context_package_refs",
+    )
     step_result_refs = validate_ref_list(payload["step_result_refs"], "step_result_refs")
     stage_review_refs = validate_ref_list(payload["stage_review_refs"], "stage_review_refs")
     validate_result_paths(payload["result_paths"], payload["stage"])
     validate_constraints(payload["constraints"])
+
+    expected_context_paths = [
+        expected_context_package_path(payload["stage"], step) for step in steps
+    ]
+    actual_context_paths = [item["path"] for item in context_package_refs]
+    if actual_context_paths != expected_context_paths:
+        raise ReviewContextPackageError("context_package_refs must match steps in order")
 
     expected_step_paths = [expected_step_result_path(step) for step in steps]
     actual_step_paths = [item["path"] for item in step_result_refs]
@@ -152,6 +184,21 @@ def validate_review_context_package(
         run_root = Path(run_dir).expanduser().resolve()
         if payload["run_id"] != run_root.name:
             raise ReviewContextPackageError("run_id must match run_dir name")
+        for item, step in zip(context_package_refs, steps, strict=True):
+            validate_ref_file(item, run_root)
+            context_payload = validate_step_context_package_or_raise(
+                load_json(run_root / item["path"]),
+                repo_root=repo_root,
+                run_dir=run_root,
+            )
+            if (
+                context_payload["run_id"] != payload["run_id"]
+                or context_payload["stage"] != payload["stage"]
+                or context_payload["step"] != step
+            ):
+                raise ReviewContextPackageError(
+                    "StepContextPackage stage and step must match package"
+                )
         for item in step_result_refs:
             validate_ref_file(item, run_root)
             step_payload = validate_step_result_or_raise(
@@ -164,6 +211,10 @@ def validate_review_context_package(
             validate_ref_file(item, run_root)
 
     return payload
+
+
+def expected_context_package_path(stage: str, step: str) -> str:
+    return f"orchestration/context_packages/{stage}/{step}.json"
 
 
 def expected_step_result_path(step: str) -> str:
@@ -330,6 +381,17 @@ def validate_step_result_or_raise(payload: dict[str, Any], run_dir: Path | str) 
     try:
         return validate_step_result(payload, run_dir=run_dir)
     except ShortResultError as exc:
+        raise ReviewContextPackageError(str(exc)) from exc
+
+
+def validate_step_context_package_or_raise(
+    payload: dict[str, Any],
+    repo_root: Path | str | None = None,
+    run_dir: Path | str | None = None,
+) -> dict[str, Any]:
+    try:
+        return validate_step_context_package(payload, repo_root=repo_root, run_dir=run_dir)
+    except ContextPackageError as exc:
         raise ReviewContextPackageError(str(exc)) from exc
 
 

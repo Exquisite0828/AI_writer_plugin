@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from ai_writing_plugin.context_packages import build_step_context_package
 from ai_writing_plugin.review_context_packages import (
     ReviewContextPackageError,
     build_review_context_package,
@@ -59,14 +60,47 @@ def write_step_result(run_dir: Path, step: str) -> Path:
     return path
 
 
+def create_repo_and_run(tmp_path: Path):
+    repo_root = tmp_path / "repo"
+    run_dir = tmp_path / "runs" / "demo-run"
+    for step in STEPS:
+        write(repo_root / "skills" / step / "SKILL.md", f"{step} wrapper")
+        write(
+            repo_root / "skills" / "workflow-steps" / step / "SKILL.md",
+            f"{step} canonical",
+        )
+    write(repo_root / "skills" / "document-types" / "hara" / "SKILL.md", "doctype")
+    write(run_dir / "task_brief.json", '{"task_type":"hara"}')
+    write(run_dir / "manifest.json", "{}")
+    return repo_root, run_dir
+
+
+def write_context_packages(repo_root: Path, run_dir: Path) -> list[Path]:
+    paths = []
+    for step in STEPS:
+        build_step_context_package(
+            repo_root=repo_root,
+            run_dir=run_dir,
+            stage="ingest",
+            step=step,
+            task_type="hara",
+        )
+        paths.append(run_dir / "orchestration" / "context_packages" / "ingest" / f"{step}.json")
+    return paths
+
+
 def valid_package(**overrides):
     payload = {
         "kind": "review_context_package",
-        "schema_version": 1,
+        "schema_version": 2,
         "run_id": "demo-run",
         "stage": "ingest",
         "steps": STEPS,
         "created_at": "2026-07-08T00:00:00+00:00",
+        "context_package_refs": [
+            ref("orchestration/context_packages/ingest/step-input-materials.json"),
+            ref("orchestration/context_packages/ingest/step-material-inventory.json"),
+        ],
         "step_result_refs": [
             ref("orchestration/step_results/step-input-materials.json"),
             ref("orchestration/step_results/step-material-inventory.json"),
@@ -95,10 +129,8 @@ def assert_invalid(payload, expected_message: str, **kwargs):
 
 
 def test_build_review_context_package_collects_step_results_and_stage_review_refs(tmp_path):
-    repo_root = tmp_path / "repo"
-    run_dir = tmp_path / "runs" / "demo-run"
-    write(repo_root / "commands" / "write.md", "command")
-    write(run_dir / "manifest.json", "{}")
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    context_paths = write_context_packages(repo_root, run_dir)
     for step in STEPS:
         write_step_result(run_dir, step)
 
@@ -124,6 +156,10 @@ def test_build_review_context_package_collects_step_results_and_stage_review_ref
         "orchestration/step_results/step-input-materials.json",
         "orchestration/step_results/step-material-inventory.json",
     ]
+    assert [item["path"] for item in payload["context_package_refs"]] == [
+        "orchestration/context_packages/ingest/step-input-materials.json",
+        "orchestration/context_packages/ingest/step-material-inventory.json",
+    ]
     assert [item["path"] for item in payload["stage_review_refs"]] == [
         "stage_reviews/ingest/review_prompt.md",
         "stage_reviews/ingest/review_units.json",
@@ -136,6 +172,7 @@ def test_build_review_context_package_collects_step_results_and_stage_review_ref
     assert payload["step_result_refs"][0]["sha256"] == sha256_file(
         run_dir / "orchestration/step_results/step-input-materials.json"
     )
+    assert payload["context_package_refs"][0]["sha256"] == sha256_file(context_paths[0])
     assert validate_review_context_package(
         payload,
         repo_root=repo_root,
@@ -164,6 +201,7 @@ def test_rejects_unknown_or_body_like_fields(field):
     "override, message",
     [
         ({"stage": "unknown"}, "invalid stage"),
+        ({"schema_version": 1}, "schema_version"),
         ({"steps": ["step-not-real"]}, "invalid step"),
         ({"steps": STEPS + [STEPS[0]]}, "steps must not contain duplicates"),
         ({"created_at": "not-a-date"}, "created_at"),
@@ -203,13 +241,23 @@ def test_rejects_stage_review_refs_outside_allowlist():
 
 
 def test_run_dir_validation_requires_matching_hashes_and_step_result_payload(tmp_path):
-    run_dir = tmp_path / "runs" / "demo-run"
-    write(run_dir / "manifest.json", "{}")
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    context_paths = write_context_packages(repo_root, run_dir)
     for step in STEPS:
         write_step_result(run_dir, step)
     write(run_dir / "stage_reviews" / "ingest" / "review_prompt.md", "prompt")
 
     payload = valid_package(
+        context_package_refs=[
+            ref(
+                "orchestration/context_packages/ingest/step-input-materials.json",
+                sha256_file(context_paths[0]),
+            ),
+            ref(
+                "orchestration/context_packages/ingest/step-material-inventory.json",
+                sha256_file(context_paths[1]),
+            ),
+        ],
         step_result_refs=[
             ref(
                 "orchestration/step_results/step-input-materials.json",
@@ -227,16 +275,51 @@ def test_run_dir_validation_requires_matching_hashes_and_step_result_payload(tmp
             ),
         ],
     )
-    assert validate_review_context_package(payload, run_dir=run_dir) == payload
+    assert validate_review_context_package(
+        payload,
+        repo_root=repo_root,
+        run_dir=run_dir,
+    ) == payload
 
     payload["step_result_refs"][0]["sha256"] = VALID_HASH
     assert_invalid(payload, "sha256 mismatch", run_dir=run_dir)
 
 
+def test_run_dir_validation_rejects_context_package_hash_mismatch(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    context_paths = write_context_packages(repo_root, run_dir)
+    for step in STEPS:
+        write_step_result(run_dir, step)
+
+    payload = valid_package(
+        context_package_refs=[
+            ref(
+                "orchestration/context_packages/ingest/step-input-materials.json",
+                VALID_HASH,
+            ),
+            ref(
+                "orchestration/context_packages/ingest/step-material-inventory.json",
+                sha256_file(context_paths[1]),
+            ),
+        ],
+        step_result_refs=[
+            ref(
+                "orchestration/step_results/step-input-materials.json",
+                sha256_file(run_dir / "orchestration/step_results/step-input-materials.json"),
+            ),
+            ref(
+                "orchestration/step_results/step-material-inventory.json",
+                sha256_file(run_dir / "orchestration/step_results/step-material-inventory.json"),
+            ),
+        ],
+    )
+
+    assert_invalid(payload, "sha256 mismatch", repo_root=repo_root, run_dir=run_dir)
+
+
 def test_cli_builds_validates_and_reports_invalid_package(tmp_path):
-    repo_root = tmp_path / "repo"
-    run_dir = tmp_path / "runs" / "demo-run"
-    write(run_dir / "manifest.json", "{}")
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    write_context_packages(repo_root, run_dir)
     write(run_dir / "stage_reviews" / "ingest" / "review_prompt.md", "prompt")
     for step in STEPS:
         write_step_result(run_dir, step)

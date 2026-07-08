@@ -95,6 +95,8 @@ def test_thin_controller_requires_real_task_tool_worker_handoff():
 
     required_phrases = [
         "Task tool",
+        "Agent tool",
+        "Task tool / Agent tool",
         "worker_unavailable",
         "fail closed",
         "不得 fallback 到主上下文执行 step 或 review",
@@ -125,6 +127,100 @@ def test_thin_controller_requires_document_type_lazy_loading():
     missing = [phrase for phrase in required_phrases if phrase not in combined]
 
     assert not missing, f"document-type lazy routing contract is incomplete: {missing}"
+
+
+def test_thin_controller_requires_python_metadata_builders_and_validators():
+    combined = "\n".join(read(path) for path in THIN_CONTROLLER_PROMPTS)
+
+    required_phrases = [
+        "python -m ai_writing_plugin init-progress-ledger --run-dir <run_dir>",
+        "python -m ai_writing_plugin prepare-step-worker-dispatch",
+        "python -m ai_writing_plugin validate-step-context-package",
+        "python -m ai_writing_plugin validate-step-worker-dispatch",
+        "python -m ai_writing_plugin validate-progress-ledger",
+        "python -m ai_writing_plugin validate-step-result",
+        "python -m ai_writing_plugin validate-review-result",
+        "python -m ai_writing_plugin complete-step-worker-dispatch",
+        "python -m ai_writing_plugin build-review-context-package",
+        "python -m ai_writing_plugin validate-review-context-package",
+        "python -m ai_writing_plugin build-stage-gate-result",
+        "python -m ai_writing_plugin validate-stage-gate-result",
+        "metadata_invalid",
+        "不得手写 orchestration JSON",
+        "不得手动 patch ledger",
+        "主 Agent 不得写 StepResult",
+        "主 Agent 不得写 ReviewResult",
+        "主 Agent 不得写 step artifacts",
+        "不得使用 Write/Edit 手写 runtime metadata",
+    ]
+
+    missing = [phrase for phrase in required_phrases if phrase not in combined]
+
+    assert not missing, f"validated runtime metadata contract is incomplete: {missing}"
+
+
+def test_thin_controller_requires_final_result_hash_binding_order():
+    combined = "\n".join(read(path) for path in THIN_CONTROLLER_PROMPTS)
+
+    required_phrases = [
+        "不得在 complete-step-worker-dispatch 后修改 StepResult",
+        "修改 StepResult 后必须重新运行 validate-step-result 和 complete-step-worker-dispatch",
+        "ProgressLedger 中的 step_result_ref 必须绑定最终 StepResult sha256",
+        "ProgressLedger 中的 review_result_ref 必须绑定最终 ReviewResult sha256",
+        "不得手动修改 progress_ledger.json",
+    ]
+
+    missing = [phrase for phrase in required_phrases if phrase not in combined]
+
+    assert not missing, f"final result hash binding contract is incomplete: {missing}"
+
+
+def test_thin_controller_requires_worker_prompt_result_schema():
+    combined = "\n".join(read(path) for path in THIN_CONTROLLER_PROMPTS)
+
+    required_phrases = [
+        "Step worker prompt 必须包含完整 StepResult 字段列表",
+        "kind=step_result",
+        "schema_version=1",
+        "artifact_hashes",
+        "不允许 task_type",
+        "不允许 knowledge_gaps_count",
+        "不允许 completed_at",
+        "Step worker 返回前必须自行运行 validate-step-result",
+        "同一个 step worker 修正后重跑 validate-step-result",
+        "Review worker prompt 必须包含完整 ReviewResult 字段列表",
+        "kind=review_result",
+        "review_package_hashes",
+        "Review worker 返回前必须自行运行 validate-review-result",
+        "同一个 review worker 修正后重跑 validate-review-result",
+        "--run-dir <run_dir> --path <result_path>",
+    ]
+
+    missing = [phrase for phrase in required_phrases if phrase not in combined]
+
+    assert not missing, f"worker result schema prompt contract is incomplete: {missing}"
+
+
+def test_thin_controller_does_not_allow_manual_metadata_json_workarounds():
+    forbidden_manual_metadata_phrases = [
+        "允许手写 orchestration JSON",
+        "可以手写 orchestration JSON",
+        "手写 StepContextPackage 后继续执行",
+        "手写 StepWorkerDispatch 后继续执行",
+        "手写 ProgressLedger 后继续执行",
+        "手动 patch ledger 后继续执行",
+        "validator 失败也可以继续",
+        "metadata_invalid 后继续执行",
+    ]
+
+    matches = []
+    for path in THIN_CONTROLLER_PROMPTS:
+        text = read(path)
+        for phrase in forbidden_manual_metadata_phrases:
+            if phrase in text:
+                matches.append((path.relative_to(ROOT).as_posix(), phrase))
+
+    assert not matches, f"thin controller allows manual metadata workarounds: {matches}"
 
 
 def test_thin_controller_does_not_allow_main_agent_worker_fallback():
