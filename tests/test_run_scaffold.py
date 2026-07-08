@@ -119,23 +119,3 @@ def test_invalid_task_fails_without_run_dir(tmp_path):
     assert result.returncode != 0
     assert "task_type" in result.stderr
     assert not (output_root / "demo-run").exists()
-
-
-def test_prompt_does_not_claim_manual_run_creation():
-    root = Path(__file__).resolve().parents[1]
-    prompt_text = "\n".join(
-        [
-            (root / "commands/write.md").read_text(encoding="utf-8"),
-            (root / "skills/workflow-steps/step-input-materials/SKILL.md").read_text(
-                encoding="utf-8"
-            ),
-        ]
-    )
-
-    forbidden_phrases = [
-        "手动创建 run 目录",
-        "预创建完整 artifact tree",
-        "pre-create every possible run subdirectory",
-    ]
-    for phrase in forbidden_phrases:
-        assert phrase not in prompt_text

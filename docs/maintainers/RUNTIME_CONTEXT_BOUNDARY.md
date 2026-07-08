@@ -61,6 +61,16 @@ This command may create only `runs/<run_id>/manifest.json` and `runs/<run_id>/ta
 
 Runtime prompts must not duplicate that contract in full. Duplicated contract lists drift over time and can be misread as instructions to generate every listed artifact. A runtime skill may summarize the contract's purpose, then require intentional contract reads only when exact path or schema detail is needed.
 
+## Regression Guardrails
+
+CI enforces the runtime boundary rules through pytest. The focused guardrail is:
+
+```bash
+python -m pytest -q -p no:cacheprovider tests/test_runtime_context_boundary.py
+```
+
+This test scans only runtime prompt surfaces, currently `commands/` and `skills/`. Maintainer documents may describe forbidden patterns for explanation and review, but those patterns must not re-enter runtime prompts as execution guidance.
+
 ## Examples Boundary
 
 `examples/` contains committed demos and deterministic fixtures. It is not a default knowledge base.

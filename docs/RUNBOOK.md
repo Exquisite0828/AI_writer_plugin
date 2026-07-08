@@ -47,6 +47,14 @@ claude plugin validate .
 
 这两个命令是提交前的基础检查。pytest 覆盖 deterministic engine、document type rules、artifact contract、eval、correction harvesting、demo fixtures 和文档约束；plugin validate 检查 `.claude-plugin/plugin.json` 和 command 结构。
 
+运行期上下文边界专项检查：
+
+```bash
+.venv/bin/python -m pytest -q -p no:cacheprovider tests/test_runtime_context_boundary.py
+```
+
+该检查防止 runtime prompt 重新引用 maintainer docs、默认扫描 examples catalog、内嵌完整 artifact tree，或由 document-type overlay 重新声明 run 起点 ownership。
+
 ## Demo runs
 
 运行六类 demo：

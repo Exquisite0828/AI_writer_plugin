@@ -130,7 +130,7 @@ HARA（ISO 26262-3）经 **13 个** workflow step skill 产出 hazard 分析报�
 - 方案C 逐份材料登记并即时校验 path 可达性、format 支持与 source≠sample。
 
 ### 典型修订子任务
-1. 创建 run 目录并写 manifest。
+1. 确认 Phase 0 run 起点 artifacts 已由 deterministic engine 生成。
 2. 确认 `task_type: hara` 并加载 HARA 规则与本子 skill。
 3. 逐份登记输入材料（分配 file_id、记录 path/title/format/role）。
 4. 校验 HARA source≠sample 边界与缺失/不支持材料的显式标记。
@@ -153,7 +153,7 @@ HARA（ISO 26262-3）经 **13 个** workflow step skill 产出 hazard 分析报�
     "chosen_plan": "<选定修订方案>",
     "rejected_plans": ["<方案及放弃理由>"],
     "subtasks": [
-      {"id": "rt-1", "desc": "创建 run 目录并写 manifest", "status": "done"},
+      {"id": "rt-1", "desc": "确认 Phase 0 run 起点 artifacts 已由 engine 生成", "status": "done"},
       {"id": "rt-2", "desc": "确认 task_type=hara 并加载 HARA 规则", "status": "running"},
       {"id": "rt-3", "desc": "逐份登记输入材料并标注 role", "status": "not_run"},
       {"id": "rt-4", "desc": "校验 source≠sample 边界与缺失/不支持标记", "status": "not_run"}

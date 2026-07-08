@@ -50,7 +50,7 @@ Detailed Design / Unit Design（SWE.3）/ Integration / Test
 2. **确定读者**：软件架构师、软件工程师、集成工程师、功能安全接口人、测试负责人。
 3. **收集输入**，逐份标注 role 与 tier。
 4. **登记 `writing_scenario`**（见主 skill「情景判定」）。
-5. **声明非目标**：写入 `task_brief.notes`。
+5. **声明非目标**：在 `task_brief` 边界信息中保留 non-goals。
 
 #### From-Scratch 方法要点
 
