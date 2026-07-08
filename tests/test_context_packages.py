@@ -134,6 +134,39 @@ def test_build_step_context_package_writes_canonical_package_with_hashes(tmp_pat
     ) == payload
 
 
+def test_build_step_context_package_keeps_document_type_refs_lazy_and_task_scoped(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    write(
+        repo_root / "skills" / "document-types" / "SoftwareArchitecture" / "SKILL.md",
+        "sibling root",
+    )
+    write(
+        repo_root
+        / "skills"
+        / "document-types"
+        / "SoftwareArchitecture"
+        / "steps"
+        / "step-input-materials.md",
+        "sibling overlay",
+    )
+
+    payload = build_step_context_package(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        task_type="hara",
+    )
+
+    instruction_paths = {item["path"] for item in payload["instruction_refs"]}
+    assert "skills/document-types/hara/SKILL.md" in instruction_paths
+    assert "skills/document-types/hara/steps/step-input-materials.md" in instruction_paths
+    assert all(
+        not path.startswith("skills/document-types/SoftwareArchitecture/")
+        for path in instruction_paths
+    )
+
+
 def test_missing_document_type_skill_or_overlay_does_not_fail(tmp_path):
     repo_root, run_dir = create_repo_and_run(tmp_path, include_doc_type=False)
 

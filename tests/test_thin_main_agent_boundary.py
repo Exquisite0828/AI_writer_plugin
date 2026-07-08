@@ -108,6 +108,25 @@ def test_thin_controller_requires_real_task_tool_worker_handoff():
     assert not missing, f"real worker handoff contract is incomplete: {missing}"
 
 
+def test_thin_controller_requires_document_type_lazy_loading():
+    combined = "\n".join(read(path) for path in THIN_CONTROLLER_PROMPTS)
+
+    required_phrases = [
+        "DocumentTypeLazyLoad",
+        "不得批量读取 `skills/document-types/**`",
+        "只把当前 `task_type` 的 document-type path/hash 放进 StepContextPackage",
+        "worker 只能通过 StepContextPackage 中的 path/hash 读取当前 `task_type` 的 document type 文件",
+        "不得读取 sibling document types",
+        "task_type=hara",
+        "SoftwareArchitecture",
+        "SystemRequirement",
+    ]
+
+    missing = [phrase for phrase in required_phrases if phrase not in combined]
+
+    assert not missing, f"document-type lazy routing contract is incomplete: {missing}"
+
+
 def test_thin_controller_does_not_allow_main_agent_worker_fallback():
     forbidden_fallback_phrases = [
         "允许 fallback 到主上下文",

@@ -89,6 +89,12 @@ document_profile_path: profiles/document_types/customer_demo/custom_technical_no
 
 文档类型差异由 `skills/document-types/<task_type>/SKILL.md` 中的规则表达。command layer 不承载文档业务逻辑；它把控制权交给 `workflow-orchestrator` 总控 skill。
 
+## DocumentTypeLazyLoad
+
+DocumentTypeLazyLoad 是本命令的文档类型上下文边界：主 Agent 只确认 `task_type`，只把当前 `task_type` 的 document-type path/hash 放进 StepContextPackage；不得批量读取 `skills/document-types/**`。worker 只能通过 StepContextPackage 中的 path/hash 读取当前 `task_type` 的 document type 文件，不得让主 Agent 粘贴 document type 正文。
+
+不得读取 sibling document types。例如 `task_type=hara` 时，只允许派发 `skills/document-types/hara/` 下的 root 与当前 step overlay；不得读取 `SoftwareArchitecture`、`SystemRequirement`、`SystemArchitecture`、`SoftwareRequirement`、`fsr` 或其他 sibling document type 规则。若需要切换文档类型，必须先确认新的 `task_type`，再生成新的 StepContextPackage。
+
 ## Task file boundary
 
 如果用户提供 task file，先读取并确认其中声明的 `task_type`。如果用户选择 demo，必须由用户显式确认具体 demo task file；command layer 不维护 demo catalog，不默认遍历 `examples/`，也不把 examples 当作项目事实来源。
