@@ -206,7 +206,7 @@ runs/<run_id>/learning/candidate_profile_update.yaml
 
 先读哪些文件、哪些 artifact 适合审查或排查，见 [Reading Outputs](docs/READING_OUTPUTS.md)。
 
-完整 artifact contract 见 [Artifact Contracts](docs/CURRENT_ARTIFACT_CONTRACTS.md)。
+完整 artifact contract 见 [Artifact Contracts](contracts/CURRENT_ARTIFACT_CONTRACTS.md)。
 
 ## 开发检查
 
@@ -229,5 +229,5 @@ claude plugin validate .
 - [Examples](docs/EXAMPLES.md)
 - [Document Profiles](docs/DOCUMENT_PROFILES.md)
 - [Runbook](docs/RUNBOOK.md)
-- [Artifact Contracts](docs/CURRENT_ARTIFACT_CONTRACTS.md)
+- [Artifact Contracts](contracts/CURRENT_ARTIFACT_CONTRACTS.md)
 - [Document Type Development Guide](docs/DOCUMENT_TYPE_DEVELOPMENT_GUIDE.md)

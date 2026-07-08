@@ -1661,7 +1661,7 @@ tests/test_test_report_demo.py
 ```text
 README.md
 docs/RUNBOOK.md
-docs/CURRENT_ARTIFACT_CONTRACTS.md
+contracts/CURRENT_ARTIFACT_CONTRACTS.md
 docs/DOCUMENT_TYPE_DEVELOPMENT_GUIDE.md
 docs/archive/generalization_phase0_6/GENERALIZATION_SUMMARY.md
 current demo documentation

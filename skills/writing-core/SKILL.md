@@ -72,47 +72,11 @@ Equivalent stage words include init run, ingest, document navigation index, temp
 
 ## Artifact Contract
 
-The artifact contract is maintained in `docs/CURRENT_ARTIFACT_CONTRACTS.md` and enforced by each step skill's subagent against its declared schema. Skill.md can explain the contract but must not invent a parallel schema.
-
-Core artifacts include:
-
-- `manifest.json`
-- `task_brief.json`
-- `inputs/input_inventory.json`
-- `knowledge/source_index.json`（跨文档 `topic_index` 导航总索引）
-- `knowledge/provenance_index.json`（各文档 L1→L2→L3 语义目录树与 L3 位置锚点）
-- `knowledge/document_tocs/<file_id>.md`（单文档可读目录，Agent 优先访问）
-- `knowledge/knowledge_gaps.md`
-- `plans/template_structure.json`
-- `plans/outline_l1.md`
-- `plans/outline_l2.md`
-- `plans/section_writing_plans.json`
-- `plans/evidence_map.json`
-- `plans/unresolved_questions.md`
-- `plans/citation_plan.json`
-- `plans/outline_final.md`
-- `plans/section_tasks.json`
-- `plans/claim_support_matrix.json`
-- `plans/writing_plan.md`
-- `draft/full_draft.md`
-- `review/review_report.json`
-- `review/final_review.md`
-- `verify/verify_report.json`
-- `verify/failures.md`
-- `revision_plan.json`
-- `revised/full_draft.md`
-- `revised/change_log.md`
-- `final/final_report.md`
-- `final/delivery_summary.md`
-- `trace/session_trace.jsonl`
-- `trace/hitl_decisions.jsonl`
-- `learning/run_summary.md`
-- `learning/reusable_patterns.md`
-- `learning/candidate_profile_update.yaml`
-- `learning/candidate_skill_patch.md`
-- `learning/promotion_report.md`
+The artifact contract is maintained in `contracts/CURRENT_ARTIFACT_CONTRACTS.md` and enforced by each step skill's subagent against its declared schema. Skill.md can explain the contract but must not invent a parallel schema.
 
 Runtime artifacts are written under `runs/<run_id>/` and must not be committed to git.
+
+Do not use this Skill.md as a checklist to pre-create every possible run subdirectory or artifact. Each workflow step should create only the artifacts it owns for the current stage. When exact paths, required files, or schema details are needed, read `contracts/CURRENT_ARTIFACT_CONTRACTS.md` intentionally and only for that contract question.
 
 ## 输入文档访问协议（Step 4 及以后强制）
 

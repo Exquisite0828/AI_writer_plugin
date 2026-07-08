@@ -26,7 +26,7 @@ When working in this repository, follow this priority order:
 2. This `AGENTS.md`.
 3. Current active phase execution documents, when present and not under local archive folders.
 4. `docs/maintainers/ARCHITECTURE.md`.
-5. `docs/CURRENT_ARTIFACT_CONTRACTS.md`.
+5. `contracts/CURRENT_ARTIFACT_CONTRACTS.md`.
 6. `docs/maintainers/PROJECT_CONTEXT.md`.
 7. `docs/TECHNICAL_DECISIONS.md`.
 
@@ -36,9 +36,26 @@ If there is a conflict between historical/local archive materials and current pr
 
 ### `docs/`
 
-Contains current design guidance, repository rules, artifact contracts, active phase documents when present, and development notes.
+Contains current design guidance, repository rules, active phase documents when present, and development notes.
 
 Do not treat historical phase docs, process archives, handoff materials, or original PRD materials as direct coding tasks.
+
+### Runtime Context Boundary
+
+Runtime files are `commands/**/*.md` and `skills/**/*.md`. Keep them minimal and operational.
+
+Runtime files must not:
+
+1. Reference `docs/maintainers/*` as execution instructions.
+2. Bulk-read or glob `examples/**` as default context or default input.
+3. Embed the complete artifact tree from `contracts/CURRENT_ARTIFACT_CONTRACTS.md`.
+4. Use a full artifact list as a checklist to pre-create every possible `runs/<run_id>/` directory or artifact.
+
+Runtime files may point to `contracts/CURRENT_ARTIFACT_CONTRACTS.md` as the single artifact/schema authority, but they should read it intentionally only when exact paths, required files, or schema details are needed.
+
+`examples/` contains opt-in demos and deterministic fixtures. Read a specific example only when the user selected that demo or a test explicitly references the fixture.
+
+Maintainer context boundary policy: `docs/maintainers/RUNTIME_CONTEXT_BOUNDARY.md`.
 
 ### Optional Local Reference Folders
 
@@ -146,7 +163,7 @@ Every generated artifact must be:
 
 Do not silently skip missing input, unsupported formats, or failed parsing.
 
-If an artifact schema has already been stabilized in `docs/CURRENT_ARTIFACT_CONTRACTS.md`, do not change it unless the current generalization phase document explicitly requires the change.
+If an artifact schema has already been stabilized in `contracts/CURRENT_ARTIFACT_CONTRACTS.md`, do not change it unless the current generalization phase document explicitly requires the change.
 
 ## Done Criteria for Any Coding Task
 

@@ -16,10 +16,11 @@
 ## 维护者文档
 
 - [Runbook](RUNBOOK.md)：维护者运行检查和常用操作。
-- [Artifact Contracts](CURRENT_ARTIFACT_CONTRACTS.md)：当前 artifact tree 和 contract。
+- [Artifact Contracts](../contracts/CURRENT_ARTIFACT_CONTRACTS.md)：当前 artifact tree 和 contract。
 - [Document Type Development Guide](DOCUMENT_TYPE_DEVELOPMENT_GUIDE.md)：未来新增文档类型的开发指南。
 - [Document Profile Spec Template](DOCUMENT_PROFILE_SPEC_TEMPLATE.md)：`Markdown Spec` 模板。
 - [Technical Decisions](TECHNICAL_DECISIONS.md)：当前技术决策。
+- [Runtime Context Boundary](maintainers/RUNTIME_CONTEXT_BOUNDARY.md)：运行期 prompt、维护者文档、contract、examples 和 runs 的上下文边界。
 
 ## 架构与路线
 

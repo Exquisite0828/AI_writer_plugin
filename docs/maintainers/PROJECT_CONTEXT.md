@@ -2,7 +2,7 @@
 
 Status: Post-N8 current context brief.
 
-本文档是当前项目状态的维护者索引。它不替代 `README.md`、`docs/RUNBOOK.md`、`docs/CURRENT_ARTIFACT_CONTRACTS.md` 或 `docs/maintainers/ARCHITECTURE.md`。
+本文档是当前项目状态的维护者索引。它不替代 `README.md`、`docs/RUNBOOK.md`、`contracts/CURRENT_ARTIFACT_CONTRACTS.md` 或 `docs/maintainers/ARCHITECTURE.md`。
 
 当前项目已经从 HARA 单点 MVP 泛化为一个 AI 专业文档写作 Claude Code 插件技术预览版，支持四类 official L3 built-in document types：
 
@@ -19,12 +19,15 @@ Status: Post-N8 current context brief.
 - 文档导航：`docs/README.md`
 - 泛化架构：`docs/maintainers/ARCHITECTURE.md`
 - Roadmap：`docs/maintainers/ROADMAP.md`
+- Runtime context boundary：`docs/maintainers/RUNTIME_CONTEXT_BOUNDARY.md`
 - Runbook：`docs/RUNBOOK.md`
-- Artifact contract：`docs/CURRENT_ARTIFACT_CONTRACTS.md`
+- Artifact contract：`contracts/CURRENT_ARTIFACT_CONTRACTS.md`
 - 新 document type 开发指南：`docs/DOCUMENT_TYPE_DEVELOPMENT_GUIDE.md`
 - HARA baseline：`docs/baselines/HARA_MVP_BASELINE.md`
 
 历史 phase / process / handoff 材料不再作为 tracked public docs 保留；如本地存在 `docs/archive/` 或 `local_archive/`，只作历史参考，不作为当前 Codex 执行指令。
+
+运行期 prompt / skill 不应把维护者文档、examples 或完整 artifact contract 当作默认上下文。边界规则见 `docs/maintainers/RUNTIME_CONTEXT_BOUNDARY.md`。
 
 未来新增能力应先创建新的 active phase/spec 文档。
 
