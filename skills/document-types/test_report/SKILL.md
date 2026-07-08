@@ -153,11 +153,9 @@ final report is not approval. The final package is for human review and must car
 
 Do not describe the final report as validated, production ready, release approved, or ready for production without explicit T0/T1 support and a rule that allows that wording.
 
-## Demo Fixture / Command
+## Demo Boundary
 
-```bash
-.venv/bin/python -m ai_writing_plugin write-run --task examples/test_report_demo_fixture/task.yaml
-```
+Demo task paths are intentionally not listed in runtime skills. Use a specific user-selected task file only.
 
 ## Common Gotchas
 

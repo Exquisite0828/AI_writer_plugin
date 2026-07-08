@@ -176,12 +176,9 @@ Use the existing deterministic Python engine. Do not add heavy dependencies. no 
 
 `FunctionalSafetyRequirement` 与 `fsr` 共享 FSR 文档语义；逐步子 skill 见 `skills/document-types/FunctionalSafetyRequirement/steps/`。`task_type: fsr` 仍可使用 `skills/document-types/fsr/SKILL.md`（无逐步子 skill）。
 
-## Demo Fixture / Command
+## Demo Boundary
 
-```bash
-.venv/bin/python -m ai_writing_plugin write-run --task examples/fsr_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/functional_safety_requirement_demo_fixture/task.yaml
-```
+Demo task paths are intentionally not listed in runtime skills. Use a specific user-selected task file only.
 
 ## Common Gotchas
 

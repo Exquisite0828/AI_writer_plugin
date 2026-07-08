@@ -101,6 +101,8 @@ DocumentTypeLazyLoad 是本命令的文档类型上下文边界：主 Agent 只�
 
 真实 worker handoff 必须使用 Claude Code 的 Task tool / Agent tool。不同运行日志可能显示为 `Task tool` 或 `Agent tool`，二者在本插件里都表示独立 worker/subagent handoff。若当前环境没有可用的 Task tool / Agent tool，必须 `worker_unavailable` fail closed；主 Agent 不得写 step artifacts，主 Agent 不得写 StepResult，主 Agent 不得写 ReviewResult，不得用主上下文补跑 step 或 review。
 
+`manifest.json` 和 `task_brief.json` 是 `init-run` 生成后的 engine-owned immutable files。StepContextPackage.run_refs[] 中的文件只是只读输入引用；Step worker / Review worker 不得 Write/Edit/MultiEdit task_brief.json，不得 Write/Edit/MultiEdit manifest.json，也不得改写任何 StepContextPackage.run_refs[] 文件。Step 1 worker 不得扩展 task_brief.json；输入统计、缺失材料和 gap 摘要只能写入 StepResult.summary、StepResult.blocking_issues_count 或后续专门 artifact。
+
 必须使用以下命令边界：
 
 ```text
@@ -126,9 +128,13 @@ Step worker prompt 必须包含完整 StepResult 字段列表：`kind=step_resul
 
 Review worker prompt 必须包含完整 ReviewResult 字段列表：`kind=review_result`、`schema_version=1`、`run_id`、`stage`、`step`、`status`、`review_package_paths`、`review_package_hashes`、`summary`、`blocking_issues_count`、`next_gate_status`。Review worker 返回前必须自行运行 validate-review-result：`python -m ai_writing_plugin validate-review-result --run-dir <run_dir> --path <result_path>`；若失败，必须由同一个 review worker 修正后重跑 validate-review-result，直到通过或返回 `metadata_invalid`。
 
+主 Agent 收到 step worker 返回后，必须按固定顺序校验并收口：validate-step-context-package → validate-step-worker-dispatch → validate-step-result → complete-step-worker-dispatch --step-result <result_path> → validate-progress-ledger。任一命令失败立即 metadata_invalid fail closed；不得开修复 worker 反复修 metadata，不得继续烧预算尝试补救。
+
 ## Task file boundary
 
 如果用户提供 task file，先读取并确认其中声明的 `task_type`。如果用户选择 demo，必须由用户显式确认具体 demo task file；command layer 不维护 demo catalog，不默认遍历 `examples/`，也不把 examples 当作项目事实来源。
+
+worker 只能读取当前用户选择的 task file 以及该 task 声明的 inputs。不得读取 sibling demo；例如当前任务是用户明确选择的最小 HARA demo 时，不得读取其他 HARA demo task 或其他 sibling example task。
 
 ## 交互 workflow（由 workflow-orchestrator 薄编排器 / thin controller 编排）
 

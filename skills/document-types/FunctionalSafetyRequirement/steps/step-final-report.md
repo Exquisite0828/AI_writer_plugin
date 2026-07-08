@@ -47,9 +47,7 @@ TSC / 系统设计 / 需求分解 …  ← TSC 为独立下游文档类型
 
 ### 触发方式（本仓库）
 
-```text
-/ai-writing-plugin:write "Run the writing workflow with examples/functional_safety_requirement_demo_fixture/task.yaml"
-```
+运行期只使用用户明确选择的 task file；本子 skill 不列出 demo task 路径。
 
 `task_type: FunctionalSafetyRequirement`（或 `fsr`）加载本目录子 skill。
 

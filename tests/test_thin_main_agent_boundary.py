@@ -201,6 +201,27 @@ def test_thin_controller_requires_worker_prompt_result_schema():
     assert not missing, f"worker result schema prompt contract is incomplete: {missing}"
 
 
+def test_thin_controller_requires_immutable_run_refs_and_fail_closed_order():
+    combined = "\n".join(read(path) for path in THIN_CONTROLLER_PROMPTS)
+
+    required_phrases = [
+        "engine-owned immutable files",
+        "StepContextPackage.run_refs[]",
+        "不得 Write/Edit/MultiEdit task_brief.json",
+        "不得 Write/Edit/MultiEdit manifest.json",
+        "Step 1 worker 不得扩展 task_brief.json",
+        "validate-step-context-package → validate-step-worker-dispatch → validate-step-result → complete-step-worker-dispatch --step-result <result_path> → validate-progress-ledger",
+        "任一命令失败立即 metadata_invalid fail closed",
+        "不得开修复 worker 反复修 metadata",
+        "worker 只能读取当前用户选择的 task file 以及该 task 声明的 inputs",
+        "不得读取 sibling demo",
+    ]
+
+    missing = [phrase for phrase in required_phrases if phrase not in combined]
+
+    assert not missing, f"immutable run refs and fail-closed contract is incomplete: {missing}"
+
+
 def test_thin_controller_does_not_allow_manual_metadata_json_workarounds():
     forbidden_manual_metadata_phrases = [
         "允许手写 orchestration JSON",

@@ -81,6 +81,20 @@ def test_command_and_core_are_not_demo_task_catalogs():
         )
 
 
+def test_document_type_runtime_prompts_do_not_publish_demo_task_paths():
+    matches = []
+    for path in sorted((ROOT / "skills/document-types").rglob("*.md")):
+        candidate_text = "\n".join(executable_instruction_lines(read(path)))
+        demo_task_paths = re.findall(r"examples/[^\s`\"']+task\.yaml", candidate_text)
+        for demo_task_path in demo_task_paths:
+            matches.append((path.relative_to(ROOT).as_posix(), demo_task_path))
+
+    assert not matches, (
+        "document-type runtime prompts must not publish executable demo task paths: "
+        f"{matches}"
+    )
+
+
 def test_document_type_input_steps_do_not_own_shared_run_start():
     patterns = [
         r"创建\s+`?runs/<run_id>`?",

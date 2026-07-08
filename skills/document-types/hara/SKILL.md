@@ -169,11 +169,9 @@ The HARA `final_report.md` is a plugin-generated final package artifact for huma
 
 Valid conservative statuses include `finalized_with_open_items`, `ready_for_human_review`, and `blocked_pending_confirmation`. Unresolved HARA items must remain open.
 
-## Demo Fixture / Command
+## Demo Boundary
 
-```bash
-.venv/bin/python -m ai_writing_plugin write-run --task examples/hara_demo_fixture/task.yaml
-```
+Demo task paths are intentionally not listed in runtime skills. Use a specific user-selected task file only.
 
 ## Common Gotchas
 

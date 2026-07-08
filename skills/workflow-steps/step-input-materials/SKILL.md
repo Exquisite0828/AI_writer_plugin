@@ -32,6 +32,8 @@ python -m ai_writing_plugin init-run --task <task.yaml>
 
 该命令只拥有 Phase 0 artifacts：`manifest.json` 与 `task_brief.json`。不得由本 skill 预创建 `inputs/`、`knowledge/`、`plans/`、`draft/`、`review/`、`verify/`、`final/`、`learning/`、`stage_reviews/` 或 `subagent/`。
 
+`manifest.json` 与 `task_brief.json` 是 engine-owned immutable files。后续 step worker / review worker 只能读取它们，不得 Write/Edit/MultiEdit 或扩展字段。若需要报告输入统计、缺失材料、gap summary 或审核结论，写入 StepResult 短摘要或后续专门 artifact，不得改写 `task_brief.json`。
+
 ## 边界与约束
 
 材料 `role` 不可互换，且 `fact source != sample document`：

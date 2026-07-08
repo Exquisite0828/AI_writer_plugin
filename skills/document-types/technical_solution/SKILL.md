@@ -153,11 +153,9 @@ The final package is for human review, not architecture approval. Valid final st
 
 Unconfirmed critical claims remain pending until real HITL decisions are recorded. final report is not approval.
 
-## Demo Fixture / Command
+## Demo Boundary
 
-```bash
-.venv/bin/python -m ai_writing_plugin write-run --task examples/technical_solution_demo_fixture/task.yaml
-```
+Demo task paths are intentionally not listed in runtime skills. Use a specific user-selected task file only.
 
 ## Common Gotchas
 

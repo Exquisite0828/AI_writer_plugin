@@ -162,19 +162,9 @@ Markdown Spec is a human-readable upstream explanation layer. It can be used by 
 
 Candidate profile output from `profile-from-spec` is proposed / inactive and cannot overwrite an active profile.
 
-## Demo Fixture / Command
+## Demo Boundary
 
-generic_document demo command:
-
-```bash
-.venv/bin/python -m ai_writing_plugin write-run --task examples/generic_document_demo_fixture/task.yaml
-```
-
-custom_technical_note external profile demo command:
-
-```bash
-.venv/bin/python -m ai_writing_plugin write-run --task examples/custom_technical_note_profile_demo_fixture/task.yaml
-```
+Demo task paths are intentionally not listed in runtime skills. Use a specific user-selected task file only.
 
 ## Common Gotchas
 

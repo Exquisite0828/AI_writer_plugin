@@ -186,6 +186,72 @@ def test_runtime_metadata_cli_contract_round_trip(tmp_path):
     ]
 
 
+def test_run_ref_mutation_after_dispatch_fails_closed(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    step = "step-input-materials"
+
+    init = run_cli("init-progress-ledger", "--run-dir", str(run_dir))
+    assert init.returncode == 0, init.stderr
+
+    prepare = run_cli(
+        "prepare-step-worker-dispatch",
+        "--repo-root",
+        str(repo_root),
+        "--run-dir",
+        str(run_dir),
+        "--stage",
+        "ingest",
+        "--step",
+        step,
+        "--task-type",
+        "hara",
+    )
+    assert prepare.returncode == 0, prepare.stderr
+
+    write(run_dir / "task_brief.json", '{"task_type":"hara","mutated":true}')
+    step_result = write_valid_step_result(run_dir)
+    package_path = run_dir / "orchestration/context_packages/ingest/step-input-materials.json"
+    dispatch_path = run_dir / "orchestration/worker_dispatches/ingest/step-input-materials.json"
+
+    validate_package = run_cli(
+        "validate-step-context-package",
+        "--path",
+        str(package_path),
+        "--repo-root",
+        str(repo_root),
+        "--run-dir",
+        str(run_dir),
+    )
+    assert validate_package.returncode == 2
+    assert "run ref sha256 mismatch: task_brief.json" in validate_package.stderr
+
+    validate_dispatch = run_cli(
+        "validate-step-worker-dispatch",
+        "--path",
+        str(dispatch_path),
+        "--repo-root",
+        str(repo_root),
+        "--run-dir",
+        str(run_dir),
+    )
+    assert validate_dispatch.returncode == 2
+    assert "run ref sha256 mismatch: task_brief.json" in validate_dispatch.stderr
+
+    complete = run_cli(
+        "complete-step-worker-dispatch",
+        "--run-dir",
+        str(run_dir),
+        "--stage",
+        "ingest",
+        "--step",
+        step,
+        "--step-result",
+        str(step_result),
+    )
+    assert complete.returncode == 2
+    assert "run ref sha256 mismatch: task_brief.json" in complete.stderr
+
+
 def test_plan10_real_run_drift_shapes_remain_invalid():
     with pytest.raises(ContextPackageError, match="unexpected fields"):
         validate_step_context_package(
