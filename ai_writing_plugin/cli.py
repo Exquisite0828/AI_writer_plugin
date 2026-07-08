@@ -24,6 +24,13 @@ from .short_results import (
     validate_review_result,
     validate_step_result,
 )
+from .step_worker_dispatch import (
+    StepWorkerDispatchError,
+    complete_step_worker_dispatch,
+    prepare_step_worker_dispatch,
+    step_worker_dispatch_path,
+    validate_step_worker_dispatch,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -150,6 +157,75 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to progress ledger JSON.",
     )
     progress_ledger_validator.add_argument(
+        "--run-dir",
+        help="Optional run directory for ref existence, sha256, and delegated checks.",
+    )
+
+    step_worker_dispatch_prepare = subparsers.add_parser(
+        "prepare-step-worker-dispatch",
+        help="Prepare an ingest-stage StepWorkerDispatch pilot file.",
+    )
+    step_worker_dispatch_prepare.add_argument(
+        "--repo-root",
+        default=".",
+        help="Repository root containing commands/ and skills/.",
+    )
+    step_worker_dispatch_prepare.add_argument("--run-dir", required=True, help="Run directory.")
+    step_worker_dispatch_prepare.add_argument("--stage", required=True, help="Workflow stage.")
+    step_worker_dispatch_prepare.add_argument("--step", required=True, help="Workflow step.")
+    step_worker_dispatch_prepare.add_argument("--task-type", required=True, help="Task type.")
+    step_worker_dispatch_prepare.add_argument(
+        "--input-ref",
+        action="append",
+        default=[],
+        help="Additional run-relative artifact path to include in the context package.",
+    )
+    step_worker_dispatch_prepare.add_argument(
+        "--overwrite-package",
+        action="store_true",
+        help="Overwrite the existing context package.",
+    )
+    step_worker_dispatch_prepare.add_argument(
+        "--overwrite-dispatch",
+        action="store_true",
+        help="Overwrite the existing worker dispatch.",
+    )
+
+    step_worker_dispatch_complete = subparsers.add_parser(
+        "complete-step-worker-dispatch",
+        help="Complete an ingest-stage StepWorkerDispatch and update the ProgressLedger.",
+    )
+    step_worker_dispatch_complete.add_argument("--run-dir", required=True, help="Run directory.")
+    step_worker_dispatch_complete.add_argument("--stage", required=True, help="Workflow stage.")
+    step_worker_dispatch_complete.add_argument("--step", required=True, help="Workflow step.")
+    step_worker_dispatch_complete.add_argument(
+        "--step-result",
+        required=True,
+        help="Run-relative or run-contained absolute StepResult path.",
+    )
+    step_worker_dispatch_complete.add_argument(
+        "--review-result",
+        help="Run-relative or run-contained absolute ReviewResult path.",
+    )
+    step_worker_dispatch_complete.add_argument(
+        "--status",
+        help="Optional completion status override.",
+    )
+
+    step_worker_dispatch_validator = subparsers.add_parser(
+        "validate-step-worker-dispatch",
+        help="Validate a compact StepWorkerDispatch JSON file.",
+    )
+    step_worker_dispatch_validator.add_argument(
+        "--path",
+        required=True,
+        help="Path to worker dispatch JSON.",
+    )
+    step_worker_dispatch_validator.add_argument(
+        "--repo-root",
+        help="Optional repository root for context package instruction ref checks.",
+    )
+    step_worker_dispatch_validator.add_argument(
         "--run-dir",
         help="Optional run directory for ref existence, sha256, and delegated checks.",
     )
@@ -289,6 +365,76 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
         print("progress ledger valid")
+        return 0
+
+    if args.command == "prepare-step-worker-dispatch":
+        try:
+            prepare_step_worker_dispatch(
+                repo_root=Path(args.repo_root),
+                run_dir=Path(args.run_dir),
+                stage=args.stage,
+                step=args.step,
+                task_type=args.task_type,
+                input_refs=args.input_ref,
+                overwrite_package=args.overwrite_package,
+                overwrite_dispatch=args.overwrite_dispatch,
+            )
+        except (
+            OSError,
+            json.JSONDecodeError,
+            ContextPackageError,
+            ProgressLedgerError,
+            StepWorkerDispatchError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print(step_worker_dispatch_path(Path(args.run_dir), args.stage, args.step))
+        return 0
+
+    if args.command == "complete-step-worker-dispatch":
+        try:
+            complete_step_worker_dispatch(
+                run_dir=Path(args.run_dir),
+                stage=args.stage,
+                step=args.step,
+                step_result=Path(args.step_result),
+                review_result=Path(args.review_result) if args.review_result else None,
+                status=args.status,
+            )
+        except (
+            OSError,
+            json.JSONDecodeError,
+            ShortResultError,
+            ProgressLedgerError,
+            StepWorkerDispatchError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print(progress_ledger_path(Path(args.run_dir)))
+        return 0
+
+    if args.command == "validate-step-worker-dispatch":
+        try:
+            payload = load_json(Path(args.path))
+            validate_step_worker_dispatch(
+                payload,
+                repo_root=Path(args.repo_root) if args.repo_root else None,
+                run_dir=Path(args.run_dir) if args.run_dir else None,
+            )
+        except (
+            OSError,
+            json.JSONDecodeError,
+            ShortResultError,
+            ContextPackageError,
+            ProgressLedgerError,
+            StepWorkerDispatchError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print("step worker dispatch valid")
         return 0
 
     parser.error(f"unsupported command: {args.command}")
