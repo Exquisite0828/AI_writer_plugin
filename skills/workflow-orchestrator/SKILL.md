@@ -1,24 +1,26 @@
 ---
 name: workflow-orchestrator
-description: 中文优先总控 skill，按顺序编排 workflow 的 13 个 step skills。每个 step 执行完毕后，由独立 subagent 审核 step artifacts 并产出 stage-review 材料；必须用户审核通过（在 stage_reviews/<stage>/decision.json 落 accepted）才能进入下一步。不自动批准、不伪造 HITL。
+description: 中文优先薄编排器 / thin controller，按顺序调度 workflow 的 13 个 step skills。每个 step 由独立 step execution context 产出 artifacts，再由独立 subagent 审核并产出 stage-review 材料；必须用户审核通过（在 stage_reviews/<stage>/decision.json 落 accepted）才能进入下一步。不自动批准、不伪造 HITL。
 ---
 
 # Workflow Orchestrator Skill
 
-总控 skill：按固定顺序驱动 **13 个** registerable step skill（`ai-writing-plugin:step-*`），并在**每一步执行完毕后弹出供用户确认的问题列表**，由用户审核该步产出后才允许进入下一步。
+总控 skill 是薄编排器 / thin controller：按固定顺序调度 **13 个** registerable step skill（`ai-writing-plugin:step-*`），并在**每一步执行完毕后弹出供用户确认的问题列表**，由用户审核该步产出后才允许进入下一步。
 
-本 skill 是编排指导层，不直接写最终文档。各 step 的 artifacts 由当前主执行上下文按对应 step skill 产出（须符合 artifact 契约）；独立 subagent 默认只审核这些已产出的 artifacts，并在需要时产出 stage-review 材料。只有发现 P0/P1 或用户落 `decision=needs_revision` 后，才允许 subagent 进入局部修订；stage-review 闸门通过 `runs/<run_id>/stage_reviews/<stage>/decision.json` 记录，不自动批准、不伪造 HITL。
+本 skill 是编排指导层，不直接写最终文档，不直接产出 step artifacts。各 step 的 artifacts 由独立 step execution context 按对应 step skill 产出（须符合 artifact 契约）；独立 subagent 默认只审核这些已产出的 artifacts，并在需要时产出 stage-review 材料。只有发现 P0/P1 或用户落 `decision=needs_revision` 后，才允许 subagent 进入局部修订；stage-review 闸门通过 `runs/<run_id>/stage_reviews/<stage>/decision.json` 记录，不自动批准、不伪造 HITL。
 
 ## 何时使用
 
 - 用户希望「一步一步、每步人工确认」地走完整条专业文档写作流程。
 - 需要在每个步骤产出后做人工审核，未通过不得继续。
-- 作为 `/ai-writing-plugin:write` 命令「交互 workflow」的编排层：command 确认 task 后把控制权交给本 skill，由本 skill 逐 stage 驱动 **13 个** step skill（每步先子代理审核、后用户确认闸门）。
+- 作为 `/ai-writing-plugin:write` 命令「交互 workflow」的薄编排层：command 确认 task 后把控制权交给本 skill，由本 skill 逐 stage 调度 **13 个** step skill（每步先子代理审核、后用户确认闸门）。
 
 ## 核心原则
 
 - **顺序、单向、artifact-first**：每步只消费上游 `runs/<run_id>/` 下的 artifacts。
 - **step skill 注册名与正文分离**：调用 step 时使用一级注册名 `ai-writing-plugin:step-<name>`（例如 `ai-writing-plugin:step-source-index`）。每个一级 step skill 是 Claude Code 注册 wrapper；完整 canonical 说明仍在 `skills/workflow-steps/<step>/SKILL.md`，执行前必须读取并遵守该 canonical 文件。
+- **薄编排器长期上下文**：主 Agent 只保留稳定编排规则、路径/hash、短摘要和人工闸门状态；不得粘贴 artifact 正文，不得批量读取 step canonical，不得把动态 artifact 内容、review 明细或输入材料全文带回长期上下文。
+- **step 短摘要协议**：每个 step execution context 返回给主 Agent 的短摘要只包含 `step`、`stage`、`status`、`artifact_paths`、`artifact_hashes`、`review_package_paths`、`blocking_issues_count`、`next_gate_status`。该短摘要是运行期返回内容约束，不等同于正式 Python `StepResult` schema。
 - **运行期上下文边界**：不得把 artifact contract、maintainer docs 或 examples 当作默认上下文。contract 只在需要精确路径或 schema 时按需读取；examples 只在用户显式选择具体 demo task 时使用。
 - **路径锚定，不依赖 cwd**：所有 step 与 subagent 读取输入文件时，必须使用上游 artifact 中已经解析好的路径或派发时显式传入的绝对路径。当前 shell cwd / subagent cwd 只代表执行上下文，不得用于推导 `inputdoc/`、`runs/<run_id>/inputdoc/` 或其他输入根目录。
 - **输入文档仅经 L1→L2→L3 访问**：Step 4 及以后读原始输入须遵守 `writing-core` 输入文档访问协议；禁止 chunk/SRC/直接全文盲搜。
@@ -31,7 +33,7 @@ description: 中文优先总控 skill，按顺序编排 workflow 的 13 个 step
 
 ## Step → stage 映射
 
-stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage 时共享该 stage 的单一闸门决定。各 step 的产出由主执行上下文按对应 step skill 完成；subagent 默认只做独立审核。
+stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage 时共享该 stage 的单一闸门决定。各 step 的产出由独立 step execution context 按对应 step skill 完成；subagent 默认只做独立审核。
 
 | Step | stage |
 |---|---|
@@ -49,9 +51,9 @@ stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage �
 
 对每个 stage（按上表顺序），执行以下闭环：
 
-1. **驱动本 stage 产出（主执行上下文）**：进入本 stage 前先确认上一 stage 的 `runs/<run_id>/stage_reviews/<prev_stage>/decision.json` 存在且 `decision ∈ {accepted, skipped}`（首个 stage `ingest` 无上游闸门）。随后对本 stage 覆盖的每个 step（见上表），用 Claude Code Skill tool 调用对应一级注册名（例如 `ai-writing-plugin:step-material-inventory` / `ai-writing-plugin:step-source-index` / `ai-writing-plugin:step-template-outline`）。step wrapper 加载后，先读取其指向的 `skills/workflow-steps/<step>/SKILL.md` canonical 说明，再由当前主执行上下文按该 step skill 产出符合 artifact 契约的 artifacts。
+1. **调度本 stage 产出（step execution context）**：进入本 stage 前先确认上一 stage 的 `runs/<run_id>/stage_reviews/<prev_stage>/decision.json` 存在且 `decision ∈ {accepted, skipped}`（首个 stage `ingest` 无上游闸门）。随后对本 stage 覆盖的每个 step（见上表），用 Claude Code Skill tool 调用对应一级注册名（例如 `ai-writing-plugin:step-material-inventory` / `ai-writing-plugin:step-source-index` / `ai-writing-plugin:step-template-outline`），并把 step artifact 生产职责交给独立 step execution context。step execution context 加载 wrapper 后，按需读取其指向的 `skills/workflow-steps/<step>/SKILL.md` canonical 说明，产出符合 artifact 契约的 artifacts，并只向主 Agent 返回短摘要。
 
-2. **逐个 step 的子代理审核（state.json 三态推进）**：对本 stage 覆盖的每个 step，按该 step skill 的「子代理审核」小节新开独立 subagent，自主完成 A1 审核任务，在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` 三态跟踪进度；无 P0/P1 时 `revision_required=false` 且不得改写 step artifacts。P2/P3 只能记录到 `issues.json` / review prompt，等待用户确认，不得由主执行上下文或 subagent 自动修订。只有发现 P0/P1 时，才按具体 issue 进入 A2 局部修订，并在 `revision_state` 记录 `issue_id`、`target_artifact`、`changed_paths`。subagent 不得伪造 HITL、不得移除 `NEEDS_USER_CONFIRMATION`、不得输出专业批准结论。
+2. **逐个 step 的子代理审核（state.json 三态推进）**：对本 stage 覆盖的每个 step，按该 step skill 的「子代理审核」小节新开独立 subagent，自主完成 A1 审核任务，在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` 三态跟踪进度；无 P0/P1 时 `revision_required=false` 且不得改写 step artifacts。P2/P3 只能记录到 `issues.json` / review prompt，等待用户确认，不得由薄编排器或 subagent 自动修订。只有发现 P0/P1 时，才按具体 issue 进入 A2 局部修订，并在 `revision_state` 记录 `issue_id`、`target_artifact`、`changed_paths`。subagent 不得伪造 HITL、不得移除 `NEEDS_USER_CONFIRMATION`、不得输出专业批准结论。
 
 3. **逐个 step 说明产出**：参照本 stage 覆盖的 step skill，用中文向用户说明每个 step 产出的 artifact 与边界。
 
@@ -120,7 +122,7 @@ stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage �
 
 ## 边界与约束
 
-- 本 skill 不生成草稿、不做专业判断、不下最终结论；这些由对应 step 按 artifact 契约产出，subagent 只做独立审核与必要的局部修订。
+- 本 skill 不生成草稿、不产出 step artifacts、不做专业判断、不下最终结论；这些由对应 step execution context 按 artifact 契约产出，subagent 只做独立审核与必要的局部修订。
 - `final/final_report.md` 是 review-ready package，不等于专业批准。
 - 候选物（`candidate_profile_update.yaml` / `candidate_skill_patch.md`）保持 proposed/inactive，不在编排中自动启用。
 - 不引入 RAG / 向量库 / 复杂 agent 框架；不为单一文档类型新建并行 pipeline。

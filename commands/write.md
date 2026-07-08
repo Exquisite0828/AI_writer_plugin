@@ -93,12 +93,14 @@ document_profile_path: profiles/document_types/customer_demo/custom_technical_no
 
 如果用户提供 task file，先读取并确认其中声明的 `task_type`。如果用户选择 demo，必须由用户显式确认具体 demo task file；command layer 不维护 demo catalog，不默认遍历 `examples/`，也不把 examples 当作项目事实来源。
 
-## 交互 workflow（由 workflow-orchestrator 总控 skill 编排）
+## 交互 workflow（由 workflow-orchestrator 薄编排器 / thin controller 编排）
 
-本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 **13 个** step skill，并对每一步做到「**主执行上下文产出、子代理审核、后用户确认闸门**」。command 层只负责确认 task、把控制权交给总控 skill，不手写或手动创建 run 起点。Step 1 启动 run 时必须调用 deterministic engine：`python -m ai_writing_plugin init-run --task <task.yaml>`。各 step 的 artifacts 由当前主执行上下文按对应 step skill 和 artifact 契约写入 `runs/<run_id>/`；subagent 默认只审核这些已产出的 artifacts。
+本命令的交互编排统一交给 **`workflow-orchestrator`** 薄编排器 / thin controller 执行；它按固定顺序调度 **13 个** step skill，并对每一步做到「**独立 step execution context 产出、独立审核、后用户确认闸门**」。command 层只负责确认 task、启动或恢复 run、把控制权交给总控 skill，不手写或手动创建 run 起点。Step 1 启动 run 时必须调用 deterministic engine：`python -m ai_writing_plugin init-run --task <task.yaml>`。各 step 的 artifacts 由独立 step execution context 按对应 step skill 和 artifact 契约写入 `runs/<run_id>/`；主 Agent 的长期上下文只保留稳定编排规则、路径/hash、短摘要和人工闸门状态。
+
+主 Agent 作为薄编排器时必须遵守上下文边界：不得粘贴 artifact 正文，不得批量读取 step canonical，不得把动态 artifact 内容、review 明细或输入材料全文带回长期上下文。每个 step execution context 返回给主 Agent 的短摘要只包含：`step`、`stage`、`status`、`artifact_paths`、`artifact_hashes`、`review_package_paths`、`blocking_issues_count`、`next_gate_status`。
 
 1. 用中文确认 task file 路径和 `task_type`。若用户只给自然语言意图，先映射到候选 `task_type`（例如 HARA → `hara`；SystemRequirement / SyRS / 系统需求 → `SystemRequirement`；SystemArchitecture / 系统架构 / SYS.3 → `SystemArchitecture`；SoftwareRequirement / SwRS / 软件需求 → `SoftwareRequirement`；SoftwareArchitecture / SwAD / 软件架构 / SWE.2 → `SoftwareArchitecture`），再确认是使用用户明确指定的 demo task，还是等待用户提供真实 task.yaml / 输入材料。真实项目**无 task.yaml 或输入材料时不要凭空开跑**。
-2. 启用 **`workflow-orchestrator`** skill 作为总控，按其「编排主循环」逐 stage 推进；每个 stage 覆盖的 step 见下方映射表，逐 step 调用对应 step skill。
+2. 启用 **`workflow-orchestrator`** skill 作为薄编排器，按其「编排主循环」逐 stage 推进；每个 stage 覆盖的 step 见下方映射表，逐 step 调度对应 step execution context。
 3. 每个 step 执行后，按该 step skill 的「子代理审核」小节**新开独立 subagent**：默认只完成 A1 审核任务，在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` 三态（`not_run` / `running` / `done`）跟踪进度。无 P0/P1 时 `revision_required=false`，不得重写 step artifacts、不得重新驱动整步任务；只有发现 P0/P1 或用户明确 `needs_revision` 时，才执行 A2 局部修订，并把 `issue_id`、`target_artifact`、`changed_paths` 写入 `revision_state`。
 4. subagent 审核完成后，先确认 stage-review package 完整且 `issues.json` 可审查，再向用户弹出 stage-review 确认问题列表；用户回复 `accepted` / `needs_revision` / `blocked` / `skipped` 后，由总控 skill 在 `runs/<run_id>/stage_reviews/<stage>/decision.json` 落盘决定。未获 `accepted` / `skipped` 不得进入下一 stage；package 不完整、coverage 不完整，或存在 `severity=P0/P1` 且 `requires_revision=true` 的 issue 时，不得记录 `accepted`，也不得用 `skipped` 绕过。
 5. 只有在用户明确回复后，才记录真实 HITL decisions；非交互运行不得伪造，缺失 gate 记为 `not_collected_in_noninteractive_run` / `pending_user_confirmation`。
