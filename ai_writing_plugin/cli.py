@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+from .context_telemetry import build_context_telemetry
 from .context_packages import (
     ContextPackageError,
     build_step_context_package,
@@ -48,6 +49,18 @@ from .step_worker_dispatch import (
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m ai_writing_plugin")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    telemetry_parser = subparsers.add_parser(
+        "context-telemetry",
+        help="Generate deterministic context telemetry for runtime prompts.",
+    )
+    add_context_telemetry_args(telemetry_parser)
+
+    budget_parser = subparsers.add_parser(
+        "check-context-budget",
+        help="Check deterministic context telemetry against token budgets.",
+    )
+    add_context_telemetry_args(budget_parser)
 
     init_parser = subparsers.add_parser(
         "init-run",
@@ -324,6 +337,41 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    if args.command in {"context-telemetry", "check-context-budget"}:
+        try:
+            report = build_context_telemetry(
+                Path(args.root),
+                task_type=args.task_type,
+                step=args.step,
+                largest_limit=args.largest_limit,
+                budget_overrides=context_budget_overrides(args),
+            )
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
+        else:
+            print(f"schema: {report['schema_version']}")
+            print(f"overall status: {report['overall_status']}")
+            print(
+                "estimated total runtime tokens: "
+                f"{report['measurements']['total_runtime_surface']['estimated_tokens']}"
+            )
+            print(
+                "estimated active workflow tokens: "
+                f"{report['measurements']['active_workflow']['estimated_tokens']}"
+            )
+            print(
+                "estimated active step tokens: "
+                f"{report['measurements']['active_step']['estimated_tokens']}"
+            )
+
+        if args.command == "check-context-budget" and report["overall_status"] == "fail":
+            return 1
+        return 0
 
     if args.command == "init-run":
         try:
@@ -616,3 +664,58 @@ def load_json(path: Path) -> dict:
     if not isinstance(payload, dict):
         raise ShortResultError("result JSON must be an object")
     return payload
+
+
+def add_context_telemetry_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--root", default=".", help="Repository root to inspect.")
+    parser.add_argument("--task-type", required=True, help="Task type to measure.")
+    parser.add_argument("--step", required=True, help="Workflow step to measure.")
+    parser.add_argument(
+        "--largest-limit",
+        type=int,
+        default=20,
+        help="Number of largest runtime files to include.",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the full telemetry payload as JSON.",
+    )
+    parser.add_argument("--total-preferred-tokens", type=int)
+    parser.add_argument("--total-hard-limit-tokens", type=int)
+    parser.add_argument("--active-workflow-preferred-tokens", type=int)
+    parser.add_argument("--active-workflow-hard-limit-tokens", type=int)
+    parser.add_argument("--active-step-preferred-tokens", type=int)
+    parser.add_argument("--active-step-hard-limit-tokens", type=int)
+    parser.add_argument("--single-runtime-file-preferred-tokens", type=int)
+    parser.add_argument("--single-runtime-file-hard-limit-tokens", type=int)
+
+
+def context_budget_overrides(args: argparse.Namespace) -> dict[str, dict[str, int]]:
+    mapping = {
+        "total_runtime_surface": {
+            "preferred_tokens": args.total_preferred_tokens,
+            "hard_limit_tokens": args.total_hard_limit_tokens,
+        },
+        "active_workflow": {
+            "preferred_tokens": args.active_workflow_preferred_tokens,
+            "hard_limit_tokens": args.active_workflow_hard_limit_tokens,
+        },
+        "active_step": {
+            "preferred_tokens": args.active_step_preferred_tokens,
+            "hard_limit_tokens": args.active_step_hard_limit_tokens,
+        },
+        "single_runtime_file": {
+            "preferred_tokens": args.single_runtime_file_preferred_tokens,
+            "hard_limit_tokens": args.single_runtime_file_hard_limit_tokens,
+        },
+    }
+    return {
+        scope: {
+            field: value
+            for field, value in values.items()
+            if value is not None
+        }
+        for scope, values in mapping.items()
+        if any(value is not None for value in values.values())
+    }

@@ -209,6 +209,7 @@ def analyze_file(path: Path, repo_root: Path) -> dict[str, Any]:
         "category": categorize_runtime_prompt(relative_path),
         "bytes": len(encoded),
         "characters": len(text),
+        "word_count": len(text.split()),
         "estimated_tokens": estimate_tokens(text),
         "sha256": hashlib.sha256(encoded).hexdigest(),
         "hotspot_counts": count_hotspots(text),
