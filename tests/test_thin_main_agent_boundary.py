@@ -49,6 +49,8 @@ def test_command_and_orchestrator_define_thin_controller_contract():
         "ReviewResult",
         "runs/<run_id>/orchestration/step_results/<step>.json",
         "runs/<run_id>/orchestration/review_results/<stage>/<step>.json",
+        "StepContextPackage",
+        "runs/<run_id>/orchestration/context_packages/<stage>/<step>.json",
         "不读取 artifact 正文",
         "不得粘贴 artifact 正文",
         "不得批量读取 step canonical",
