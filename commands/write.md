@@ -95,7 +95,7 @@ document_profile_path: profiles/document_types/customer_demo/custom_technical_no
 
 ## 交互 workflow（由 workflow-orchestrator 总控 skill 编排）
 
-本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 **13 个** step skill，并对每一步做到「**主执行上下文产出、子代理审核、后用户确认闸门**」。command 层只负责确认 task、把控制权交给总控 skill。各 step 的 artifacts 由当前主执行上下文按对应 step skill 和 artifact 契约写入 `runs/<run_id>/`；subagent 默认只审核这些已产出的 artifacts。
+本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 **13 个** step skill，并对每一步做到「**主执行上下文产出、子代理审核、后用户确认闸门**」。command 层只负责确认 task、把控制权交给总控 skill，不手写或手动创建 run 起点。Step 1 启动 run 时必须调用 deterministic engine：`python -m ai_writing_plugin init-run --task <task.yaml>`。各 step 的 artifacts 由当前主执行上下文按对应 step skill 和 artifact 契约写入 `runs/<run_id>/`；subagent 默认只审核这些已产出的 artifacts。
 
 1. 用中文确认 task file 路径和 `task_type`。若用户只给自然语言意图，先映射到候选 `task_type`（例如 HARA → `hara`；SystemRequirement / SyRS / 系统需求 → `SystemRequirement`；SystemArchitecture / 系统架构 / SYS.3 → `SystemArchitecture`；SoftwareRequirement / SwRS / 软件需求 → `SoftwareRequirement`；SoftwareArchitecture / SwAD / 软件架构 / SWE.2 → `SoftwareArchitecture`），再确认是使用用户明确指定的 demo task，还是等待用户提供真实 task.yaml / 输入材料。真实项目**无 task.yaml 或输入材料时不要凭空开跑**。
 2. 启用 **`workflow-orchestrator`** skill 作为总控，按其「编排主循环」逐 stage 推进；每个 stage 覆盖的 step 见下方映射表，逐 step 调用对应 step skill。

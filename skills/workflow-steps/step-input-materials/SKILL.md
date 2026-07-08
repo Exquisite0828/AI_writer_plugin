@@ -22,6 +22,16 @@ description: 中文优先指导 workflow 第 1 步「输入材料」：通过 ta
 - `manifest.json`
 - `task_brief.json`
 
+## Engine-owned run start
+
+启动 run 起点时必须调用 deterministic engine，而不是在 prompt 中手写目录或 JSON：
+
+```bash
+python -m ai_writing_plugin init-run --task <task.yaml>
+```
+
+该命令只拥有 Phase 0 artifacts：`manifest.json` 与 `task_brief.json`。不得由本 skill 预创建 `inputs/`、`knowledge/`、`plans/`、`draft/`、`review/`、`verify/`、`final/`、`learning/`、`stage_reviews/` 或 `subagent/`。
+
 ## 边界与约束
 
 材料 `role` 不可互换，且 `fact source != sample document`：

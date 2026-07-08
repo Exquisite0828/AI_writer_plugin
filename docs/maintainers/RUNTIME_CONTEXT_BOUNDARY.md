@@ -45,6 +45,16 @@ Runtime files may:
 
 Document-type step files under `skills/document-types/*/steps/` are domain overlays. They may define role classification, critical claims, review wording, and domain checks, but they must not redeclare ownership of shared runtime artifacts such as run creation, manifests, or global artifact trees.
 
+## Engine-Owned Run Start
+
+Run start is owned by the deterministic engine, not by prompt text. The runtime entry for Phase 0 is:
+
+```bash
+python -m ai_writing_plugin init-run --task <task.yaml>
+```
+
+This command may create only `runs/<run_id>/manifest.json` and `runs/<run_id>/task_brief.json`. Runtime prompts may request or inspect those artifacts, but must not hand-write them or pre-create downstream artifact directories.
+
 ## Contract Boundary
 
 `contracts/CURRENT_ARTIFACT_CONTRACTS.md` is the single source of truth for artifact names, paths, and schema expectations when a contract exists.

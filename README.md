@@ -142,6 +142,14 @@ inputs:
 
 这些 demo 用于体验不同场景，不代表插件只能写这些文档。
 
+当前 tracked Python scaffold 已实现 Phase 0 run 起点创建：
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin init-run --task examples/generic_document_demo_fixture/task.yaml
+```
+
+完整 Phase 0-8 `write-run` 链路仍以后续 deterministic engine phase 实现为准；以下命令保留为目标 workflow 示例和 contract 对齐参考。
+
 ```bash
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin write-run --task examples/generic_document_demo_fixture/task.yaml
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin write-run --task examples/custom_technical_note_profile_demo_fixture/task.yaml

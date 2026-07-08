@@ -70,7 +70,13 @@ completed_with_candidate_updates_proposed
 
 ## Stage commands
 
-Python deterministic engine 暴露以下 stage commands：
+当前 tracked Python scaffold 已实现 Phase 0 run 起点命令：
+
+```bash
+.venv/bin/python -m ai_writing_plugin init-run --task examples/generic_document_demo_fixture/task.yaml
+```
+
+该命令只创建 `manifest.json` 与 `task_brief.json`，不预创建下游 stage 目录。完整 Phase 0-8 deterministic engine 目标暴露以下 stage commands，后续 engine phase 应按 artifact contract 逐步补齐：
 
 ```text
 init-run
