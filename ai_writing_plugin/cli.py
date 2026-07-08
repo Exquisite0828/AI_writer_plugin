@@ -18,11 +18,23 @@ from .progress_ledger import (
     record_step_progress,
     validate_progress_ledger,
 )
+from .review_context_packages import (
+    ReviewContextPackageError,
+    build_review_context_package,
+    review_context_package_path,
+    validate_review_context_package,
+)
 from .run_scaffold import RunScaffoldError, init_run
 from .short_results import (
     ShortResultError,
     validate_review_result,
     validate_step_result,
+)
+from .stage_gate_results import (
+    StageGateResultError,
+    build_stage_gate_result,
+    stage_gate_result_path,
+    validate_stage_gate_result,
 )
 from .step_worker_dispatch import (
     StepWorkerDispatchError,
@@ -226,6 +238,82 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional repository root for context package instruction ref checks.",
     )
     step_worker_dispatch_validator.add_argument(
+        "--run-dir",
+        help="Optional run directory for ref existence, sha256, and delegated checks.",
+    )
+
+    review_context_package_builder = subparsers.add_parser(
+        "build-review-context-package",
+        help="Build a compact ReviewContextPackage JSON file.",
+    )
+    review_context_package_builder.add_argument(
+        "--repo-root",
+        default=".",
+        help="Repository root; accepted for API symmetry.",
+    )
+    review_context_package_builder.add_argument("--run-dir", required=True, help="Run directory.")
+    review_context_package_builder.add_argument("--stage", required=True, help="Workflow stage.")
+    review_context_package_builder.add_argument(
+        "--step",
+        action="append",
+        required=True,
+        help="Workflow step to include; repeat for all steps in the stage.",
+    )
+    review_context_package_builder.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite the existing review context package.",
+    )
+
+    review_context_package_validator = subparsers.add_parser(
+        "validate-review-context-package",
+        help="Validate a compact ReviewContextPackage JSON file.",
+    )
+    review_context_package_validator.add_argument(
+        "--path",
+        required=True,
+        help="Path to review context package JSON.",
+    )
+    review_context_package_validator.add_argument(
+        "--repo-root",
+        help="Optional repository root; accepted for API symmetry.",
+    )
+    review_context_package_validator.add_argument(
+        "--run-dir",
+        help="Optional run directory for ref existence, sha256, and delegated checks.",
+    )
+
+    stage_gate_result_builder = subparsers.add_parser(
+        "build-stage-gate-result",
+        help="Build a compact StageGateResult JSON file.",
+    )
+    stage_gate_result_builder.add_argument("--run-dir", required=True, help="Run directory.")
+    stage_gate_result_builder.add_argument("--stage", required=True, help="Workflow stage.")
+    stage_gate_result_builder.add_argument(
+        "--decision",
+        help="Run-relative or run-contained absolute stage review decision.json path.",
+    )
+    stage_gate_result_builder.add_argument(
+        "--review-result",
+        action="append",
+        default=[],
+        help="Run-relative or run-contained absolute ReviewResult path; repeatable.",
+    )
+    stage_gate_result_builder.add_argument(
+        "--status",
+        help="Optional gate status override.",
+    )
+
+    stage_gate_result_validator = subparsers.add_parser(
+        "validate-stage-gate-result",
+        help="Validate a compact StageGateResult JSON file.",
+    )
+    stage_gate_result_validator.add_argument(
+        "--path",
+        required=True,
+        help="Path to stage gate result JSON.",
+    )
+    stage_gate_result_validator.add_argument(
         "--run-dir",
         help="Optional run directory for ref existence, sha256, and delegated checks.",
     )
@@ -435,6 +523,87 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
         print("step worker dispatch valid")
+        return 0
+
+    if args.command == "build-review-context-package":
+        try:
+            build_review_context_package(
+                repo_root=Path(args.repo_root),
+                run_dir=Path(args.run_dir),
+                stage=args.stage,
+                steps=args.step,
+                overwrite=args.overwrite,
+            )
+        except (
+            OSError,
+            json.JSONDecodeError,
+            ShortResultError,
+            ReviewContextPackageError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print(review_context_package_path(Path(args.run_dir), args.stage))
+        return 0
+
+    if args.command == "validate-review-context-package":
+        try:
+            payload = load_json(Path(args.path))
+            validate_review_context_package(
+                payload,
+                repo_root=Path(args.repo_root) if args.repo_root else None,
+                run_dir=Path(args.run_dir) if args.run_dir else None,
+            )
+        except (
+            OSError,
+            json.JSONDecodeError,
+            ShortResultError,
+            ReviewContextPackageError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print("review context package valid")
+        return 0
+
+    if args.command == "build-stage-gate-result":
+        try:
+            build_stage_gate_result(
+                run_dir=Path(args.run_dir),
+                stage=args.stage,
+                decision_path=Path(args.decision) if args.decision else None,
+                review_result_paths=[Path(item) for item in args.review_result],
+                status=args.status,
+            )
+        except (
+            OSError,
+            json.JSONDecodeError,
+            ShortResultError,
+            StageGateResultError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print(stage_gate_result_path(Path(args.run_dir), args.stage))
+        return 0
+
+    if args.command == "validate-stage-gate-result":
+        try:
+            payload = load_json(Path(args.path))
+            validate_stage_gate_result(
+                payload,
+                run_dir=Path(args.run_dir) if args.run_dir else None,
+            )
+        except (
+            OSError,
+            json.JSONDecodeError,
+            ShortResultError,
+            StageGateResultError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print("stage gate result valid")
         return 0
 
     parser.error(f"unsupported command: {args.command}")
