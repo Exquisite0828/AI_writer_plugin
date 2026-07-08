@@ -90,6 +90,44 @@ def test_thin_controller_prompts_do_not_keep_worker_pilot_escape_hatch():
     assert not matches, f"thin controller prompts still contain worker pilot escape hatch: {matches}"
 
 
+def test_thin_controller_requires_real_task_tool_worker_handoff():
+    combined = "\n".join(read(path) for path in THIN_CONTROLLER_PROMPTS)
+
+    required_phrases = [
+        "Task tool",
+        "worker_unavailable",
+        "fail closed",
+        "不得 fallback 到主上下文执行 step 或 review",
+        "Step worker 只接收 StepWorkerDispatch 路径和 StepContextPackage 路径",
+        "Review worker 只接收 ReviewContextPackage 路径",
+        "不得把 artifact 正文、canonical 正文或 review 明细正文传给 worker",
+    ]
+
+    missing = [phrase for phrase in required_phrases if phrase not in combined]
+
+    assert not missing, f"real worker handoff contract is incomplete: {missing}"
+
+
+def test_thin_controller_does_not_allow_main_agent_worker_fallback():
+    forbidden_fallback_phrases = [
+        "允许 fallback 到主上下文",
+        "可 fallback 到主上下文",
+        "Task tool 不可用时由主 Agent 执行",
+        "Task tool 不可用时主 Agent 执行",
+        "主 Agent 可自行读取 canonical step 正文",
+        "主 Agent 可以自行产出 step artifacts",
+    ]
+
+    matches = []
+    for path in THIN_CONTROLLER_PROMPTS:
+        text = read(path)
+        for phrase in forbidden_fallback_phrases:
+            if phrase in text:
+                matches.append((path.relative_to(ROOT).as_posix(), phrase))
+
+    assert not matches, f"thin controller prompts allow main-agent fallback: {matches}"
+
+
 def test_thin_controller_prompts_do_not_expand_runtime_context_scope():
     forbidden_context_expansions = [
         "docs/maintainers",

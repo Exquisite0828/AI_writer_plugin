@@ -7,7 +7,7 @@ description: 中文优先薄编排器 / thin controller，按顺序调度 workfl
 
 总控 skill 是薄编排器 / thin controller：按固定顺序调度 **13 个** registerable step skill（`ai-writing-plugin:step-*`），并在**每一步执行完毕后弹出供用户确认的问题列表**，由用户审核该步产出后才允许进入下一步。
 
-本 skill 是编排指导层，不直接写最终文档，不直接产出 step artifacts。各 step 的 artifacts 由独立 step execution context 按对应 step skill 产出（须符合 artifact 契约）；独立 subagent 默认只审核这些已产出的 artifacts，并在需要时产出 stage-review 材料。只有发现 P0/P1 或用户落 `decision=needs_revision` 后，才允许 subagent 进入局部修订；stage-review 闸门通过 `runs/<run_id>/stage_reviews/<stage>/decision.json` 记录，不自动批准、不伪造 HITL。
+本 skill 是编排指导层，不直接写最终文档，不直接产出 step artifacts。各 step 的 artifacts 必须由 Claude Code `Task tool` 新开的独立 step worker 按对应 step skill 产出（须符合 artifact 契约）；独立 review worker 默认只审核这些已产出的 artifacts，并在需要时产出 stage-review 材料。只有发现 P0/P1 或用户落 `decision=needs_revision` 后，才允许 review worker 进入局部修订；stage-review 闸门通过 `runs/<run_id>/stage_reviews/<stage>/decision.json` 记录，不自动批准、不伪造 HITL。
 
 ## 何时使用
 
@@ -21,10 +21,11 @@ description: 中文优先薄编排器 / thin controller，按顺序调度 workfl
 - **step skill 注册名与正文分离**：调用 step 时使用一级注册名 `ai-writing-plugin:step-<name>`（例如 `ai-writing-plugin:step-source-index`）。每个一级 step skill 是 Claude Code 注册 wrapper；完整 canonical 说明仍在 `skills/workflow-steps/<step>/SKILL.md`，执行前必须读取并遵守该 canonical 文件。
 - **薄编排器长期上下文**：主 Agent 只保留稳定编排规则、ProgressLedger 短账本、StepContextPackage 路径/hash、ReviewContextPackage 路径/hash、StepResult / ReviewResult / StageGateResult 短摘要和人工闸门状态；不得粘贴 artifact 正文，不读取 artifact 正文，不得批量读取 step canonical，不得把动态 artifact 内容、review 明细或输入材料全文带回长期上下文。
 - **ProgressLedger 恢复协议**：初始化或恢复 run 时先读取 `runs/<run_id>/orchestration/progress_ledger.json`。每生成 StepContextPackage、StepResult 或 ReviewResult 后立即更新 ledger。恢复时主 Agent 只用 ledger 判断下一步；只有某个 step 需要继续、核对或阻断定位时，才按 ledger 中的 path/hash 打开单个 package/result 文件。
-- **StepContextPackage 派发协议**：调度每个 step 前先生成 `runs/<run_id>/orchestration/context_packages/<stage>/<step>.json`。主 Agent 只把该 package 路径交给 step execution context；step execution context 从 package 中的 path/hash 读取 step wrapper、canonical step、任务专属规则和 run artifacts，不要求主 Agent 粘贴正文。
-- **StepWorkerDispatch / 全 13 step worker handoff**：全部 13 个 workflow step 都使用 StepWorkerDispatch：`runs/<run_id>/orchestration/worker_dispatches/<stage>/<step>.json`。主 Agent 只把 dispatch/context package 路径交给独立 step execution context。
-- **StepResult / ReviewResult 短返回协议**：每个 step execution context 写入 `runs/<run_id>/orchestration/step_results/<step>.json`；每个 review subagent 写入 `runs/<run_id>/orchestration/review_results/<stage>/<step>.json`。StepResult 短字段只包含 `step`、`stage`、`status`、`artifact_paths`、`artifact_hashes`、`summary`、`blocking_issues_count`、`next_gate_status`。ReviewResult 短字段只包含 `step`、`stage`、`status`、`review_package_paths`、`review_package_hashes`、`summary`、`blocking_issues_count`、`next_gate_status`。
-- **ReviewContextPackage 派发协议**：调度 review subagent 前先生成 `runs/<run_id>/orchestration/review_context_packages/<stage>.json`。主 Agent 只把 package 路径交给 review subagent；review subagent 从 package 中的 StepResult path/hash 和 stage review refs 读取所需文件，不要求主 Agent 粘贴 `issues.json` 或 `review_units.json` 正文。
+- **StepContextPackage 派发协议**：调度每个 step 前先生成 `runs/<run_id>/orchestration/context_packages/<stage>/<step>.json`。主 Agent 只把该 package 路径交给 step worker；step worker 从 package 中的 path/hash 读取 step wrapper、canonical step、任务专属规则和 run artifacts，不要求主 Agent 粘贴正文。
+- **StepWorkerDispatch / 全 13 step worker handoff**：全部 13 个 workflow step 都使用 StepWorkerDispatch：`runs/<run_id>/orchestration/worker_dispatches/<stage>/<step>.json`。主 Agent 必须通过 Claude Code `Task tool` 新开独立 step worker。Step worker 只接收 StepWorkerDispatch 路径和 StepContextPackage 路径。
+- **Task tool fail closed 边界**：如果当前运行环境没有 `Task tool`，必须 fail closed：停止当前 step 或 review，记录并报告 `worker_unavailable`，不得 fallback 到主上下文执行 step 或 review，不得自行读取 canonical step 正文并产出 artifacts。
+- **StepResult / ReviewResult 短返回协议**：每个 step worker 写入 `runs/<run_id>/orchestration/step_results/<step>.json`；每个 review worker 写入 `runs/<run_id>/orchestration/review_results/<stage>/<step>.json`。StepResult 短字段只包含 `step`、`stage`、`status`、`artifact_paths`、`artifact_hashes`、`summary`、`blocking_issues_count`、`next_gate_status`。ReviewResult 短字段只包含 `step`、`stage`、`status`、`review_package_paths`、`review_package_hashes`、`summary`、`blocking_issues_count`、`next_gate_status`。
+- **ReviewContextPackage 派发协议**：调度 review worker 前先生成 `runs/<run_id>/orchestration/review_context_packages/<stage>.json`。主 Agent 必须通过 `Task tool` 新开独立 review worker，并只把 package 路径交给 review worker。Review worker 只接收 ReviewContextPackage 路径。不得把 artifact 正文、canonical 正文或 review 明细正文传给 worker；review worker 从 package 中的 StepResult path/hash 和 stage review refs 读取所需文件，不要求主 Agent 粘贴 `issues.json` 或 `review_units.json` 正文。
 - **StageGateResult 短返回协议**：stage gate 完成后写入 `runs/<run_id>/orchestration/stage_gate_results/<stage>.json`。`decision.json` 仍是 stage review gate 的原始 runtime decision，StageGateResult 只是短摘要和 path/hash 索引。恢复或继续时主 Agent 先读 ProgressLedger 和 StageGateResult，默认不回放 issues.json，不回放 review_units.json；只有向用户展示具体问题时才按需打开单个 review 文件。
 - **运行期上下文边界**：不得把 artifact contract、maintainer docs 或 examples 当作默认上下文。contract 只在需要精确路径或 schema 时按需读取；examples 只在用户显式选择具体 demo task 时使用。
 - **路径锚定，不依赖 cwd**：所有 step 与 subagent 读取输入文件时，必须使用上游 artifact 中已经解析好的路径或派发时显式传入的绝对路径。当前 shell cwd / subagent cwd 只代表执行上下文，不得用于推导 `inputdoc/`、`runs/<run_id>/inputdoc/` 或其他输入根目录。
@@ -38,7 +39,7 @@ description: 中文优先薄编排器 / thin controller，按顺序调度 workfl
 
 ## Step → stage 映射
 
-stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage 时共享该 stage 的单一闸门决定。各 step 的产出由独立 step execution context 按对应 step skill 完成；subagent 默认只做独立审核。
+stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage 时共享该 stage 的单一闸门决定。各 step 的产出由 `Task tool` 新开的独立 step worker 按对应 step skill 完成；review worker 默认只做独立审核。
 
 | Step | stage |
 |---|---|
@@ -56,9 +57,9 @@ stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage �
 
 对每个 stage（按上表顺序），执行以下闭环：
 
-1. **调度本 stage 产出（step execution context）**：进入本 stage 前先读取 ProgressLedger：`runs/<run_id>/orchestration/progress_ledger.json`，用账本判断本 stage / step 的最近状态；再确认上一 stage 的 `runs/<run_id>/stage_reviews/<prev_stage>/decision.json` 存在且 `decision ∈ {accepted, skipped}`（首个 stage `ingest` 无上游闸门）。随后对本 stage 覆盖的每个 step（见上表），先生成 StepContextPackage：`runs/<run_id>/orchestration/context_packages/<stage>/<step>.json`，再生成 StepWorkerDispatch：`runs/<run_id>/orchestration/worker_dispatches/<stage>/<step>.json`，更新 ledger 为 `context_ready`。随后用 Claude Code Skill tool 调用对应一级注册名（例如 `ai-writing-plugin:step-material-inventory` / `ai-writing-plugin:step-source-index` / `ai-writing-plugin:step-template-outline`），并把 step artifact 生产职责交给独立 step execution context。step execution context 只接收 dispatch/context package 路径，从 package 中的 path/hash 读取 wrapper、canonical step、任务专属规则和 run artifacts，产出符合 artifact 契约的 artifacts，写入 `runs/<run_id>/orchestration/step_results/<step>.json`，并只向主 Agent 返回 StepResult 短摘要；主 Agent 随后把该 StepResult path/hash 记录进 ledger。
+1. **调度本 stage 产出（step worker）**：进入本 stage 前先读取 ProgressLedger：`runs/<run_id>/orchestration/progress_ledger.json`，用账本判断本 stage / step 的最近状态；再确认上一 stage 的 `runs/<run_id>/stage_reviews/<prev_stage>/decision.json` 存在且 `decision ∈ {accepted, skipped}`（首个 stage `ingest` 无上游闸门）。随后对本 stage 覆盖的每个 step（见上表），先生成 StepContextPackage：`runs/<run_id>/orchestration/context_packages/<stage>/<step>.json`，再生成 StepWorkerDispatch：`runs/<run_id>/orchestration/worker_dispatches/<stage>/<step>.json`，更新 ledger 为 `context_ready`。随后必须用 Claude Code `Task tool` 调用独立 step worker，并把 step artifact 生产职责交给该 worker。step worker 只接收 dispatch/context package 路径，从 package 中的 path/hash 读取 wrapper、canonical step、任务专属规则和 run artifacts，产出符合 artifact 契约的 artifacts，写入 `runs/<run_id>/orchestration/step_results/<step>.json`，并只向主 Agent 返回 StepResult 短摘要；主 Agent 随后把该 StepResult path/hash 记录进 ledger。若 `Task tool` 不可用，必须 fail closed，记录/报告 `worker_unavailable` 并停止当前 step。
 
-2. **逐个 step 的子代理审核（state.json 三态推进）**：对本 stage 覆盖的每个 step，先生成 ReviewContextPackage：`runs/<run_id>/orchestration/review_context_packages/<stage>.json`，再按该 step skill 的「子代理审核」小节新开独立 subagent，只把 review context package 路径交给 subagent。subagent 自主完成 A1 审核任务，在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` 三态跟踪进度，并写入 `runs/<run_id>/orchestration/review_results/<stage>/<step>.json`；主 Agent 随后把该 ReviewResult path/hash 记录进 ledger。无 P0/P1 时 `revision_required=false` 且不得改写 step artifacts。P2/P3 只能记录到 `issues.json` / review prompt，等待用户确认，不得由薄编排器或 subagent 自动修订。只有发现 P0/P1 时，才按具体 issue 进入 A2 局部修订，并在 `revision_state` 记录 `issue_id`、`target_artifact`、`changed_paths`。subagent 不得伪造 HITL、不得移除 `NEEDS_USER_CONFIRMATION`、不得输出专业批准结论；主 Agent 只读取 ReviewResult 短摘要，不读取 artifact 正文。
+2. **逐个 step 的 review worker 审核（state.json 三态推进）**：对本 stage 覆盖的每个 step，先生成 ReviewContextPackage：`runs/<run_id>/orchestration/review_context_packages/<stage>.json`，再按该 step skill 的「子代理审核」小节通过 `Task tool` 新开独立 review worker，只把 review context package 路径交给 worker。review worker 自主完成 A1 审核任务，在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` 三态跟踪进度，并写入 `runs/<run_id>/orchestration/review_results/<stage>/<step>.json`；主 Agent 随后把该 ReviewResult path/hash 记录进 ledger。无 P0/P1 时 `revision_required=false` 且不得改写 step artifacts。P2/P3 只能记录到 `issues.json` / review prompt，等待用户确认，不得由薄编排器或 review worker 自动修订。只有发现 P0/P1 时，才按具体 issue 进入 A2 局部修订，并在 `revision_state` 记录 `issue_id`、`target_artifact`、`changed_paths`。review worker 不得伪造 HITL、不得移除 `NEEDS_USER_CONFIRMATION`、不得输出专业批准结论；主 Agent 只读取 ReviewResult 短摘要，不读取 artifact 正文。若 `Task tool` 不可用，必须 fail closed，记录/报告 `worker_unavailable` 并停止当前 review。
 
 3. **逐个 step 说明产出**：参照本 stage 覆盖的 step skill，用中文向用户说明每个 step 产出的 artifact 与边界。
 
@@ -127,7 +128,7 @@ stage 是 stage-review 闸门记录的单元；多个 step 共用一个 stage �
 
 ## 边界与约束
 
-- 本 skill 不生成草稿、不产出 step artifacts、不做专业判断、不下最终结论；这些由对应 step execution context 按 artifact 契约产出，subagent 只做独立审核与必要的局部修订。
+- 本 skill 不生成草稿、不产出 step artifacts、不做专业判断、不下最终结论；这些由对应 step worker 按 artifact 契约产出，review worker 只做独立审核与必要的局部修订。
 - `final/final_report.md` 是 review-ready package，不等于专业批准。
 - 候选物（`candidate_profile_update.yaml` / `candidate_skill_patch.md`）保持 proposed/inactive，不在编排中自动启用。
 - 不引入 RAG / 向量库 / 复杂 agent 框架；不为单一文档类型新建并行 pipeline。
