@@ -296,6 +296,30 @@ def test_prepare_step_worker_dispatch_supports_all_workflow_steps(tmp_path, stag
     assert ledger["entries"][0]["status"] == "context_ready"
 
 
+def test_preparing_multiple_ingest_dispatches_keeps_earlier_dispatches_valid(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    prepared_paths = []
+
+    for step in WORKFLOW_STAGE_STEPS["ingest"]:
+        prepare_step_worker_dispatch(
+            repo_root=repo_root,
+            run_dir=run_dir,
+            stage="ingest",
+            step=step,
+            task_type="hara",
+        )
+        prepared_paths.append(step_worker_dispatch_path(run_dir, "ingest", step))
+
+    assert len(read_json(progress_ledger_path(run_dir))["entries"]) == 3
+    for dispatch_path in prepared_paths:
+        dispatch = read_json(dispatch_path)
+        assert validate_step_worker_dispatch(
+            dispatch,
+            repo_root=repo_root,
+            run_dir=run_dir,
+        ) == dispatch
+
+
 def test_complete_step_worker_dispatch_updates_ledger_from_short_results(tmp_path):
     repo_root, run_dir = create_repo_and_run(tmp_path)
     prepare_step_worker_dispatch(
@@ -381,7 +405,7 @@ def test_rejects_refs_outside_run_boundary(bad_ref, message):
     assert_invalid(payload, message)
 
 
-def test_run_dir_validation_requires_matching_ref_hashes(tmp_path):
+def test_run_dir_validation_requires_matching_context_package_hash_but_allows_stale_ledger_hash(tmp_path):
     repo_root, run_dir = create_repo_and_run(tmp_path)
     payload = prepare_step_worker_dispatch(
         repo_root=repo_root,
@@ -397,7 +421,42 @@ def test_run_dir_validation_requires_matching_ref_hashes(tmp_path):
     ) == payload
 
     payload["progress_ledger_ref"]["sha256"] = VALID_HASH
+    assert validate_step_worker_dispatch(
+        payload,
+        repo_root=repo_root,
+        run_dir=run_dir,
+    ) == payload
+
+    payload["context_package_ref"]["sha256"] = VALID_HASH
     assert_invalid(payload, "sha256 mismatch", run_dir=run_dir)
+
+
+def test_run_dir_validation_requires_progress_ledger_ref_to_exist(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    payload = prepare_step_worker_dispatch(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        stage="ingest",
+        step=DEFAULT_STEP,
+        task_type="hara",
+    )
+    payload["progress_ledger_ref"] = ref("orchestration/missing_progress_ledger.json")
+
+    assert_invalid(payload, "run path does not exist", repo_root=repo_root, run_dir=run_dir)
+
+
+def test_run_dir_validation_requires_progress_ledger_ref_to_be_valid_ledger(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    payload = prepare_step_worker_dispatch(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        stage="ingest",
+        step=DEFAULT_STEP,
+        task_type="hara",
+    )
+    write(progress_ledger_path(run_dir), "{}")
+
+    assert_invalid(payload, "missing required fields", repo_root=repo_root, run_dir=run_dir)
 
 
 def test_run_dir_validation_delegates_to_context_package_validator(tmp_path):

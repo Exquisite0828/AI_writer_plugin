@@ -234,7 +234,8 @@ def validate_step_worker_dispatch(
             raise StepWorkerDispatchError("run_id must match run_dir name")
         validate_ref_file(context_package_ref, run_root)
         validate_context_package_ref(context_package_ref, repo_root=repo_root, run_dir=run_root)
-        validate_ref_file(progress_ledger_ref, run_root)
+        # ProgressLedger is mutable orchestration state; dispatch stores a live pointer.
+        validate_ref_path_exists(progress_ledger_ref, run_root)
         validate_progress_ledger_ref(progress_ledger_ref, run_root)
 
     return payload
@@ -270,6 +271,10 @@ def validate_ref_file(ref: dict[str, str], run_dir: Path) -> None:
     digest = file_sha256(candidate)
     if digest != ref["sha256"]:
         raise StepWorkerDispatchError(f"sha256 mismatch for {ref['path']}")
+
+
+def validate_ref_path_exists(ref: dict[str, str], run_dir: Path) -> None:
+    resolve_run_path(run_dir, ref["path"])
 
 
 def validate_context_package_ref(
