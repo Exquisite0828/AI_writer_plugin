@@ -4,7 +4,7 @@
 
 ## 本步目的要点
 
-- 创建 `runs/<run_id>/`，写入 manifest、`task_brief`；确认 `task_type: FunctionalSafetyRequirement`（或 `fsr`）。
+- 确认本步 run 元数据与 `task_type: FunctionalSafetyRequirement`（或 `fsr`）边界；共享 run 起点与 manifest / task_brief ownership 由通用 Step 1 / deterministic engine 负责。
 - 登记 task.yaml 每份输入：`file_id`、path、title、format、`role`。
 - **source**：Item 定义、Safety Goals、HARA 摘要/追溯、项目约束 → `is_fact_source=true`。
 - **template**：FSR 模板 → T2。

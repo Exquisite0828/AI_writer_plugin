@@ -4,7 +4,7 @@
 
 ## 本步目的要点
 
-- 创建 `runs/<run_id>/` 并确认 `task_type: SoftwareRequirement`
+- 确认本步 run 元数据与 `task_type: SoftwareRequirement` 边界；共享 run 起点与 manifest / task_brief ownership 由通用 Step 1 / deterministic engine 负责。
 - 登记每份输入的 `file_id`、path、title、format、role、`is_fact_source`
 - 固定 **当前项目架构 vs 历史项目架构参考** 的 tier 边界
 - 声明 SwRS critical claims 需要 T0/T1 或 `NEEDS_USER_CONFIRMATION`

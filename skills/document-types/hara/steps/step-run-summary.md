@@ -2,7 +2,7 @@
 
 本文件是通用骨架 `skills/workflow-steps/step-run-summary/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
-## 本步目的要点（HARA 自主重新驱动）
+## 本步目的要点（HARA 领域补充）
 
 - 重建本次 HARA run 各阶段会话轨迹与 HITL 决策记录，如实描述发生了什么，不重下 HARA 专业结论。
 - 抽取 HARA HITL 决策（hazard/S-E-C/ASIL/safety goal 等记录确认点）与 open items。

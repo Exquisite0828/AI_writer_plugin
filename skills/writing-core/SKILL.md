@@ -38,15 +38,10 @@ Skill.md must not replace artifact contract, schema validation, document navigat
 Claude Code command:
 
 ```text
-/ai-writing-plugin:write "Run the writing workflow with examples/hara_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/technical_solution_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/test_report_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/fsr_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/technical_safety_concept_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/system_requirement_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/generic_document_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/custom_technical_note_profile_demo_fixture/task.yaml"
+/ai-writing-plugin:write "<用户提供的 task.yaml 路径或自然语言写作目标>"
 ```
+
+If the user wants a demo, they must explicitly choose a specific demo task file. This skill must not act as an examples catalog, must not scan `examples/`, and must not treat examples as default project input.
 
 ## Generic Workflow
 

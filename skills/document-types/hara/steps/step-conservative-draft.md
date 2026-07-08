@@ -2,7 +2,7 @@
 
 本文件是通用骨架 `skills/workflow-steps/step-conservative-draft/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
-## 本步目的要点（HARA 自主重新驱动）
+## 本步目的要点（HARA 领域补充）
 
 - 遍历 section_tasks 逐任务（含 L2 粒度子任务），匹配 citation_plan 章节/小节并校验任务证据（只用任务携带的 allowed evidence ids）。
 - 逐节按 `outline_final.md` 的 L1 章与 L2 小节渲染保守草稿，汇编 `draft/full_draft.md`。

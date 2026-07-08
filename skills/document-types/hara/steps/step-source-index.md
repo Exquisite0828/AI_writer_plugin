@@ -2,7 +2,7 @@
 
 本文件是通用骨架 `skills/workflow-steps/step-source-index/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 路径与 **L1→L2→L3→原文** 访问协议以骨架与 `writing-core` 为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
-## 本步目的要点（HARA 自主重新驱动）
+## 本步目的要点（HARA 领域补充）
 
 - **逐份阅读**已解析的 HARA 相关输入材料，为每份文档建立 **一级 / 二级 / 三级目录**，像书籍目录一样反映实际结构与语义。
 - 为每份文档生成 `knowledge/document_tocs/<file_id>.md`，供 Agent **必须按 L1→L2→L3 顺序**浏览后再打开原文。

@@ -2,7 +2,7 @@
 
 本文件是通用骨架 `skills/workflow-steps/step-revision/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
-## 本步目的要点（HARA 自主重新驱动）
+## 本步目的要点（HARA 领域补充）
 
 - 依据 HARA 审查/验证结果生成确定性修订计划，逐条修订草稿，不引入未支撑的新 HARA 结论。
 - 无法解决的 HARA 开放项（hazard/S-E-C/ASIL/safety goal 等未经 HITL 确认）继续带入最终交付的 open items，保持 pending。

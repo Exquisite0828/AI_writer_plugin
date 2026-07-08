@@ -2,7 +2,7 @@
 
 本文件是通用骨架 `skills/workflow-steps/step-review/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
-## 本步目的要点（HARA 自主重新驱动）
+## 本步目的要点（HARA 领域补充）
 
 - 对 HARA 草稿做多维度结构化审查：模板符合性、HARA checklist 满足度、证据支撑情况。
 - 审查维度覆盖：critical claim 的 EVD 是否经 **L1/L2/L3** 可回溯原文；是否存在未走三级目录或直接全文读输入文件的情况。

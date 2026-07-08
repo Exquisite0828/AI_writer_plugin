@@ -36,7 +36,9 @@ description: 中文优先指导 workflow 第 1 步「输入材料」：通过 ta
 
 ## 加载任务专属子 skill（必做）
 
-本步是**通用骨架**，只定义流程、artifact 契约与角色边界。执行本步前，主执行上下文必须按 `task_type` 加载对应的任务专属子 skill：
+本步是**通用骨架**，定义流程、artifact 契约、共享 run 起点与角色边界。通用 Step 1 / deterministic engine 负责创建 run 起点和共享 artifacts；document-type 子 step 只补充领域输入分类、critical claims、A1/A2 审核文案与领域检查项，不重新声明共享 artifact ownership。
+
+执行本步前，主执行上下文必须按 `task_type` 加载对应的任务专属子 skill：
 
 - 路径：`skills/document-types/<task_type>/steps/step-input-materials.md`
 - 例：`task_type: hara` → `skills/document-types/hara/steps/step-input-materials.md`，并配合根 skill `skills/document-types/<task_type>/SKILL.md`。

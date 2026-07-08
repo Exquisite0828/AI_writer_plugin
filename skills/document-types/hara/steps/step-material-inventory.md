@@ -2,7 +2,7 @@
 
 本文件是通用骨架 `skills/workflow-steps/step-material-inventory/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
-## 本步目的要点（HARA 自主重新驱动）
+## 本步目的要点（HARA 领域补充）
 
 - 对每份材料按格式选择 reader 抽取文本，生成结构化清单 `inputs/input_inventory.json`。
 - 为每条记录登记 `role` / `parse_status`（parsed/failed/unsupported/missing）/ `is_fact_source`。

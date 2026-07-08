@@ -17,13 +17,7 @@ description: 运行 AI 专业文档写作 workflow，支持通过 task YAML 选�
 作为 Claude Code plugin 加载后，可以使用：
 
 ```text
-/ai-writing-plugin:write "Run the writing workflow with examples/hara_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/item_definition_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/functional_safety_requirement_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/system_requirement_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/system_architecture_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/software_requirement_demo_fixture/task.yaml"
-/ai-writing-plugin:write "Run the writing workflow with examples/software_architecture_demo_fixture/task.yaml"
+/ai-writing-plugin:write "<用户提供的 task.yaml 路径或自然语言写作目标>"
 ```
 
 自然语言快捷意图也可以被识别，但必须映射到明确的 `task_type` 与材料来源：
@@ -40,7 +34,7 @@ description: 运行 AI 专业文档写作 workflow，支持通过 task YAML 选�
 /ai-writing-plugin:write "写一份汽车控制器产品 SwAD 软件架构报告"
 ```
 
-（上列与 HARA 一样：自然语言须映射到 `task_type`；demo 时对应 `examples/*_demo_fixture/task.yaml`。）
+自然语言须映射到 `task_type`，并继续确认用户要使用真实项目材料、用户提供的 task file，还是一个明确指定的 demo task。不得把 demo 目录当作默认输入来源。
 
 自然语言 → `task_type` 映射（识别后须再确认 demo 或真实 `task.yaml`）：
 
@@ -56,13 +50,13 @@ description: 运行 AI 专业文档写作 workflow，支持通过 task YAML 选�
 
 若用户没有提供 task.yaml 或输入材料：
 
-- 明确说是 demo / 示例时，可提示并使用对应 `examples/*_demo_fixture/task.yaml`。
+- 明确说是 demo / 示例时，要求用户确认一个具体 demo task file；不得扫描或批量读取 `examples/`。
 - 真实项目写作时，先要求用户提供 task.yaml 或输入材料清单，不得凭空生成项目事实。
 
 部分环境可能存在产品级快捷命令：
 
 ```text
-/write "Run the writing workflow with examples/test_report_demo_fixture/task.yaml"
+/write "<用户提供的 task.yaml 路径或自然语言写作目标>"
 ```
 
 不要新增每种文档类型一个命令。保持一个统一入口，让 `task_type` 选择规则。
@@ -95,31 +89,15 @@ document_profile_path: profiles/document_types/customer_demo/custom_technical_no
 
 文档类型差异由 `skills/document-types/<task_type>/SKILL.md` 中的规则表达。command layer 不承载文档业务逻辑；它把控制权交给 `workflow-orchestrator` 总控 skill。
 
-## Demo task files
+## Task file boundary
 
-```text
-examples/hara_demo_fixture/task.yaml
-examples/technical_solution_demo_fixture/task.yaml
-examples/test_report_demo_fixture/task.yaml
-examples/fsr_demo_fixture/task.yaml
-examples/functional_safety_requirement_demo_fixture/task.yaml
-examples/item_definition_demo_fixture/task.yaml
-examples/technical_safety_concept_demo_fixture/task.yaml
-examples/system_requirement_demo_fixture/task.yaml
-examples/system_architecture_demo_fixture/task.yaml
-examples/software_requirement_demo_fixture/task.yaml
-examples/software_architecture_demo_fixture/task.yaml
-examples/generic_document_demo_fixture/task.yaml
-examples/custom_technical_note_profile_demo_fixture/task.yaml
-```
-
-如果用户提供其他 task file，先请用户给出路径，读取并确认其中声明的 `task_type`。
+如果用户提供 task file，先读取并确认其中声明的 `task_type`。如果用户选择 demo，必须由用户显式确认具体 demo task file；command layer 不维护 demo catalog，不默认遍历 `examples/`，也不把 examples 当作项目事实来源。
 
 ## 交互 workflow（由 workflow-orchestrator 总控 skill 编排）
 
 本命令的交互编排统一交给 **`workflow-orchestrator`** 总控 skill 执行；它按固定顺序驱动 **13 个** step skill，并对每一步做到「**主执行上下文产出、子代理审核、后用户确认闸门**」。command 层只负责确认 task、把控制权交给总控 skill。各 step 的 artifacts 由当前主执行上下文按对应 step skill 和 artifact 契约写入 `runs/<run_id>/`；subagent 默认只审核这些已产出的 artifacts。
 
-1. 用中文确认 task file 路径和 `task_type`。若用户只给自然语言意图，先映射到候选 `task_type`（例如 HARA → `hara`；SystemRequirement / SyRS / 系统需求 → `SystemRequirement`；SystemArchitecture / 系统架构 / SYS.3 → `SystemArchitecture`；SoftwareRequirement / SwRS / 软件需求 → `SoftwareRequirement`；SoftwareArchitecture / SwAD / 软件架构 / SWE.2 → `SoftwareArchitecture`），再确认是使用 demo fixture 还是等待用户提供 task.yaml / 输入材料。真实项目**无 task.yaml 或输入材料时不要凭空开跑**。
+1. 用中文确认 task file 路径和 `task_type`。若用户只给自然语言意图，先映射到候选 `task_type`（例如 HARA → `hara`；SystemRequirement / SyRS / 系统需求 → `SystemRequirement`；SystemArchitecture / 系统架构 / SYS.3 → `SystemArchitecture`；SoftwareRequirement / SwRS / 软件需求 → `SoftwareRequirement`；SoftwareArchitecture / SwAD / 软件架构 / SWE.2 → `SoftwareArchitecture`），再确认是使用用户明确指定的 demo task，还是等待用户提供真实 task.yaml / 输入材料。真实项目**无 task.yaml 或输入材料时不要凭空开跑**。
 2. 启用 **`workflow-orchestrator`** skill 作为总控，按其「编排主循环」逐 stage 推进；每个 stage 覆盖的 step 见下方映射表，逐 step 调用对应 step skill。
 3. 每个 step 执行后，按该 step skill 的「子代理审核」小节**新开独立 subagent**：默认只完成 A1 审核任务，在 `runs/<run_id>/subagent/<step>/state.json` 以 `review_state` 三态（`not_run` / `running` / `done`）跟踪进度。无 P0/P1 时 `revision_required=false`，不得重写 step artifacts、不得重新驱动整步任务；只有发现 P0/P1 或用户明确 `needs_revision` 时，才执行 A2 局部修订，并把 `issue_id`、`target_artifact`、`changed_paths` 写入 `revision_state`。
 4. subagent 审核完成后，先确认 stage-review package 完整且 `issues.json` 可审查，再向用户弹出 stage-review 确认问题列表；用户回复 `accepted` / `needs_revision` / `blocked` / `skipped` 后，由总控 skill 在 `runs/<run_id>/stage_reviews/<stage>/decision.json` 落盘决定。未获 `accepted` / `skipped` 不得进入下一 stage；package 不完整、coverage 不完整，或存在 `severity=P0/P1` 且 `requires_revision=true` 的 issue 时，不得记录 `accepted`，也不得用 `skipped` 绕过。

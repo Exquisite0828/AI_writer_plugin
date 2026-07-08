@@ -2,7 +2,7 @@
 
 本文件是通用骨架 `skills/workflow-steps/step-verification/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
-## 本步目的要点（HARA 自主重新驱动）
+## 本步目的要点（HARA 领域补充）
 
 - 对 HARA 草稿与审查结果做确定性验证检查，把未通过项显式列出。
 - HARA REQUIRED_CHECKS 覆盖：required artifacts 齐全、citation integrity、source tier 与 provenance、sample/reference 非事实来源、critical claims 确认状态、`NEEDS_USER_CONFIRMATION` 保留、candidate update inactive。

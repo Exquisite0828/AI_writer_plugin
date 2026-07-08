@@ -19,6 +19,7 @@ description: 中文优先总控 skill，按顺序编排 workflow 的 13 个 step
 
 - **顺序、单向、artifact-first**：每步只消费上游 `runs/<run_id>/` 下的 artifacts。
 - **step skill 注册名与正文分离**：调用 step 时使用一级注册名 `ai-writing-plugin:step-<name>`（例如 `ai-writing-plugin:step-source-index`）。每个一级 step skill 是 Claude Code 注册 wrapper；完整 canonical 说明仍在 `skills/workflow-steps/<step>/SKILL.md`，执行前必须读取并遵守该 canonical 文件。
+- **运行期上下文边界**：不得把 artifact contract、maintainer docs 或 examples 当作默认上下文。contract 只在需要精确路径或 schema 时按需读取；examples 只在用户显式选择具体 demo task 时使用。
 - **路径锚定，不依赖 cwd**：所有 step 与 subagent 读取输入文件时，必须使用上游 artifact 中已经解析好的路径或派发时显式传入的绝对路径。当前 shell cwd / subagent cwd 只代表执行上下文，不得用于推导 `inputdoc/`、`runs/<run_id>/inputdoc/` 或其他输入根目录。
 - **输入文档仅经 L1→L2→L3 访问**：Step 4 及以后读原始输入须遵守 `writing-core` 输入文档访问协议；禁止 chunk/SRC/直接全文盲搜。
 - **每步先子代理审核、再人工确认**：每个 step 执行后先由独立 subagent 审核已产出的 artifacts（见各 step skill 的「子代理审核」小节），通过后才向用户弹出确认问题列表。确认问题列表来自该 step 的 subagent 产出（`stage_reviews/<stage>/review_prompt.md` + `review_units.json` + `issues.json`），不是凭空生成。

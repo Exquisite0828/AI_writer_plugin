@@ -4,7 +4,7 @@
 
 ## 本步目的要点
 
-- 创建 `runs/<run_id>/`，写入 manifest、`task_brief`；确认 `task_type: SystemRequirement`。
+- 确认本步 run 元数据与 `task_type: SystemRequirement` 边界；共享 run 起点与 manifest / task_brief ownership 由通用 Step 1 / deterministic engine 负责。
 - 登记 task.yaml 每份输入：`file_id`、path、title、format、`role`。
 - **source**：SWRS/RFQ、架构、接口规范、ODD、诊断规范、法规清单、既有 FSR（若有）→ `is_fact_source=true`。
 - **template**：SyRS 模板 → T2。

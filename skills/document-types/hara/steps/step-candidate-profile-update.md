@@ -2,7 +2,7 @@
 
 本文件是通用骨架 `skills/workflow-steps/step-candidate-profile-update/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
-## 本步目的要点（HARA 自主重新驱动）
+## 本步目的要点（HARA 领域补充）
 
 - 从本次 HARA run 提炼候选 profile 更新与 skill patch 提案，保持 proposed/inactive，不立即修改稳定 profile/skill。
 - 候选物仅基于本次 run 的可复用流程/结构信号，不掺入 HARA 事实结论（hazard/rating/ASIL/safety goal）。

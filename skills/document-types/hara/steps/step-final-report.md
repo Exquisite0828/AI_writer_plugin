@@ -2,7 +2,7 @@
 
 本文件是通用骨架 `skills/workflow-steps/step-final-report/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
-## 本步目的要点（HARA 自主重新驱动）
+## 本步目的要点（HARA 领域补充）
 
 - 把修订后 HARA 草稿、审查、验证与溯源汇编为最终交付包，供合格人工审查。
 - 状态保守：`finalized_with_open_items` / `ready_for_human_review` / `blocked_pending_confirmation`；未解决 HARA 条目保持 open。

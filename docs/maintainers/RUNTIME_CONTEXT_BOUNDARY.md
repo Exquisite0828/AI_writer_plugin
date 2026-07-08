@@ -43,6 +43,8 @@ Runtime files may:
 3. Mention specific example task paths only as opt-in demo commands or deterministic test fixtures.
 4. List only the artifacts owned by the current command or workflow step.
 
+Document-type step files under `skills/document-types/*/steps/` are domain overlays. They may define role classification, critical claims, review wording, and domain checks, but they must not redeclare ownership of shared runtime artifacts such as run creation, manifests, or global artifact trees.
+
 ## Contract Boundary
 
 `contracts/CURRENT_ARTIFACT_CONTRACTS.md` is the single source of truth for artifact names, paths, and schema expectations when a contract exists.

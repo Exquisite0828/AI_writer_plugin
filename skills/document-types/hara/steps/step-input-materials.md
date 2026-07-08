@@ -2,9 +2,9 @@
 
 本文件是通用骨架 `skills/workflow-steps/step-input-materials/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。它只补充 HARA 专属的目的要点、候选方案示例、典型子任务与审核检查项；通用流程、artifact 契约与角色边界以骨架为准。HARA 领域规则（critical claims、章节、forbidden final claims、source tier）以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
-## 本步目的要点（HARA 自主重新驱动）
+## 本步目的要点（HARA 领域补充）
 
-- 创建 `runs/<run_id>/` 并写入 manifest 与 task_brief；确认 `task_type: hara` 并加载 HARA `DocumentTypeRules` 与本子 skill。
+- 确认本步 run 元数据与 `task_type: hara` 边界，并加载 HARA `DocumentTypeRules` 与本子 skill；共享 run 起点与 manifest / task_brief ownership 由通用 Step 1 / deterministic engine 负责。
 - 把 task.yaml 声明的每份输入登记为材料记录（分配 file_id、记录 path/title/format）。
 - 判定每份材料的 `role`：item definition / operational situations / assumptions 多为 `source`；HARA 模板为 `template`；safety/review checklist 为 `checklist`；functional safety 方法学为 `reference`；既有 HARA 报告样例为 `sample`（仅风格/表格形状）。
 - 确认 HARA critical claims（hazard、hazardous event、S/E/C、ASIL、safety goal、final acceptability）已声明为 `requires_human_confirmation`，等待 T0/T1 证据或 HITL。
