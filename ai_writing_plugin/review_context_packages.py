@@ -18,6 +18,10 @@ from .short_results import (
     validate_step,
     validate_step_result,
 )
+from .stage_review_issues import (
+    StageReviewIssueError,
+    validate_issues_index,
+)
 
 
 PACKAGE_FIELDS = {
@@ -46,12 +50,14 @@ ALLOWED_STAGE_REVIEW_FILES = {
     "review_units.json",
     "issues_schema.json",
     "review_context.json",
+    "issues_index.json",
 }
 STAGE_REVIEW_FILE_ORDER = [
     "review_prompt.md",
     "review_units.json",
     "issues_schema.json",
     "review_context.json",
+    "issues_index.json",
 ]
 
 
@@ -209,6 +215,11 @@ def validate_review_context_package(
                 raise ReviewContextPackageError("StepResult stage must match package")
         for item in stage_review_refs:
             validate_ref_file(item, run_root)
+            if item["path"] == f"stage_reviews/{payload['stage']}/issues_index.json":
+                validate_issues_index_or_raise(
+                    load_json(run_root / item["path"]),
+                    run_dir=run_root,
+                )
 
     return payload
 
@@ -392,6 +403,16 @@ def validate_step_context_package_or_raise(
     try:
         return validate_step_context_package(payload, repo_root=repo_root, run_dir=run_dir)
     except ContextPackageError as exc:
+        raise ReviewContextPackageError(str(exc)) from exc
+
+
+def validate_issues_index_or_raise(
+    payload: dict[str, Any],
+    run_dir: Path | str | None = None,
+) -> dict[str, Any]:
+    try:
+        return validate_issues_index(payload, run_dir=run_dir)
+    except StageReviewIssueError as exc:
         raise ReviewContextPackageError(str(exc)) from exc
 
 

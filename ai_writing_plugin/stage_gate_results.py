@@ -17,6 +17,11 @@ from .short_results import (
     validate_stage,
     validate_summary,
 )
+from .stage_review_issues import (
+    StageReviewIssueError,
+    issues_index_path,
+    validate_issues_index,
+)
 
 
 RESULT_FIELDS = {
@@ -147,6 +152,7 @@ def validate_stage_gate_result(
             validate_ref_file(decision_ref, run_root)
             decision_payload = load_json(run_root / decision_ref["path"])
             validate_decision_matches_status(decision_payload, payload["stage"], payload["status"])
+            validate_decision_issue_binding(decision_payload, run_root, payload["stage"])
         for item in review_result_refs:
             validate_ref_file(item, run_root)
             review_payload = validate_review_result_or_raise(
@@ -187,6 +193,34 @@ def validate_decision_matches_status(
         raise StageGateResultError("decision stage must match stage gate")
     if "decision" in decision_payload and decision_payload["decision"] != status:
         raise StageGateResultError("decision must match stage gate status")
+
+
+def validate_decision_issue_binding(
+    decision_payload: dict[str, Any],
+    run_dir: Path,
+    stage: str,
+) -> None:
+    if decision_payload.get("professional_approval") is True:
+        raise StageGateResultError("professional_approval must not be true")
+
+    decision_scope = decision_payload.get("decision_scope")
+    if decision_scope is not None and decision_scope != "stage_review_gate_only":
+        raise StageGateResultError("decision_scope must be stage_review_gate_only")
+
+    expected_path = f"stage_reviews/{stage}/issues_index.json"
+    index_path = issues_index_path(run_dir, stage)
+    if index_path.is_file():
+        issues_index_ref = decision_payload.get("issues_index_ref")
+        if issues_index_ref is None:
+            raise StageGateResultError("decision must include issues_index_ref")
+        ref = validate_ref(issues_index_ref, "issues_index_ref")
+        if ref["path"] != expected_path:
+            raise StageGateResultError("issues_index_ref path must match stage issues_index")
+        validate_ref_file(ref, run_dir)
+        validate_issues_index_or_raise(load_json(index_path), run_dir=run_dir)
+    elif "issues_index_ref" in decision_payload:
+        ref = validate_ref(decision_payload["issues_index_ref"], "issues_index_ref")
+        validate_ref_file(ref, run_dir)
 
 
 def validate_ref_list(value: Any, field: str) -> list[dict[str, str]]:
@@ -342,6 +376,16 @@ def validate_review_result_or_raise(payload: dict[str, Any], run_dir: Path | str
     try:
         return validate_review_result(payload, run_dir=run_dir)
     except ShortResultError as exc:
+        raise StageGateResultError(str(exc)) from exc
+
+
+def validate_issues_index_or_raise(
+    payload: dict[str, Any],
+    run_dir: Path | str | None = None,
+) -> dict[str, Any]:
+    try:
+        return validate_issues_index(payload, run_dir=run_dir)
+    except StageReviewIssueError as exc:
         raise StageGateResultError(str(exc)) from exc
 
 

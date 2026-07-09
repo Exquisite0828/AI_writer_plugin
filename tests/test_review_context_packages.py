@@ -14,6 +14,7 @@ from ai_writing_plugin.review_context_packages import (
     review_context_package_path,
     validate_review_context_package,
 )
+from ai_writing_plugin.stage_review_issues import build_issues_index, issues_index_path
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -154,6 +155,19 @@ def test_build_review_context_package_collects_step_results_and_stage_review_ref
     write(stage_review_dir / "issues_schema.json", '{"type":"object"}')
     write(stage_review_dir / "review_context.json", '{"stage":"ingest"}')
     write(stage_review_dir / "issues.json", '{"not":"included in context package"}')
+    build_issues_index(
+        run_dir,
+        "ingest",
+        issues=[
+            {
+                "issue_id": "P1-001",
+                "severity": "P1",
+                "category": "missing_evidence",
+                "title": "Missing cited evidence.",
+                "summary": "Missing cited evidence.",
+            }
+        ],
+    )
 
     payload = build_review_context_package(
         repo_root=repo_root,
@@ -179,8 +193,12 @@ def test_build_review_context_package_collects_step_results_and_stage_review_ref
         "stage_reviews/ingest/review_units.json",
         "stage_reviews/ingest/issues_schema.json",
         "stage_reviews/ingest/review_context.json",
+        "stage_reviews/ingest/issues_index.json",
     ]
     assert "stage_reviews/ingest/issues.json" not in [
+        item["path"] for item in payload["stage_review_refs"]
+    ]
+    assert "stage_reviews/ingest/issues/P1-001.json" not in [
         item["path"] for item in payload["stage_review_refs"]
     ]
     assert payload["step_result_refs"][0]["sha256"] == sha256_file(
@@ -244,14 +262,79 @@ def test_rejects_refs_outside_run_boundary(bad_ref, message):
     assert_invalid(payload, message)
 
 
-def test_rejects_stage_review_refs_outside_allowlist():
+@pytest.mark.parametrize(
+    "bad_path",
+    [
+        "stage_reviews/ingest/issues.json",
+        "stage_reviews/ingest/issues/P1-001.json",
+    ],
+)
+def test_rejects_stage_review_refs_outside_allowlist(bad_path):
     payload = valid_package(
         stage_review_refs=[
-            ref("stage_reviews/ingest/issues.json"),
+            ref(bad_path),
         ]
     )
 
     assert_invalid(payload, "stage_review_refs path is not allowed")
+
+
+def test_validate_review_context_package_accepts_issues_index_with_matching_hash(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    context_paths = write_context_packages(repo_root, run_dir)
+    for step in STEPS:
+        write_step_result(run_dir, step)
+    build_issues_index(
+        run_dir,
+        "ingest",
+        issues=[
+            {
+                "issue_id": "P1-001",
+                "severity": "P1",
+                "category": "missing_evidence",
+                "title": "Missing cited evidence.",
+                "summary": "Missing cited evidence.",
+            }
+        ],
+    )
+
+    payload = valid_package(
+        context_package_refs=[
+            ref(
+                "orchestration/context_packages/ingest/step-input-materials.json",
+                sha256_file(context_paths[0]),
+            ),
+            ref(
+                "orchestration/context_packages/ingest/step-material-inventory.json",
+                sha256_file(context_paths[1]),
+            ),
+        ],
+        step_result_refs=[
+            ref(
+                "orchestration/step_results/step-input-materials.json",
+                sha256_file(run_dir / "orchestration/step_results/step-input-materials.json"),
+            ),
+            ref(
+                "orchestration/step_results/step-material-inventory.json",
+                sha256_file(run_dir / "orchestration/step_results/step-material-inventory.json"),
+            ),
+        ],
+        stage_review_refs=[
+            ref(
+                "stage_reviews/ingest/issues_index.json",
+                sha256_file(issues_index_path(run_dir, "ingest")),
+            )
+        ],
+    )
+
+    assert validate_review_context_package(
+        payload,
+        repo_root=repo_root,
+        run_dir=run_dir,
+    ) == payload
+
+    payload["stage_review_refs"][0]["sha256"] = VALID_HASH
+    assert_invalid(payload, "sha256 mismatch", run_dir=run_dir)
 
 
 def test_run_dir_validation_requires_matching_hashes_and_step_result_payload(tmp_path):

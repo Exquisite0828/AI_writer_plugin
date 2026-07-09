@@ -12,6 +12,7 @@ from ai_writing_plugin.stage_gate_results import (
     stage_gate_result_path,
     validate_stage_gate_result,
 )
+from ai_writing_plugin.stage_review_issues import build_issues_index, issues_index_path
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +38,29 @@ def sha256_file(path: Path) -> str:
 
 def ref(path: str, digest: str = VALID_HASH) -> dict:
     return {"path": path, "sha256": digest}
+
+
+def write_issues_index(run_dir: Path) -> Path:
+    build_issues_index(
+        run_dir,
+        "ingest",
+        issues=[
+            {
+                "issue_id": "P1-001",
+                "severity": "P1",
+                "category": "missing_evidence",
+                "title": "Missing cited evidence.",
+                "summary": "Missing cited evidence.",
+            }
+        ],
+    )
+    return issues_index_path(run_dir, "ingest")
+
+
+def write_decision(run_dir: Path, payload: dict) -> Path:
+    path = run_dir / "stage_reviews" / "ingest" / "decision.json"
+    write(path, json.dumps(payload, ensure_ascii=False))
+    return path
 
 
 def write_review_result(
@@ -130,6 +154,35 @@ def test_build_stage_gate_result_from_decision_and_review_results(tmp_path):
     assert payload["summary"] == "用户确认本 stage 可以继续。"
     assert payload["blocking_issues_count"] == 0
     assert payload["next_gate_status"] == "can_continue"
+    assert validate_stage_gate_result(payload, run_dir=run_dir) == payload
+
+
+def test_build_stage_gate_result_accepts_decision_with_matching_issues_index_ref(tmp_path):
+    run_dir = tmp_path / "runs" / "demo-run"
+    index_path = write_issues_index(run_dir)
+    decision_path = write_decision(
+        run_dir,
+        {
+            "stage": "ingest",
+            "decision": "accepted",
+            "decision_scope": "stage_review_gate_only",
+            "professional_approval": False,
+            "issues_index_ref": ref(
+                "stage_reviews/ingest/issues_index.json",
+                sha256_file(index_path),
+            ),
+            "notes": "User accepted this stage review gate.",
+        },
+    )
+
+    payload = build_stage_gate_result(
+        run_dir=run_dir,
+        stage="ingest",
+        decision_path=decision_path,
+        review_result_paths=[],
+    )
+
+    assert payload["status"] == "accepted"
     assert validate_stage_gate_result(payload, run_dir=run_dir) == payload
 
 
@@ -232,6 +285,142 @@ def test_run_dir_validation_rejects_hash_mismatch_and_wrong_review_stage(tmp_pat
 
     payload["review_result_refs"][0]["sha256"] = VALID_HASH
     assert_invalid(payload, "sha256 mismatch", run_dir=run_dir)
+
+
+def test_validate_stage_gate_result_rejects_missing_issues_index_ref_when_index_exists(tmp_path):
+    run_dir = tmp_path / "runs" / "demo-run"
+    write_issues_index(run_dir)
+    decision_path = write_decision(
+        run_dir,
+        {
+            "stage": "ingest",
+            "decision": "accepted",
+            "decision_scope": "stage_review_gate_only",
+            "professional_approval": False,
+            "notes": "ok",
+        },
+    )
+    payload = valid_result(
+        decision_ref=ref("stage_reviews/ingest/decision.json", sha256_file(decision_path)),
+        review_result_refs=[],
+    )
+
+    assert_invalid(payload, "issues_index_ref", run_dir=run_dir)
+
+
+def test_validate_stage_gate_result_rejects_issues_index_ref_hash_mismatch(tmp_path):
+    run_dir = tmp_path / "runs" / "demo-run"
+    write_issues_index(run_dir)
+    decision_path = write_decision(
+        run_dir,
+        {
+            "stage": "ingest",
+            "decision": "accepted",
+            "decision_scope": "stage_review_gate_only",
+            "professional_approval": False,
+            "issues_index_ref": ref("stage_reviews/ingest/issues_index.json", VALID_HASH),
+            "notes": "ok",
+        },
+    )
+    payload = valid_result(
+        decision_ref=ref("stage_reviews/ingest/decision.json", sha256_file(decision_path)),
+        review_result_refs=[],
+    )
+
+    assert_invalid(payload, "sha256 mismatch", run_dir=run_dir)
+
+
+def test_validate_stage_gate_result_rejects_issues_index_ref_for_wrong_stage(tmp_path):
+    run_dir = tmp_path / "runs" / "demo-run"
+    index_path = write_issues_index(run_dir)
+    decision_path = write_decision(
+        run_dir,
+        {
+            "stage": "ingest",
+            "decision": "accepted",
+            "decision_scope": "stage_review_gate_only",
+            "professional_approval": False,
+            "issues_index_ref": ref(
+                "stage_reviews/review/issues_index.json",
+                sha256_file(index_path),
+            ),
+            "notes": "ok",
+        },
+    )
+    payload = valid_result(
+        decision_ref=ref("stage_reviews/ingest/decision.json", sha256_file(decision_path)),
+        review_result_refs=[],
+    )
+
+    assert_invalid(payload, "issues_index_ref path", run_dir=run_dir)
+
+
+def test_validate_stage_gate_result_rejects_professional_approval_true(tmp_path):
+    run_dir = tmp_path / "runs" / "demo-run"
+    index_path = write_issues_index(run_dir)
+    decision_path = write_decision(
+        run_dir,
+        {
+            "stage": "ingest",
+            "decision": "accepted",
+            "decision_scope": "stage_review_gate_only",
+            "professional_approval": True,
+            "issues_index_ref": ref(
+                "stage_reviews/ingest/issues_index.json",
+                sha256_file(index_path),
+            ),
+            "notes": "ok",
+        },
+    )
+    payload = valid_result(
+        decision_ref=ref("stage_reviews/ingest/decision.json", sha256_file(decision_path)),
+        review_result_refs=[],
+    )
+
+    assert_invalid(payload, "professional_approval", run_dir=run_dir)
+
+
+def test_validate_stage_gate_result_rejects_invalid_decision_scope(tmp_path):
+    run_dir = tmp_path / "runs" / "demo-run"
+    index_path = write_issues_index(run_dir)
+    decision_path = write_decision(
+        run_dir,
+        {
+            "stage": "ingest",
+            "decision": "accepted",
+            "decision_scope": "professional_approval",
+            "professional_approval": False,
+            "issues_index_ref": ref(
+                "stage_reviews/ingest/issues_index.json",
+                sha256_file(index_path),
+            ),
+            "notes": "ok",
+        },
+    )
+    payload = valid_result(
+        decision_ref=ref("stage_reviews/ingest/decision.json", sha256_file(decision_path)),
+        review_result_refs=[],
+    )
+
+    assert_invalid(payload, "decision_scope", run_dir=run_dir)
+
+
+def test_old_decision_without_issues_index_ref_passes_when_no_index_exists(tmp_path):
+    run_dir = tmp_path / "runs" / "demo-run"
+    decision_path = write_decision(
+        run_dir,
+        {
+            "stage": "ingest",
+            "decision": "accepted",
+            "notes": "legacy decision",
+        },
+    )
+    payload = valid_result(
+        decision_ref=ref("stage_reviews/ingest/decision.json", sha256_file(decision_path)),
+        review_result_refs=[],
+    )
+
+    assert validate_stage_gate_result(payload, run_dir=run_dir) == payload
 
 
 def test_cli_builds_validates_and_reports_invalid_result(tmp_path):
