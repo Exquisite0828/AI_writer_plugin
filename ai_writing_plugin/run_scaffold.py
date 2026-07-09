@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .input_refs import InputRefsError, build_input_refs, file_sha256, write_input_refs
+
 
 RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
@@ -33,20 +35,32 @@ def init_run(task_path: Path, output_root: Path, run_id: str | None = None) -> P
     if run_dir.exists():
         raise RunScaffoldError(f"run directory already exists: {run_dir}")
 
-    created_at = utc_now()
-    manifest = build_manifest(
-        run_id=safe_run_id,
-        task_path=task_path,
-        created_at=created_at,
-    )
+    try:
+        input_refs = build_input_refs(
+            run_id=safe_run_id,
+            task_path=task_path,
+            task=task,
+            repo_root=Path.cwd(),
+        )
+    except InputRefsError as exc:
+        raise RunScaffoldError(str(exc)) from exc
+
     task_brief = build_task_brief(
         run_id=safe_run_id,
         task=task,
     )
 
     run_dir.mkdir(parents=True)
-    write_json(run_dir / "manifest.json", manifest)
+    input_refs_file = write_input_refs(run_dir, input_refs)
+    created_at = utc_now()
+    manifest = build_manifest(
+        run_id=safe_run_id,
+        task_path=task_path,
+        created_at=created_at,
+        input_refs_sha256=file_sha256(input_refs_file),
+    )
     write_json(run_dir / "task_brief.json", task_brief)
+    write_json(run_dir / "manifest.json", manifest)
 
     return run_dir
 
@@ -67,7 +81,12 @@ def validate_run_id(run_id: str) -> None:
         )
 
 
-def build_manifest(run_id: str, task_path: Path, created_at: str) -> dict[str, Any]:
+def build_manifest(
+    run_id: str,
+    task_path: Path,
+    created_at: str,
+    input_refs_sha256: str,
+) -> dict[str, Any]:
     return {
         "run_id": run_id,
         "task_file": str(task_path.resolve()),
@@ -75,6 +94,12 @@ def build_manifest(run_id: str, task_path: Path, created_at: str) -> dict[str, A
         "status": "initialized",
         "phase": "phase_0",
         "artifacts": [
+            {
+                "path": "input_refs.json",
+                "kind": "input_refs",
+                "sha256": input_refs_sha256,
+                "created_at": created_at,
+            },
             {
                 "path": "manifest.json",
                 "kind": "manifest",

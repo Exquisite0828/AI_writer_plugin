@@ -15,7 +15,7 @@ def test_current_baseline_budget_does_not_hard_fail():
     assert report["overall_status"] == "pass"
     assert report["budget_summary"]["hard_failures"] == []
     assert report["budgets"]["total_runtime_surface"]["status"] == "warn"
-    assert report["budgets"]["active_workflow"]["status"] == "warn"
+    assert report["budgets"]["active_workflow"]["status"] in {"pass", "warn"}
     assert report["budgets"]["active_step"]["status"] in {"pass", "warn"}
 
 

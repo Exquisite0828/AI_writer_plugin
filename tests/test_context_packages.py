@@ -11,6 +11,7 @@ from ai_writing_plugin.context_packages import (
     build_step_context_package,
     validate_step_context_package,
 )
+from ai_writing_plugin.input_refs import build_input_refs, write_input_refs
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +20,10 @@ VALID_HASH = "0" * 64
 
 def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def write(path: Path, text: str = "{}") -> None:
@@ -56,6 +61,19 @@ def create_repo_and_run(tmp_path: Path, *, include_doc_type: bool = True):
         )
 
     write(run_dir / "task_brief.json", '{"task_type":"hara"}')
+    task_path = repo_root / "examples" / "hara_minimal" / "task.yaml"
+    source_path = repo_root / "examples" / "hara_minimal" / "inputs" / "source.md"
+    write(task_path, "task_type: hara\n")
+    write(source_path, "source")
+    write_input_refs(
+        run_dir,
+        build_input_refs(
+            run_id="demo-run",
+            task_path=task_path,
+            task={"task_type": "hara", "inputs": [{"path": "inputs/source.md", "role": "source"}]},
+            repo_root=repo_root,
+        ),
+    )
     write(run_dir / "inputs" / "upstream.json", '{"ok":true}')
     return repo_root, run_dir
 
@@ -73,6 +91,7 @@ def valid_package(**overrides):
             ref("skills/step-input-materials/SKILL.md"),
             ref("skills/workflow-steps/step-input-materials/SKILL.md"),
         ],
+        "input_refs_ref": ref("input_refs.json"),
         "run_refs": [ref("task_brief.json")],
         "result_paths": {
             "step_result": "orchestration/step_results/step-input-materials.json",
@@ -81,6 +100,7 @@ def valid_package(**overrides):
         "constraints": {
             "paths_and_hashes_only": True,
             "no_artifact_body": True,
+            "no_input_body": True,
             "no_inline_instructions": True,
         },
     }
@@ -125,6 +145,10 @@ def test_build_step_context_package_writes_canonical_package_with_hashes(tmp_pat
         "task_brief.json",
         "inputs/upstream.json",
     ]
+    assert payload["input_refs_ref"] == {
+        "path": "input_refs.json",
+        "sha256": hashlib.sha256((run_dir / "input_refs.json").read_bytes()).hexdigest(),
+    }
     assert all(len(item["sha256"]) == 64 for item in payload["instruction_refs"])
     assert all(len(item["sha256"]) == 64 for item in payload["run_refs"])
     assert validate_step_context_package(
@@ -258,6 +282,7 @@ def test_repo_and_run_validation_require_existing_files_and_matching_hashes(tmp_
                 sha256_text("canonical"),
             ),
         ],
+        input_refs_ref=ref("input_refs.json", sha256_file(run_dir / "input_refs.json")),
         run_refs=[ref("task_brief.json", sha256_text('{"task_type":"hara"}'))],
     )
 
@@ -271,15 +296,31 @@ def test_repo_and_run_validation_require_existing_files_and_matching_hashes(tmp_
         instruction_refs=[
             ref("skills/step-input-materials/SKILL.md", sha256_text("wrapper"))
         ],
+        input_refs_ref=ref("input_refs.json", sha256_file(run_dir / "input_refs.json")),
         run_refs=[ref("missing.json")],
     )
     assert_invalid(missing, "run ref does not exist", repo_root=repo_root, run_dir=run_dir)
 
     wrong_hash = valid_package(
         instruction_refs=[ref("skills/step-input-materials/SKILL.md", VALID_HASH)],
+        input_refs_ref=ref("input_refs.json", sha256_file(run_dir / "input_refs.json")),
         run_refs=[ref("task_brief.json", sha256_text('{"task_type":"hara"}'))],
     )
     assert_invalid(wrong_hash, "instruction ref sha256 mismatch", repo_root=repo_root)
+
+    missing_input_refs = valid_package(
+        instruction_refs=[
+            ref("skills/step-input-materials/SKILL.md", sha256_text("wrapper"))
+        ],
+        input_refs_ref=ref("missing.json"),
+        run_refs=[ref("task_brief.json", sha256_text('{"task_type":"hara"}'))],
+    )
+    assert_invalid(
+        missing_input_refs,
+        "run ref does not exist",
+        repo_root=repo_root,
+        run_dir=run_dir,
+    )
 
 
 def test_build_cli_writes_package_and_respects_overwrite(tmp_path):

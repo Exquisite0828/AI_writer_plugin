@@ -5,185 +5,42 @@ description: 中文优先指导 fsr document type work，同时保留 functional
 
 # FSR Document Type Skill
 
-Use this guideline for `task_type: fsr`.
+Use this guideline for `task_type: fsr`. Default communication is Chinese; keep `fsr`, Functional Safety Requirements, Safety Goals, ASIL, TSC deferred, HITL, NEEDS_USER_CONFIRMATION, source tier, and artifact field names.
 
-## 中文交互默认规则
+## Purpose
 
-默认用中文解释 FSR workflow、Safety Goal traceability、ASIL inheritance、requirement completeness、verification method 和 open confirmations。保留 `fsr`、Functional Safety Requirements、Safety Goals、ASIL、TSC deferred、HITL、NEEDS_USER_CONFIRMATION 等英文关键术语。
+`fsr` is an official L3 built-in for review-ready Functional Safety Requirements packages. It organizes FSR candidates, Safety Goal traceability, ASIL inheritance, rationale, verification method candidates, assumptions, limitations, and open confirmations. It must not approve safety requirements, confirm compliance, validate ASIL inheritance, or claim completeness without T0/T1 evidence.
 
-如果功能安全材料为英文，可以保留原文需求语句和引用片段；用户说明优先中文。不要把 FSR candidate wording 写成 safety requirement approval、compliance approval 或 TSC output。
-
-This Skill.md is guideline material only. It must use the plugin workflow and must call the Python deterministic engine through `write-run` or `/ai-writing-plugin:write`. It is not prompt-only execution, and it does not replace artifact contracts, schema validation, source index, evidence trace, review, verify, HITL trace, or candidate update state control.
-
-## Document Type Purpose
-
-FSR supports review-ready Functional Safety Requirements packages. The input materials normally include item definition context, confirmed Safety Goals, a supplied HARA summary or safety-goal trace extract, project constraints, templates, checklists, references, and sample document shapes.
-
-The FSR document type can draft and organize functional safety requirement candidates. It must not approve safety requirements, confirm compliance, validate ASIL inheritance, or claim the requirement set is complete without project source evidence or HITL.
-
-There is no automatic professional approval in this workflow.
-
-## Supported Level And Positioning
-
-`fsr` is an official L3 built-in document type backed by built-in `DocumentTypeRules`, fixtures, regression tests, committed eval cases, and this domain guideline.
-
-The command layer remains generic. There is no fsr-specific pipeline, no `fsr_pipeline.py`, and no duplicated workflow. The project rule is one plugin, one pipeline.
-
-TSC is a separate downstream document type (`task_type: TechnicalSafetyConcept`). The FSR deliverable still must not contain TSC content: no technical safety requirements, no technical safety mechanisms, and no technical safety concept sections are emitted from the FSR workflow.
-
-## Typical Inputs
-
-Recommended inputs:
-
-- `item_definition_source.md` as `source`
-- `safety_goals_source.md` as `source`
-- `hara_summary_source.md` or a safety-goal trace extract as `source`
-- `fsr_template.md` as `template`
-- `fsr_checklist.md` as `checklist`
-- `fsr_reference.md` as `reference`
-- `fsr_sample.md` as `sample`
-
-Only `source` inputs can support project facts. HITL / explicit human confirmation is T0 when captured by the workflow.
-
-## Default / Expected Sections
-
-The FSR default sections are:
-
-- Document purpose and scope
-- Input materials and assumptions
-- Item definition summary
-- Safety goal traceability
-- Functional safety requirement table
-- ASIL inheritance and rationale
-- Verification method candidates
-- Assumptions, limitations, and open confirmations
-- Review summary
-- Final review boundary
-
-The table should keep requirement identifiers, requirement statements, linked Safety Goals, ASIL, rationale, verification method, evidence source, and confirmation status traceable. Missing inputs become open items.
-
-## Critical Claims
-
-FSR critical claim categories include:
-
-- functional safety requirement wording
-- safety goal linkage
-- ASIL inheritance
-- safe state linkage
-- verification method
-- requirement completeness
-- requirement sufficiency
-- final FSR approval
-- final compliance conclusion
-
-These require source or HITL. If evidence or a recorded human decision is missing, keep `NEEDS_USER_CONFIRMATION`.
-
-## Requires Human Confirmation
-
-Do not automatically finalize:
-
-- functional safety requirement wording
-- safety goal linkage
-- ASIL inheritance
-- verification method adequacy
-- requirement completeness and sufficiency conclusion
-- final FSR approval or compliance conclusion
-
-Safety Goals and ASIL can be carried from project source material, but the final professional conclusion still needs human review. A HARA summary may support the trace it explicitly contains; it must not be used as a blanket approval for all FSR content.
-
-## Forbidden Final Claims
-
-The following are forbidden final claims unless explicit T0/T1 support and a separate human approval process allow them:
-
-- FSR set is approved
-- functional safety requirements are approved
-- requirements are complete and compliant
-- safety goals are fully satisfied
-- ASIL inheritance is validated
-- verification method is sufficient
-- no open safety issue remains
-- ready for production release
-- risk is accepted
-- compliance is confirmed
-
-These are warning examples, not recommended output.
-
-## Source / Sample / Reference / Provenance Policy
-
-- Project source material is T1 when parsed and relevant.
-- HITL / explicit human confirmation is T0.
-- Template and checklist constraints are T2.
-- `fsr_reference.md` is T3; it may support methodology or terminology but must not prove project-specific Safety Goals, ASIL, requirement wording, verification status, completeness, compliance, or approval.
-- `fsr_sample.md` is T4; it can guide structure, style, section granularity, and table shape only.
-- Generated / unknown inference is T5 and cannot support critical claim.
-
-sample is not a fact source.
-sample is not fact source.
-reference cannot prove project facts.
-T3/T4/T5 cannot support critical claim by themselves.
-Every critical claim needs provenance and a source tier.
-
-## Review Focus
-
-Review focus includes:
-
-- template completeness
-- safety goal traceability
-- unsupported functional safety requirement wording
-- unsupported ASIL inheritance
-- unsupported verification method claims
-- sample misuse
-- reference misuse as project fact
-- TSC leakage
-- unconfirmed completeness or compliance conclusion
-
-## Verification Focus
-
-Verification focus includes:
-
-- required artifacts
-- citation integrity
-- source tier and provenance
-- sample not fact source
-- reference not project fact source
-- critical claims confirmation
-- FSR claims require source or HITL
-- final report is not approval
-- candidate update inactive
-- TSC content not emitted from FSR (TSC is a separate downstream document type)
+Use the shared plugin workflow and deterministic engine. No fsr-specific pipeline, no `fsr_pipeline.py`, no duplicated workflow.
 
 ## TSC Boundary
 
-Within the FSR workflow (TSC is a separate document type produced under `task_type: TechnicalSafetyConcept`):
+TSC is downstream under `task_type: TechnicalSafetyConcept`. FSR output must not create technical safety requirements, technical safety mechanisms, technical safety concept sections, or TSC final facts. Downstream technical allocation may be an open handoff note only when supported by source.
 
-Do not produce a TSC document from this workflow.
-Do not create technical safety requirements.
-Do not create a technical safety concept report.
-Do not create technical safety mechanisms as final facts.
-Do not create an FSR-specific pipeline.
+## Typical Inputs And Sections
 
-Downstream technical allocation may be listed as a future open item only when the source material justifies that boundary note. It must not become a TSC deliverable here; it is handed off to the TSC workflow.
+T1 source examples: item definition context, confirmed Safety Goals, HARA summary or safety-goal trace extract, project constraints. Template/checklist/reference/sample keep their roles.
 
-## Candidate Update Boundary
+Default sections: purpose/scope, inputs/assumptions, item summary, Safety Goal traceability, FSR table, ASIL inheritance/rationale, verification method candidates, limitations/open confirmations, review summary, final boundary.
 
-candidate update artifacts may be generated only as proposed / inactive material.
+FSR tables should trace requirement ID, statement, linked SG, ASIL, rationale, verification method, evidence source, and confirmation status. Missing inputs become open items.
 
-`candidate_profile_update.yaml`, `candidate_skill_patch.md`, and promotion reports must not auto-apply changes, must not overwrite stable Skill.md, and must not promote profiles without explicit human approval and eval gate evidence in a later workflow.
+## Critical Claims
 
-## Dependency And Platform Boundary
+Critical claims include FSR wording, SG linkage, ASIL inheritance, safe state linkage, verification method, completeness, sufficiency, final FSR approval, and compliance conclusion. They require source or HITL; otherwise keep `NEEDS_USER_CONFIRMATION`.
 
-Use the existing deterministic Python engine. Do not add heavy dependencies. no RAG. no LangChain. no vector DB. Do not add a complex agent framework.
+Do not automatically finalize FSR wording, SG linkage, ASIL inheritance, verification adequacy, completeness/sufficiency, approval, or compliance. A HARA summary supports only the trace it explicitly contains; it is not blanket approval.
 
-`FunctionalSafetyRequirement` 与 `fsr` 共享 FSR 文档语义；逐步子 skill 见 `skills/document-types/FunctionalSafetyRequirement/steps/`。`task_type: fsr` 仍可使用 `skills/document-types/fsr/SKILL.md`（无逐步子 skill）。
+## Forbidden Final Claims
 
-## Demo Boundary
+Do not write that FSR set/requirements are approved, complete and compliant, safety goals fully satisfied, ASIL inheritance validated, verification method sufficient, no open safety issue remains, production ready, risk accepted, or compliance confirmed unless a separate human approval process and evidence support it.
 
-Demo task paths are intentionally not listed in runtime skills. Use a specific user-selected task file only.
+## Source Policy
 
-## Common Gotchas
+T0=HITL, T1=project source, T2=template/checklist, T3=reference methodology/terminology, T4=sample shape/style, T5=inference. sample is not fact source. reference cannot prove project facts. T3/T4/T5 cannot support critical claim by themselves.
 
-- Do not infer FSR approval from a sample document.
-- Do not use a reference to prove this project's Safety Goals or ASIL.
-- Do not turn a supplied HARA summary into a new HARA judgment.
-- Do not convert FSR output into TSC output.
-- Do not claim completeness, compliance, verification sufficiency, or production release readiness without source or HITL.
+## Review / Verification Focus
+
+Check template completeness, SG traceability, unsupported FSR wording, unsupported ASIL inheritance, unsupported verification claims, sample/reference misuse, TSC leakage, unconfirmed completeness/compliance, required artifacts, citation integrity, provenance, final report not approval, candidate update inactive.
+
+Candidate updates remain proposed/inactive and must not overwrite stable Skill files or promote profiles.

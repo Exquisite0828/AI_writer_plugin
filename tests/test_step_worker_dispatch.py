@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from ai_writing_plugin.context_packages import build_step_context_package
+from ai_writing_plugin.input_refs import build_input_refs, write_input_refs
 from ai_writing_plugin.progress_ledger import (
     init_progress_ledger,
     progress_ledger_path,
@@ -89,6 +90,19 @@ def create_repo_and_run(tmp_path: Path):
     write(repo_root / "skills" / "document-types" / "hara" / "SKILL.md", "doctype")
     write(run_dir / "task_brief.json", '{"task_type":"hara"}')
     write(run_dir / "manifest.json", "{}")
+    task_path = repo_root / "examples" / "hara_minimal" / "task.yaml"
+    source_path = repo_root / "examples" / "hara_minimal" / "inputs" / "source.md"
+    write(task_path, "task_type: hara\n")
+    write(source_path, "source")
+    write_input_refs(
+        run_dir,
+        build_input_refs(
+            run_id="demo-run",
+            task_path=task_path,
+            task={"task_type": "hara", "inputs": [{"path": "inputs/source.md", "role": "source"}]},
+            repo_root=repo_root,
+        ),
+    )
     for stage in WORKFLOW_STAGE_STEPS:
         write(run_dir / "stage_reviews" / stage / "issues.json", "{}")
     init_progress_ledger(run_dir)
@@ -170,6 +184,7 @@ def valid_dispatch(**overrides):
             "worker_reads_refs": True,
             "main_agent_reads_short_results_only": True,
             "no_artifact_body": True,
+            "no_input_body": True,
         },
     }
     payload.update(overrides)
@@ -212,6 +227,14 @@ def test_prepare_step_worker_dispatch_writes_canonical_dispatch_and_updates_ledg
         "path": "orchestration/progress_ledger.json",
         "sha256": sha256_file(ledger_path),
     }
+    context_package = read_json(package_path)
+    assert context_package["input_refs_ref"] == {
+        "path": "input_refs.json",
+        "sha256": sha256_file(run_dir / "input_refs.json"),
+    }
+    encoded_dispatch = json.dumps(payload, ensure_ascii=False)
+    assert "source body" not in encoded_dispatch
+    assert "input_materials" not in encoded_dispatch
 
     ledger = read_json(ledger_path)
     entry = ledger["entries"][0]

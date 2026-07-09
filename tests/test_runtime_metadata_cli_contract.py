@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from ai_writing_plugin.context_packages import ContextPackageError, validate_step_context_package
+from ai_writing_plugin.input_refs import build_input_refs, write_input_refs
 from ai_writing_plugin.progress_ledger import ProgressLedgerError, validate_progress_ledger
 from ai_writing_plugin.short_results import ShortResultError, validate_step_result
 from ai_writing_plugin.step_worker_dispatch import (
@@ -48,7 +49,20 @@ def create_repo_and_run(tmp_path: Path) -> tuple[Path, Path]:
     write(repo_root / "skills" / step / "SKILL.md", "wrapper")
     write(repo_root / "skills" / "workflow-steps" / step / "SKILL.md", "canonical")
     write(repo_root / "skills" / "document-types" / "hara" / "SKILL.md", "doctype")
+    task_path = repo_root / "examples" / "hara_minimal" / "task.yaml"
+    source_path = repo_root / "examples" / "hara_minimal" / "inputs" / "source.md"
+    write(task_path, "task_type: hara\n")
+    write(source_path, "source")
     write(run_dir / "task_brief.json", '{"task_type":"hara"}')
+    write_input_refs(
+        run_dir,
+        build_input_refs(
+            run_id="demo-run",
+            task_path=task_path,
+            task={"task_type": "hara", "inputs": [{"path": "inputs/source.md", "role": "source"}]},
+            repo_root=repo_root,
+        ),
+    )
     write(run_dir / "manifest.json", "{}")
     return repo_root, run_dir
 

@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from .input_refs import InputRefsError, validate_input_refs
 from .short_results import RUN_ID_RE, SHA256_RE, STAGES, STEPS, ShortResultError
 from .short_results import validate_result_path as validate_run_relative_path
 
@@ -20,6 +21,7 @@ PACKAGE_FIELDS = {
     "task_type",
     "created_at",
     "instruction_refs",
+    "input_refs_ref",
     "run_refs",
     "result_paths",
     "constraints",
@@ -29,6 +31,7 @@ RESULT_PATH_FIELDS = {"step_result", "review_result"}
 FIXED_CONSTRAINTS = {
     "paths_and_hashes_only": True,
     "no_artifact_body": True,
+    "no_input_body": True,
     "no_inline_instructions": True,
 }
 TASK_TYPE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -74,6 +77,7 @@ def build_step_context_package(
         if input_ref not in run_paths:
             run_paths.append(input_ref)
     run_refs = [build_run_ref(run_dir, path) for path in run_paths]
+    input_refs_ref = build_run_ref(run_dir, "input_refs.json")
 
     payload: dict[str, Any] = {
         "kind": "step_context_package",
@@ -84,6 +88,7 @@ def build_step_context_package(
         "task_type": task_type,
         "created_at": utc_now(),
         "instruction_refs": instruction_refs,
+        "input_refs_ref": input_refs_ref,
         "run_refs": run_refs,
         "result_paths": expected_result_paths(stage, step),
         "constraints": dict(FIXED_CONSTRAINTS),
@@ -120,6 +125,11 @@ def validate_step_context_package(
         "instruction_refs",
         validate_instruction_ref_path,
     )
+    input_refs_ref = validate_ref(
+        payload["input_refs_ref"],
+        "input_refs_ref",
+        validate_run_ref_path,
+    )
     run_refs = validate_ref_list(
         payload["run_refs"],
         "run_refs",
@@ -131,6 +141,8 @@ def validate_step_context_package(
     if repo_root is not None:
         validate_repo_refs(instruction_refs, Path(repo_root))
     if run_dir is not None:
+        validate_run_refs([input_refs_ref], Path(run_dir))
+        validate_input_refs_ref(input_refs_ref, Path(run_dir), repo_root)
         validate_run_refs(run_refs, Path(run_dir))
 
     return payload
@@ -241,6 +253,24 @@ def validate_ref_list(
     return refs
 
 
+def validate_ref(
+    value: Any,
+    field: str,
+    path_validator,
+) -> dict[str, str]:
+    if not isinstance(value, dict):
+        raise ContextPackageError(f"{field} must be an object")
+    validate_exact_fields(value, REF_FIELDS)
+    path = value["path"]
+    digest = value["sha256"]
+    if not isinstance(path, str):
+        raise ContextPackageError(f"{field} path must be a string")
+    path_validator(path)
+    if not isinstance(digest, str) or not SHA256_RE.match(digest):
+        raise ContextPackageError(f"invalid sha256 for {path}")
+    return {"path": path, "sha256": digest}
+
+
 def validate_instruction_ref_path(path: str) -> None:
     validate_posix_relative_path(path)
     if not (
@@ -316,6 +346,29 @@ def validate_run_refs(refs: list[dict[str, str]], run_dir: Path) -> None:
         digest = file_sha256(candidate)
         if digest != item["sha256"]:
             raise ContextPackageError(f"run ref sha256 mismatch: {item['path']}")
+
+
+def validate_input_refs_ref(
+    ref: dict[str, str],
+    run_dir: Path,
+    repo_root: Path | str | None,
+) -> None:
+    try:
+        payload = load_json((run_dir.expanduser().resolve() / ref["path"]).resolve())
+        validate_input_refs(
+            payload,
+            repo_root=Path(repo_root) if repo_root is not None else None,
+        )
+    except (OSError, json.JSONDecodeError, InputRefsError) as exc:
+        raise ContextPackageError(f"invalid input_refs_ref: {exc}") from exc
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    with path.open(encoding="utf-8") as handle:
+        payload = json.load(handle)
+    if not isinstance(payload, dict):
+        raise ContextPackageError(f"JSON file must contain an object: {path}")
+    return payload
 
 
 def file_sha256(path: Path) -> str:

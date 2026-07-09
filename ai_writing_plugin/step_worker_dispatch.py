@@ -75,6 +75,7 @@ FIXED_CONSTRAINTS = {
     "worker_reads_refs": True,
     "main_agent_reads_short_results_only": True,
     "no_artifact_body": True,
+    "no_input_body": True,
 }
 
 

@@ -1,362 +1,44 @@
 # HARA 子 skill · Step 9 · 保守草稿 (Conservative Draft)
 
-本文件是通用骨架 `skills/workflow-steps/step-conservative-draft/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
+通用骨架：`skills/workflow-steps/step-conservative-draft/SKILL.md`。HARA 根规则：`skills/document-types/hara/SKILL.md`。
 
-## 本步目的要点（HARA 领域补充）
+## Purpose
 
-- 遍历 section_tasks 逐任务（含 L2 粒度子任务），匹配 citation_plan 章节/小节并校验任务证据（只用任务携带的 allowed evidence ids）。
-- 逐节按 `outline_final.md` 的 L1 章与 L2 小节渲染保守草稿，汇编 `draft/full_draft.md`。
-- HARA critical claim（hazard/hazardous event/S-E-C rating/ASIL/safety goal/final acceptability）无 T0/T1 支撑时保持 `NEEDS_USER_CONFIRMATION` / pending，不写未支撑结论。
-- 不写 `final ASIL is approved`/`risk is acceptable`/`the rating is S1` 等 forbidden final claims（见根 skill）。
-- 保留 source tier、claim 状态与人工确认状态；不把 sample/reference 当作事实证据。
-- 核对 allowed evidence 时，经 EVD 回溯 **L1→L2→L3→原文**；禁止跳过三级目录或直接打开 `input_inventory.path`。
-- **底线**：缺证据的 HARA 章节只成稿可支撑内容，hazard/rating/ASIL/safety goal 结论保持 open/pending。
+- 遍历 `section_tasks.json`，按 `outline_final.md` 的 L1/L2 渲染保守 HARA 草稿并汇编 `draft/full_draft.md` / HARA draft。
+- 每个 TASK 只能使用其 `allowed_evidence`；证据须经 EVD 回溯 L1→L2→L3→原文。
+- HARA critical claim（hazard、hazardous event、S/E/C、ASIL、safety goal、final acceptability）无 T0/T1 支撑时保持 `NEEDS_USER_CONFIRMATION` / pending。
+- 保留 source tier、claim status、human confirmation status；sample/reference 不能当事实。
+- 不写 `ASIL is approved`、`risk is acceptable`、`the rating is S1` 等 final claims。
 
-## HARA 报告过程总览（本步定位）
+## HARA Draft Structure
 
-本步是 HARA 6 步核心分析过程的执行落点：把 Item 定义 → 工况 → 危害识别（引导词法）→ 危害事件 → S/E/C/ASIL → 安全目标 完整成稿。
+Draft should cover the HARA core chain:
 
-**HARA 6 步核心分析过程**：
+1. **SEC-ITEM**：item 功能、边界、外部接口、假设与依赖；均来自 T1 source 或 open。
+2. **SEC-OPS**：运行工况 OS-xx；速度/频率/环境来自 T1 source，缺失写 `[PENDING]`。
+3. **SEC-HAZ**：对每个 F-xx 用 HAZOP guide words 识别 H-xx；H-xx 描述车辆层面危害行为，不写工况、底层失效或事故后果；全部 pending。
+4. **SEC-HE**：HE = H-xx × OS-xx；描述「在工况下，危害行为可能导致的车辆/人员层面后果」；不成立组合需可见排除依据。
+5. **SEC-SEC**：每个 HE 给出 S0–S3 / E0–E4 / C0–C3 候选和文字依据；ASIL candidate 由 ISO 26262-3 Table 4 查表得出；全部 `NEEDS_USER_CONFIRMATION`。
+6. **SEC-SG**：仅 ASIL > QM 的 HE 生成 SG；SG 用禁止性表述「item 不应在…条件下…，以防止…」，不写保证/确保/ensure/guarantee；含 Safe State、FTTI，必要时含 Emergency Operation Interval。
+7. **SEC-OPEN**：汇总全部 `NEEDS_USER_CONFIRMATION`、`[PENDING]`、knowledge gaps。
 
-1. **界定 Item 定义（SEC-ITEM）**：提取功能清单 F-xx、系统边界表、外部接口表 IF-xx，全部来自 T1 source。
-2. **列出运行工况（SEC-OPS）**：OS-xx 表覆盖典型工况（高速 / 城市 / 停车场 / 恶劣天气），速度与频率来自 T1 source。
-3. **危害识别（SEC-HAZ）**：对每功能 F-xx 应用 6 引导词得到 H-xx 危害清单；H-xx 只描述**危害行为本身**，不描述工况。
-4. **危害事件（SEC-HE）**：HE = H-xx × OS-xx 组合，描述「在工况下、危害行为可能导致何种后果」。
-5. **S/E/C 评级与 ASIL 候选（SEC-SEC）**：分别评 S0–S3 / E0–E4 / C0–C3，查 ISO 26262-3 Table 4 得 ASIL 候选；**全部标 `NEEDS_USER_CONFIRMATION`**。
-6. **安全目标候选（SEC-SG）**：仅对 ASIL>QM 的 HE 生成 SG；采用禁止性表述「item 不应在…条件下…，以防止…」。
+With-Reference 情景必须有 Differences from Reference HARA / Δ-Analysis：只比较结构和差异；sample 的 H-xx、HE、S/E/C、ASIL、SG 不能进入本项目事实。
 
-**本步定位**：成稿可被 T0/T1 支撑的内容；缺证据章节保持 pending；不写 forbidden final claim。
+## Self-Check / Review Focus
 
+- 草稿非空，mandatory HARA sections 存在。
+- F-xx、IF-xx、OS-xx、H-xx、HE-xxx、S/E/C、ASIL、SG 均可追溯或 open。
+- 每个功能至少覆盖多个 guide words；H-xx 是行为，不是后果。
+- E rating 引用 T1 工况 source；S 含伤害类型；C 有驾驶员响应依据。
+- ASIL candidate 与 S/E/C 逻辑一致；ASIL>QM 有 SG；ASIL=QM 不生成 SG。
+- SG 不越界到 FSC/TSC，不含具体技术方案。
+- open 条目数覆盖全部 pending；不移除 `NEEDS_USER_CONFIRMATION`。
+- 无专业批准措辞；无 sample 高度雷同或 sample fact transfer。
 
-## 本步将被审查的关键点（Review / Verification 自检清单）
+P0 examples: H-xx 抽象层次错误；HE 后果只考虑本车乘员；ASIL 与 S/E/C 不一致；ASIL>QM 无 SG；FTTI 缺失；sample 文字或数据污染 critical claim；With-Reference 缺 Δ-Analysis。
 
-本步输出（`hara_draft.md` / `full_draft.md`）是 HARA 报告主体，将在 Step 10/11 被以下检查点全方位定位。subagent 交付前必须逐项自检：
+## A1 / A2 / B
 
-| 关联检查 | 检查项 | 自检方法 |
-|---|---|---|
-| VC-1-05 | 草稿存在且非空 | `draft/hara_draft.md` 非空 |
-| RD-2 | SEC-ITEM 完整 | 功能清单 F-xx ≥ 1、边界表非空、接口表 IF-xx 含信号方向、无 sample 来源 |
-| RD-3 | SEC-HAZ 引导词覆盖 | 每个 F-xx 至少 2 种引导词；H-xx 描述**行为**而非后果；全部标 `NEEDS_USER_CONFIRMATION` |
-| RD-4 | SEC-HE / SEC-SEC 证据 | 每个 HE 有 S/E/C 候选 + 文字依据；E 引用 T1 工况 source；S 含伤害类型描述 |
-| VC-3-01~05 | critical claim 状态正确 | 所有 H / HE / S / E / C / ASIL / SG 状态含 `NEEDS_USER_CONFIRMATION` |
-| VC-4-01 | ASIL 逻辑一致 | 每条 HE 的 ASIL 候选 = S × E × C 按 ISO 26262-3 Table 4 查表结果 |
-| VC-4-02 | ASIL>QM 的 HE 均有 SG | SG 数 ≥ ASIL > QM 的 HE 数 |
-| VC-4-03 | ASIL=QM 的 HE 无 SG | SG 表无 QM HE 对应行 |
-| RD-5 | SG 措辞合规 | 使用「不应在…条件下…，以防止…」禁止性表述；无「保证」「确保」「ensure」 |
-| RD-6 | SEC-OPEN 汇总完整 | OPEN 条目数 ≥ 草稿中 `NEEDS_USER_CONFIRMATION` 数 |
-| VC-5-01 | 无专业批准措辞 | 无 `ASIL is approved` / `risk is acceptable` / `safety goal approved` / `HARA 完成` |
-| VC-5-02 | NEEDS_USER_CONFIRMATION 保留 | 草稿未移除任何 pending 标记 |
-
-**自检底线**：缺证据的 HARA 章节只成稿可支撑内容，hazard / rating / ASIL / SG 结论保持 open / pending；任何 forbidden final claim 出现即 P0 阻断。
-
-
-
-## ISO 26262-3 标准 Checklist 与 Review 要点（Clause 对照）
-
-本步把 ISO 26262-3 Clause 5/6 全部写作落点（Phase C/D/E/F）一次成稿。
-**严格性最高的一步**——下文 checklist 与 Step 10/11 审核完全一一对应。
-
-### SEC-ITEM（Clause 5，Item Definition）
-
-- [ ] 功能清单 F-xx ≥ 1，含具体描述（动作 + 对象）
-- [ ] 系统边界表（In / Out of scope）非空
-- [ ] 外部接口表 IF-xx **含信号方向**
-- [ ] 假设与依赖显式列出
-- [ ] 操作环境（速度 / 温度 / 车型）落表
-- [ ] 合理可预见的误用清单（§5.4.4 b）落节
-- [ ] 无字段来源指向 sample
-
-### SEC-OPS（Phase B，Operational Situations & Modes）
-
-- [ ] OS-xx 至少覆盖 4 类典型工况
-- [ ] 速度 / 频率引用 T1 source；缺失处标 `[PENDING]`
-- [ ] 操作模式（启动 / 待机 / 工作 / 降级 / 关机）落表
-- [ ] 降级模式与工况的耦合关系说明
-
-### SEC-HAZ（Phase C，Hazard Identification，§6.4.2）
-
-- [ ] 每个 F-xx **至少 2 种 HAZOP 引导词**
-- [ ] H-xx 描述**车辆层面危害行为**，**不**夹工况，**不**夹底层失效（如"传感器漂移"），**不**夹事故后果
-- [ ] H-xx 与 F-xx 多对多关系明确
-- [ ] H-xx 全部标 `NEEDS_USER_CONFIRMATION`
-- [ ] H-xx 来源**不**指向 sample
-
-### SEC-HE（Phase D，Hazardous Events）
-
-- [ ] HE = H-xx × OS-xx 组合枚举
-- [ ] 描述格式：「在 [工况]，[危害行为]，可能导致 [车辆/人员层面后果]」
-- [ ] 不成立组合可省略，但**可见排除依据**
-- [ ] 后果涵盖：车内乘员、其他道路使用者、行人、二次事故
-
-### SEC-SEC（Phase E，S/E/C/ASIL，§6.4.3）
-
-- [ ] 每个 HE 有 S（Table 1）/ E（Table 2）/ C（Table 3）候选值
-- [ ] S 依据含具体伤害类型（AIS / 碰撞速度 / 保护装置）
-- [ ] E 依据引用 T1 工况频率（非失效概率）
-- [ ] C 依据基于典型驾驶员的响应推理
-- [ ] **ASIL 候选 = S × E × C 经 ISO 26262-3 Table 4 查表得出**，逻辑可被独立人员重算
-- [ ] 全部标 `NEEDS_USER_CONFIRMATION`
-- [ ] 无 "ASIL is D" / "ASIL approved" / "已确认" 措辞
-
-### SEC-SG（Phase F，Safety Goals，§6.4.4 / §7.4）
-
-- [ ] **仅对 ASIL > QM 的 HE 生成 SG**
-- [ ] SG 用禁止性表述「item 不应在…条件下…，以防止…」
-- [ ] **不**含「保证」/「确保」/「ensure」/「guarantee」
-- [ ] SG 措辞**独立于**具体技术方案（不写"应通过冗余传感器…"——那是 FSC 工作）
-- [ ] 每条 SG 含 **Safe State** 描述
-- [ ] 每条 SG 含 **FTTI**（§7.4.2.4 强制）
-- [ ] 若无法立即达 safe state，含 **Emergency Operation Interval** 与降级目标
-- [ ] 相似 SG 已聚合，ASIL 取最高（§7.4.4）
-- [ ] SG ↔ HE 追溯关系建立
-
-### SEC-OPEN
-
-- [ ] 汇总全部 `NEEDS_USER_CONFIRMATION` 与 [PENDING]
-
-### Differences from Reference HARA（仅 With-Reference 情景，强制）
-
-- [ ] **Item 范围 Δ**：本项目 item 包含 / 不包含哪些功能
-- [ ] **工况 Δ**：目标市场 / 车型工况频率与 sample 差异
-- [ ] **用户群体 Δ**：驾驶员年龄 / 经验对 C 评级的影响
-- [ ] **法规 Δ**：适用 ISO 26262 版本（2011 vs 2018）、地区法规
-- [ ] **架构 Δ**：新接口、新失效模式
-- [ ] 输出：保留 / 修改 / 新增 / 删除四类条目，逐项说明
-
-### 全文级 Checklist
-
-- [ ] 无 forbidden final claim：`ASIL is approved` / `risk is acceptable` / `the rating is S1` / `HARA 完成`
-- [ ] 未移除任何 `NEEDS_USER_CONFIRMATION`
-- [ ] 草稿与 sample 的具体 H-xx / HE-xxx / S-E-C / ASIL / SG 文字**无高度雷同段落**
-
-### Review 要点（关键 P0）
-
-| 失效 | 级别 |
-|---|---|
-| H-xx 描述底层失效或事故后果（抽象层次错误） | **P0** |
-| HE 后果只考虑本车乘员（缺外部人员） | **P0** |
-| ASIL 候选与 S/E/C 算术不一致 | **P0** |
-| ASIL > QM 的 HE 无 SG | **P0** |
-| ASIL = QM 的 HE 被错误生成 SG | **P2** |
-| SG 含具体技术方案（越界到 FSC） | **P1** |
-| SG 用正面义务表述（"应保证"） | **P1** |
-| FTTI 未声明 | **P0**（§7.4.2.4） |
-| FTTI 与 item 物理特性不匹配 | **P0** |
-| Safe State 描述模糊 | **P1** |
-| 草稿任一行内容与 sample 文字高度雷同 | **P0** |
-| With-Reference 情景缺 "Differences from Reference HARA" 节 | **P0** |
-| With-Reference 该节仅写"同 sample"无具体差异 | **P0** |
-
-### 情景差异
-
-| 维度 | From-Scratch | With-Reference |
-|---|---|---|
-| 主要风险 | 漏失效模式、推断填值 | sample 文字与数据污染草稿 |
-| 写作姿态 | 从空白起草、措辞偏保守 | 独立成稿后再与 sample 对照；表格列定义可借用，**内容必须独立**；Δ-Analysis 节强制 |
-| 评级倾向 | 缺基线时取较严值 | 即使 sample 显示相同 HE 为 ASIL B，本项目也必须独立查 Table 4 |
-
-
-## ISO 26262 HARA 方法论（本步专属执行指引）
-
-### 各章节写作指引与标准表格格式
-
----
-
-#### SEC-ITEM（Item 定义摘要）
-
-**功能清单（每条一行）：**
-```
-| 功能 ID | 功能描述 | 来源 |
-| F-01 | [功能名称]：[详细功能描述] | [file_id · L1/L2/L3 · location，来自 EVD] |
-| F-02 | ... | ... |
-```
-若功能描述不完整或缺失：写 `[PENDING - NEEDS_USER_CONFIRMATION: 功能描述未在 source 中找到]`
-
-**系统边界表：**
-```
-| 类别 | 组件/子系统 | 说明 |
-| 系统内（In scope） | [组件名] | [描述] |
-| 系统外（Out of scope） | [组件名] | [描述；说明由哪个外部系统负责] |
-```
-
-**外部接口表：**
-```
-| IF-ID | 接口名称 | 类型 | 信号方向 | 说明 |
-| IF-01 | [接口名] | CAN/LIN/PWM/电气/机械 | 输入/输出/双向 | [描述] |
-```
-
----
-
-#### SEC-OPS（运行工况表）
-
-```
-| OS-ID | 工况描述 | 道路类型 | 速度范围 | 交通密度 | 天气/能见度 | 驾驶员状态 |
-| OS-01 | 高速公路稳定行驶 | 高速公路 | 80～130 km/h | 中等 | 正常/晴天 | 正常 |
-| OS-02 | 城市复杂交通行驶 | 城市道路 | 0～60 km/h | 高 | 正常 | 正常 |
-| OS-03 | 停车场低速机动 | 停车场 | 0～15 km/h | 低 | 正常 | 正常 |
-| OS-04 | 恶劣天气行驶（雨/雪/雾）| 各类道路 | 0～80 km/h | 中/高 | 雨/雪/雾 | 正常 |
-```
-注：具体工况描述及速度值须来自 T1 source；若 source 不足，在对应格中写 `[PENDING]`
-
----
-
-#### SEC-HAZ（危害识别表）
-
-**分析步骤：**对功能列表（F-01, F-02, ...）中的每个功能，逐一应用 6 种引导词：
-
-| 引导词 | 失效类型 | 分析提问 |
-|---|---|---|
-| No Function | 无功能/完全失效 | 该功能完全不工作时会发生什么？ |
-| More Function | 功能过强 | 该功能输出超出预期（幅度/速度/力度）时会发生什么？ |
-| Less Function | 功能过弱 | 该功能输出低于预期时会发生什么？ |
-| Wrong Direction | 错误方向 | 该功能方向相反（如：制动变加速）时会发生什么？ |
-| Unintended Function | 非预期激活 | 该功能在未被指令的情况下激活时会发生什么？ |
-| Too Early / Too Late | 时序错误 | 该功能激活时机不对时会发生什么？ |
-
-**危害清单表格：**
-```
-| H-ID | 危害描述 | 相关功能 | 失效类型 | 失效来源 | 状态 |
-| H-01 | 意外施加正向驱动力（车辆非预期加速）| F-01 | Unintended Function | item 输出端 | NEEDS_USER_CONFIRMATION |
-| H-02 | 驱动力完全丧失（动力中断）| F-01 | No Function | item 内部 | NEEDS_USER_CONFIRMATION |
-| H-03 | 制动力意外施加（车辆非预期减速/制动）| F-02 | Unintended Function | item 输出端 | NEEDS_USER_CONFIRMATION |
-```
-注：H-ID 描述危害行为本身，不描述"在什么工况下"——工况在 HE 中描述。
-
----
-
-#### SEC-HE（危害事件表）
-
-**分析步骤：**对每个危害 H-xx，与每个工况 OS-xx 组合，判断该组合是否构成危害事件（并非所有组合均需列出，不成立的组合可注明原因省略）。
-
-**危害事件描述格式：**`在[工况描述]（OS-xx）中，[危害行为]（H-xx），可能导致[潜在后果]`
-
-```
-| HE-ID | H-ID | OS-ID | 危害事件描述 | 是否成立 | 说明/状态 |
-| HE-001 | H-01 | OS-01 | 在高速公路行驶中（OS-01），车辆非预期加速（H-01），可能导致追尾或冲出道路 | 是 | NEEDS_USER_CONFIRMATION |
-| HE-002 | H-01 | OS-03 | 在停车场低速机动中（OS-03），车辆非预期加速（H-01），可能撞击障碍物或行人 | 是 | NEEDS_USER_CONFIRMATION |
-| HE-003 | H-02 | OS-01 | 在高速公路行驶中（OS-01），驱动力完全丧失（H-02），可能导致追尾（后方车辆）| 是 | NEEDS_USER_CONFIRMATION |
-| HE-004 | H-01 | OS-04 | 在恶劣天气行驶中（OS-04），车辆非预期加速（H-01），危害加剧 | 是 | NEEDS_USER_CONFIRMATION |
-```
-
----
-
-#### SEC-SEC（S/E/C 评级与 ASIL 候选表）
-
-**S/E/C 定义速查（ISO 26262-3）：**
-
-| 等级 | Severity | Exposure | Controllability |
-|---|---|---|---|
-| 0 | 无伤亡 | 极低（<1%，几乎不可能）| 总是可控 |
-| 1 | 轻/中度伤 | 很低（<1%/操作，罕见）| 简单可控（≥99%驾驶员）|
-| 2 | 重伤，存活可能 | 低（偶尔发生，驾驶条件特定）| 通常可控（≥90%驾驶员）|
-| 3 | 危及生命/死亡 | 中等（城市日常驾驶中可能）| 难控（<90%驾驶员）|
-| 4 | — | 高（几乎所有驾驶时间均存在）| — |
-
-**ASIL 候选查表（ISO 26262-3 Table 4 简化）：**
-
-| S/E | C1 | C2 | C3 |
-|---|---|---|---|
-| S1+E1 | QM | QM | QM |
-| S1+E2 | QM | QM | QM |
-| S1+E3 | QM | QM | A |
-| S1+E4 | QM | A | B |
-| S2+E1 | QM | QM | QM |
-| S2+E2 | QM | QM | A |
-| S2+E3 | QM | A | B |
-| S2+E4 | A | B | C |
-| S3+E1 | QM | QM | A |
-| S3+E2 | QM | A | B |
-| S3+E3 | A | B | C |
-| S3+E4 | B | C | D |
-
-**评级表格：**
-```
-| HE-ID | 危害事件描述（简）| S候选 | S依据摘要 | E候选 | E依据摘要 | C候选 | C依据摘要 | ASIL候选 | 状态 |
-| HE-001 | 高速公路非预期加速 | S3 | 高速追尾可能致命 | E4 | 高速行驶占大量驾驶时间 | C3 | 非预期加速响应时间极短，难以控制 | D | NEEDS_USER_CONFIRMATION |
-| HE-002 | 停车场非预期加速 | S2 | 低速撞击可能重伤（行人/老人）| E2 | 停车场驾驶场景为偶发 | C2 | 低速下驾驶员有一定反应时间 | A | NEEDS_USER_CONFIRMATION |
-```
-所有评级值均为**候选值**，必须加注 `NEEDS_USER_CONFIRMATION`，不得写成最终确认值。
-
----
-
-#### SEC-SG（安全目标候选表）
-
-**适用范围：** 仅为 ASIL 候选 > QM（即 ASIL A/B/C/D）的危害事件生成安全目标。
-
-**安全目标措辞规则：**
-- 采用**禁止性表述**：`[item名称]不应在[工况/运行条件]下[危害行为]，以防止[后果]`
-- 不使用"应该"或"保证"等正面义务表述
-- 不断言 ASIL 已确认
-
-**安全目标表格：**
-```
-| SG-ID | 安全目标描述 | ASIL候选 | 相关HE-ID | 来自H-ID | 状态 |
-| SG-01 | 在正常行驶工况下，[item名称]不应意外施加驱动力，以防止车辆失控、追尾或碰撞造成人员伤亡 | ASIL D | HE-001, HE-004 | H-01 | NEEDS_USER_CONFIRMATION |
-| SG-02 | 在停车场低速机动工况下，[item名称]不应意外施加驱动力，以防止撞击行人或障碍物造成人员伤害 | ASIL A | HE-002 | H-01 | NEEDS_USER_CONFIRMATION |
-```
-
----
-
-#### 通用保守写作原则
-
-1. 所有 HARA critical claim（H-xx 存在性、HE 成立性、S/E/C 值、ASIL 等级、SG 措辞）在缺乏 HITL 确认时，统一标注 `[NEEDS_USER_CONFIRMATION]`
-2. 缺乏 T1 source 支撑的内容，写 `[依据现有材料无法确认，待工程师确认]`，不推断填值
-3. 严禁使用：`ASIL is D`、`ASIL D（已确认）`、`risk is acceptable`、`safety goal approved`、`the rating is S3` 等最终批准措辞
-4. 表格中无法确定的值用 `[PENDING]` 填充，并在对应 SEC-OPEN 中汇总
-
-## A1 审核任务（HARA）
-
-### 候选方案（示例）
-- 方案A 按检查维度逐项核对。
-- 方案B 按章节逐节核对。
-- 方案C 先扫高风险约束（HARA critical claim 支撑与 forbidden final claims）再补其余。
-
-### 典型审核子任务
-1. 核对草稿是否超出证据范围。
-2. 核对 HARA critical claim 无 T0/T1 时是否保持 `NEEDS_USER_CONFIRMATION` / pending。
-3. 核对是否出现 `final ASIL is approved`/`risk is acceptable`/`the rating is S/E/C` 等批准或评级断言。
-4. 核对 source tier 与 claim 状态是否保留、sample/reference 是否未被当事实。
-
-## A2 修订任务（HARA）
-
-### 候选方案（示例）
-- 方案A 一任务一章节顺序成稿。
-- 方案B 先成稿证据充分章节再处理待证章节。
-- 方案C 按写作模式分组成稿。
-
-### 典型修订子任务
-1. 遍历 section_tasks 逐任务并匹配 citation_plan 章节。
-2. 校验任务证据只用 allowed evidence ids。
-3. 逐节渲染保守草稿（HARA critical claim 章节保守措辞）。
-4. 汇编 full_draft.md 并保留 tier/claim/HITL 状态。
-
-## state.json 示例（HARA）
-
-```json
-{
-  "step": "conservative-draft",
-  "review_state": {
-    "chosen_plan": "<选定审核方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rv-1", "desc": "核对草稿未超出证据范围", "status": "done"},
-      {"id": "rv-2", "desc": "核对 HARA critical claim 无 T0/T1 时保持 pending", "status": "running"},
-      {"id": "rv-3", "desc": "核对未出现批准/评级断言、保留 tier/claim 状态", "status": "not_run"}
-    ]
-  },
-  "revision_state": {
-    "chosen_plan": "<选定修订方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rt-1", "desc": "遍历 section_tasks 并匹配 citation_plan 章节", "status": "done"},
-      {"id": "rt-2", "desc": "校验任务证据只用 allowed evidence ids", "status": "running"},
-      {"id": "rt-3", "desc": "逐节渲染保守草稿", "status": "not_run"},
-      {"id": "rt-4", "desc": "汇编 full_draft.md 并保留 tier/claim/HITL 状态", "status": "not_run"}
-    ]
-  }
-}
-```
-
-## B 审核检查项（HARA）
-
-subagent 逐项核对：草稿是否超出证据范围；HARA critical claim（hazard/hazardous event/S-E-C/ASIL/safety goal/final acceptability）无 T0/T1 时是否保持 `NEEDS_USER_CONFIRMATION` / pending；是否出现 `final ASIL is approved`/`risk is acceptable`/`the rating is S1/S2/S3/E1/E2/E3/C1/C2/C3` 等 forbidden final claims；source tier 与 claim 状态是否保留；sample/reference 是否未被当作事实证据。
+**A1**：核对草稿未超证据范围、critical claims pending、forbidden final claims absent、tier/claim/HITL status preserved。
+**A2**：按 section_tasks 和 allowed_evidence 局部修订；证据不足只写 pending/open，不补事实。
+**B**：Step 10/11 应能重算 S/E/C→ASIL、追溯 EVD、确认 sample/reference 未作事实。
