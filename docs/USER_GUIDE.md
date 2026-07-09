@@ -232,14 +232,19 @@ PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin write-run --task
 runs/<run_id>/
 ```
 
+每个 run 会维护 context-boundary metadata，例如 `input_refs.json`。它记录输入文件的路径、hash、size、role 和 read policy；不会复制输入正文，也不会把 `sample` 当作事实来源。
+
 ## Resume interrupted runs and optional stage review gates
 
 - Interrupted resumable runs can continue with `resume-run --run runs/<run_id>`.
 - Stage review packages can be prepared and validated with `prepare-stage-review` and `validate-stage-review`.
 - `review_units.json` supports unit-level review coverage for structured issues.
+- Stage review issue summaries may be represented by `stage_reviews/<stage>/issues_index.json`; detailed issue files are read by issue reference/path only when needed.
 - Users can record `accepted`, `skipped`, `needs_revision`, or `blocked` stage review decisions.
 - `--require-stage-review-gates` is opt-in for stricter workflows; the default workflow remains non-gated.
 - Gate decisions are `stage_review_gate_only` and are not professional approval.
+
+Context budget warnings are diagnostics about runtime prompt size. They are not professional approval, document-quality approval, or a claim about real provider prompt-cache hit rate.
 
 Detailed operational commands and recovery cases are covered in [Runbook](RUNBOOK.md).
 

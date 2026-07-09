@@ -30,6 +30,11 @@ jobs:
         run: |
           python -m pytest -q -p no:cacheprovider
 
+      - name: Check context budgets
+        run: |
+          python -m ai_writing_plugin check-context-budget --root . --task-type hara --step step-input-materials --json
+          python -m ai_writing_plugin check-context-budget --root . --task-type hara --step step-evidence-map --json
+
       - name: Validate plugin manifests
         run: |
           python3 -m json.tool .claude-plugin/plugin.json >/dev/null

@@ -11,11 +11,16 @@
 - Review unit coverage validation with `review_units.json`, `reviewed_unit_ids`, `unchecked_unit_ids`, and `issues[].unit_id`.
 - User stage review decisions through `record-stage-review-decision` and `check-stage-review-gate`.
 - Opt-in `--require-stage-review-gates` enforcement for stricter stage-by-stage workflows.
+- Deterministic context telemetry and context budget guard for runtime prompt/skill surfaces.
+- Stable `input_refs.json` path/hash manifest for input context boundaries.
+- Compressed runtime prompt/skill surface to reduce active context size.
+- Stage review issue index/detail split with hash-bound stage gate decisions.
 
 ### Notes
 
 - Stage Review Gate is an auxiliary review mechanism. It does not create professional approval, compliance approval, or safety approval.
 - The workflow does not automatically invoke Claude Code, does not automatically modify professional artifacts, and does not implement auto-fix or S4 auto apply.
+- Deterministic tests report API prompt-cache ratio as `not_measured`; they do not prove a real Claude prompt-cache hit rate.
 
 ## [0.1.0] - 2026-06-08
 

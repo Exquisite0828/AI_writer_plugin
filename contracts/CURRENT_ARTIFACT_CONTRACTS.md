@@ -20,6 +20,7 @@ runs/<run_id>/
   manifest.json
   run_state.json
   task_brief.json
+  input_refs.json
   inputs/input_inventory.json
   knowledge/source_index.json
   knowledge/provenance_index.json
@@ -54,7 +55,22 @@ runs/<run_id>/
 
 `run_state.json` 是断点续写使用的 runtime control artifact。它不是专业内容 artifact，不表示专业批准，不是 eval 结果，不是 promotion approval，也不会写入 `manifest.artifacts`。维护 artifact contract 时应把它作为 orchestration metadata 单独处理，而不是放宽专业内容 artifact 的阶段边界。
 
-`stage_reviews/` 是可选 runtime assistance artifact directory，用于 Stage Review Gate S1/S1R/S2A。它不是 professional artifact，不是 fact source，不表示 professional approval，不改变 `run_state.json` lifecycle，也不会写入 `manifest.artifacts`。S1/S1R 只生成 Claude Code 可读取的 review package，并校验人工/命令层写出的 `issues.json`；S1R 的 `coverage_complete` 只表示 required review units 已被声明覆盖，不表示专业批准。S2A 只记录用户对 stage review gate 的操作决定并检查 gate 是否可继续，`accepted` / `skipped` does not indicate professional approval。S1/S1R/S2A 不调用 Claude Code、不修改原 stage artifacts、不应用 patch、不阻塞下一 stage。
+`input_refs.json` 是 context-boundary metadata。它记录 task file 和输入材料的 path、path kind、sha256、size、role、read policy、fact source policy 和 warnings；禁止包含 full input body、long excerpts、raw source material body、sample-as-fact content 或其它 body-like fields。该文件 deterministic and timestamp-free，缺失文件、非法路径、hash mismatch 和 sample/example fact-source misuse 都 fail closed。StepContextPackage 只能通过 path/hash ref 引用它，不能把输入正文 replay 到主上下文。
+
+`stage_reviews/` 是可选 runtime assistance artifact directory，用于 Stage Review Gate S1/S1R/S2A 和 context-boundary review metadata。它不是 professional artifact，不是 fact source，不表示 professional approval，不改变 `run_state.json` lifecycle，也不会写入 `manifest.artifacts`。S1/S1R 只生成 Claude Code 可读取的 review package，并校验人工/命令层写出的 `issues.json`；S1R 的 `coverage_complete` 只表示 required review units 已被声明覆盖，不表示专业批准。S2A 只记录用户对 stage review gate 的操作决定并检查 gate 是否可继续，`accepted` / `skipped` does not indicate professional approval。S1/S1R/S2A 不调用 Claude Code、不修改原 stage artifacts、不应用 patch、不阻塞下一 stage。
+
+Context-boundary review metadata uses a short index/detail split:
+
+```text
+stage_reviews/<stage>/issues_index.json
+stage_reviews/<stage>/issues/<issue_id>.json
+```
+
+`issues_index.json` is the default user gate / main-context issue surface. It may contain only short fields: `issue_id`, `severity`, `category`, `short_title`, counts, severity counts, and `issue_ref` path/hash for each detail file. It must not contain full issue body, long detail, large excerpt, markdown body, code fence, full evidence body, artifact body, or review_units body. ReviewContextPackage may reference `issues_index.json` by path/hash; it must not include `issues.json` or `issues/<issue_id>.json` by default.
+
+`issues/<issue_id>.json` is per-issue detail metadata read only on demand. It may contain bounded title, summary, recommendation, rationale, location refs, and artifact refs. It must still reference artifacts by path/hash or locator; it must not inline complete artifact bodies.
+
+When `issues_index.json` exists, a stage gate decision bound through StageGateResult must include `issues_index_ref.path = stage_reviews/<stage>/issues_index.json` and a matching sha256. Missing binding, wrong stage path, hash mismatch, invalid `decision_scope`, and `professional_approval=true` fail closed. Historical no-index decisions can remain compatible only when no `issues_index.json` exists.
 
 S2B adds opt-in stage review gate enforcement through `--require-stage-review-gates`. It introduces no new artifact schema. It only reads existing S2A artifacts:
 

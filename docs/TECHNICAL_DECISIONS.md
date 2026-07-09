@@ -161,6 +161,28 @@ artifact 和 task models 使用 Pydantic v2。
 
 `reference` 只能支持 methodology/background。它不能证明 project-specific facts、professional conclusions、test results、HARA ratings、architecture decisions 或 release readiness。
 
+## Context boundary and cache-pressure closure
+
+The repository uses deterministic context guards to reduce cache churn risk and keep runtime context below hard limits:
+
+1. static telemetry and budget checks measure `commands/**/*.md` and `skills/**/*.md`;
+2. `runs/<run_id>/input_refs.json` records inputs as path/hash metadata, without input body replay;
+3. runtime prompt and Skill surfaces are kept short and operational;
+4. compact StepContextPackage, ReviewContextPackage, StepResult, ReviewResult, StageGateResult, and ProgressLedger artifacts pass paths and hashes rather than artifact bodies;
+5. `stage_reviews/<stage>/issues_index.json` is the default review issue surface, while `issues/<issue_id>.json` details are read only on demand;
+6. stage gate decisions bind to `issues_index_ref` when an index exists.
+
+The deterministic harness does not call Claude Code or any LLM API. Therefore API-level prompt-cache read ratio remains `not_measured`; the project can claim structural cache-risk reduction, not a proven provider cache-hit percentage.
+
+Manual context guard commands:
+
+```bash
+python -m ai_writing_plugin check-context-budget --root . --task-type hara --step step-input-materials --json
+python -m ai_writing_plugin check-context-budget --root . --task-type hara --step step-evidence-map --json
+```
+
+No professional approval, S2B/S3/S4 policy automation, safe auto-fix, or target-drift cleanup is implied by these guards.
+
 ## Candidate learning decision
 
 candidate learning artifacts 可以生成，但默认保持 proposed 和 inactive。

@@ -189,6 +189,8 @@ runs/<run_id>/stage_reviews/<stage>/validation_report.json
 
 `record-stage-review-decision` 只写 `stage_reviews/<stage>/decision.json`。该文件固定 `decision_scope=stage_review_gate_only` 和 `professional_approval=false`，不是 professional artifact，不写入 `manifest.artifacts`，也不会修改原 stage artifacts。
 
+如果该 stage 存在 `stage_reviews/<stage>/issues_index.json`，decision 必须绑定 `issues_index_ref` 的 path/hash。缺少绑定、stage path 不匹配、hash mismatch 或 `professional_approval=true` 都会 fail closed。重新生成或修改 issue index 后，需要基于新的 index 重新记录 decision。
+
 ## `check-stage-review-gate` 提示 gate failed
 
 常见原因：
@@ -200,6 +202,12 @@ runs/<run_id>/stage_reviews/<stage>/validation_report.json
 - 记录 decision 后，`validation_report.json` 或 `issues.json` 被修改，导致 `validation_report_sha256` 或 `issues_sha256` mismatch。
 
 通过 `check-stage-review-gate` 只表示 S2A gate check passed；不表示专业批准。若用户要继续使用修改后的 `issues.json` 或 validation report，应重新运行 `validate-stage-review`，再重新记录 `record-stage-review-decision`。
+
+## context budget 提示 warning
+
+`check-context-budget` 的 preferred budget warning 是维护者诊断信号，不是文档质量失败，也不是专业批准状态。只有 hard budget failure 才表示 runtime context boundary 需要修复。
+
+确定性检查不会调用 Claude Code 或任何 LLM API，因此 API prompt-cache read ratio 会报告为 `not_measured`。这不是测试失败；它只表示本地 harness 不能证明真实 provider cache hit rate。
 
 ## `--require-stage-review-gates` 在某个 stage 前失败
 
