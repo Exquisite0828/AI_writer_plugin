@@ -16,11 +16,10 @@ ALLOWED_ROLES = {
     "task",
     "source",
     "template",
-    "sample",
-    "profile",
-    "rubric",
-    "instruction",
+    "checklist",
     "reference",
+    "sample",
+    "expected_output_shape",
     "other",
 }
 ALLOWED_READ_POLICIES = {
@@ -199,7 +198,10 @@ def build_material_ref(
     validate_role(role)
 
     manifest_path, path_kind = normalize_manifest_path(material_path, repo_root)
-    sample_like = is_sample_like_path(manifest_path) or role == "sample"
+    sample_like = is_sample_like_path(manifest_path) or role in {
+        "sample",
+        "expected_output_shape",
+    }
     read_policy = material_read_policy(item.get("read_policy"), role, sample_like)
     requested_fact_source = item.get("fact_source_allowed")
     fact_source_allowed = material_fact_source_allowed(
@@ -330,6 +332,10 @@ def validate_materials(value: Any, repo_root: Path | None) -> None:
             )
         if item["role"] == "sample" and item["fact_source_allowed"] is True:
             raise InputRefsError("sample materials cannot be fact_source_allowed=true")
+        if item["role"] != "source" and item["fact_source_allowed"] is True:
+            raise InputRefsError(
+                "only source materials can be fact_source_allowed=true"
+            )
         validate_file_ref(item, repo_root, f"input_materials.{material_id}")
 
 
@@ -428,7 +434,7 @@ def material_read_policy(raw_value: Any, role: str, sample_like: bool) -> str:
         validate_read_policy(read_policy)
     elif role == "source" and not sample_like:
         read_policy = "allowed"
-    elif role in {"template", "profile", "rubric", "instruction", "reference"}:
+    elif role in {"template", "checklist", "reference", "expected_output_shape"}:
         read_policy = "summary_only"
     else:
         read_policy = "summary_only"

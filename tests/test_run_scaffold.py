@@ -141,6 +141,27 @@ def test_input_refs_generated_and_validated_during_init(tmp_path):
     assert input_refs["input_materials"][0]["role"] == "source"
 
 
+def test_committed_hara_minimal_fixture_init_run_succeeds(tmp_path):
+    repo_root = Path(__file__).resolve().parents[1]
+    task_path = repo_root / "examples" / "hara_minimal_fixture" / "task.yaml"
+    output_root = tmp_path / "runs"
+
+    result = run_init(task_path, output_root, run_id="hara-minimal")
+
+    assert result.returncode == 0, result.stderr
+    input_refs = json.loads(
+        (output_root / "hara-minimal" / "input_refs.json").read_text()
+    )
+    materials_by_role = {
+        material["role"]: material for material in input_refs["input_materials"]
+    }
+    assert materials_by_role["checklist"]["read_policy"] == "summary_only"
+    assert materials_by_role["checklist"]["fact_source_allowed"] is False
+    assert materials_by_role["expected_output_shape"]["read_policy"] == "summary_only"
+    assert materials_by_role["expected_output_shape"]["fact_source_allowed"] is False
+    assert "Item Definition" not in json.dumps(input_refs, ensure_ascii=False)
+
+
 def test_invalid_task_fails_without_run_dir(tmp_path):
     task_path = tmp_path / "task.yaml"
     output_root = tmp_path / "runs"

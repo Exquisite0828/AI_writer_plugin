@@ -192,6 +192,84 @@ def test_sample_and_expected_output_paths_cannot_be_fact_sources(tmp_path):
         validate_input_refs(payload, repo_root=repo_root)
 
 
+def test_checklist_role_is_accepted_with_safe_policy(tmp_path):
+    repo_root, task_path, _ = create_repo_task(tmp_path)
+    checklist_path = task_path.parent / "inputs" / "checklist.md"
+    write(checklist_path, "review criteria body that must not be copied")
+
+    payload = build_input_refs(
+        run_id="demo-run",
+        task_path=task_path,
+        task=task_config(
+            inputs=[
+                {
+                    "path": "inputs/checklist.md",
+                    "role": "checklist",
+                    "fact_source_allowed": True,
+                }
+            ]
+        ),
+        repo_root=repo_root,
+    )
+
+    material = payload["input_materials"][0]
+    assert material["role"] == "checklist"
+    assert material["read_policy"] == "summary_only"
+    assert material["fact_source_allowed"] is False
+    assert "review criteria body" not in json.dumps(payload, ensure_ascii=False)
+    assert_no_body_keys(payload)
+    assert validate_input_refs(payload, repo_root=repo_root) == payload
+
+
+def test_expected_output_shape_role_is_accepted_with_sample_safe_policy(tmp_path):
+    repo_root, task_path, _ = create_repo_task(tmp_path)
+    expected_path = task_path.parent / "inputs" / "expected_output_shape.md"
+    write(expected_path, "expected output body that must not be copied")
+
+    payload = build_input_refs(
+        run_id="demo-run",
+        task_path=task_path,
+        task=task_config(
+            inputs=[
+                {
+                    "path": "inputs/expected_output_shape.md",
+                    "role": "expected_output_shape",
+                    "read_policy": "allowed",
+                    "fact_source_allowed": True,
+                }
+            ]
+        ),
+        repo_root=repo_root,
+    )
+
+    material = payload["input_materials"][0]
+    assert material["role"] == "expected_output_shape"
+    assert material["read_policy"] == "summary_only"
+    assert material["fact_source_allowed"] is False
+    assert "expected output body" not in json.dumps(payload, ensure_ascii=False)
+    assert_no_body_keys(payload)
+    assert validate_input_refs(payload, repo_root=repo_root) == payload
+
+
+def test_unknown_role_still_fails_closed(tmp_path):
+    repo_root, task_path, _ = create_repo_task(tmp_path)
+
+    with pytest.raises(InputRefsError, match="role is not allowed"):
+        build_input_refs(
+            run_id="demo-run",
+            task_path=task_path,
+            task=task_config(
+                inputs=[
+                    {
+                        "path": "inputs/source.md",
+                        "role": "unknown_role",
+                    }
+                ]
+            ),
+            repo_root=repo_root,
+        )
+
+
 def test_examples_are_not_bulk_read_when_no_inputs_declared(tmp_path):
     repo_root = tmp_path / "repo"
     task_path = repo_root / "task.yaml"
