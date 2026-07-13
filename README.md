@@ -1,98 +1,103 @@
 # AI 专业文档写作 Claude Code 插件
 
-面向 Claude Code 的 AI 专业文档写作插件：用一套确定性的 Python workflow，把用户材料整理成可追踪、可审查、关注证据边界的专业文档交付包。
+这是一个面向 Claude Code 的证据边界专业文档写作技术预览。当前仓库由两部分组成：
 
-## 适合什么场景
+- Claude Code `/write`、薄编排器和step/review Skills定义agent-worker写作协议；
+- Python提供Phase 0 run scaffold以及context、dispatch、progress、result、stage-review issue和stage-gate元数据工具。
 
-- 你有 `source`、`template`、`checklist`、`sample` 或 `reference` 等材料；
-- 你希望生成 professional document draft、review package 和 traceable artifacts；
-- 你需要区分项目事实、结构模板、示例风格、参考资料和人工确认；
-- 你希望 unsupported critical claims 保持 pending，而不是被自动写成结论。
+当前Python包不是完整的一键写作引擎，不提供`write-run`或`resume-run`。
 
-## Quickstart
+## 当前能做什么
 
-要求：
+### Claude Code运行时协议
 
-- Python 3.11+
-- Claude Code CLI
+在支持Task/Agent worker的Claude Code环境中，插件入口可以按7个stage、13个step编排专业文档工作：
 
-在仓库根目录准备 Python 环境：
+```text
+input materials
+-> inventory and source index
+-> outline and evidence planning
+-> conservative draft
+-> review and verification
+-> revision and review-ready delivery
+-> summary and proposed candidate update
+```
+
+专业artifact由独立worker按当前Skill生成，不是由Python CLI生成。每个stage需要独立review和明确的用户gate；缺少worker能力时必须停止，不能在主上下文静默代执行。
+
+### Python已实现能力
+
+Python当前负责：
+
+- `init-run`；
+- `input_refs.json`路径、role和hash边界；
+- context telemetry与budget diagnostics；
+- StepContextPackage、StepWorkerDispatch和ProgressLedger；
+- StepResult、ReviewResult、ReviewContextPackage和StageGateResult的构建或校验；
+- 严格stage-review `issues.json` 到 `issues_index.json`/逐issue详情的事务化构建与校验。
+
+查看准确命令：
+
+```bash
+python -m ai_writing_plugin --help
+```
+
+## 安装
+
+要求：Python 3.11+、Git和Claude Code CLI。
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -U pip
 python -m pip install -e ".[dev]"
-```
-
-校验插件 manifest：
-
-```bash
 claude plugin validate .
 ```
 
-`validate` 只检查 manifest 合法；要在当前 Claude Code 会话中使用本地插件，请从仓库根目录启动：
+从仓库根目录加载本地插件：
 
 ```bash
 claude --plugin-dir .
 ```
 
-如果 `validate` 通过但命令不显示，见 [Troubleshooting](docs/TROUBLESHOOTING.md)。
+也可以在Claude Code中把本地目录加入marketplace后安装；具体步骤见[Quickstart](docs/QUICKSTART.md)。
 
+## 使用Claude Code入口
 
-
-进入claudecode界面
-
-# 1. 添加本地目录为 marketplace
-
-/plugin marketplace add D:\Github\Ancoder\Ancoder_Writer_Agent
-
-# 2. 安装插件
-
-/plugin install ai-writing-plugin@ancoder-writer
-
-# 3. 重载插件使其生效
-
-/reload-plugins
-
-
-
-用自己的 `task.yaml` 启动 workflow：
+使用自己的task：
 
 ```text
 /ai-writing-plugin:write "Run the writing workflow with path/to/task.yaml"
 ```
 
-如果只是第一次体验，可以先运行一个 demo：
+首次了解runtime协议时，可以显式选择一个fixture，例如：
 
 ```text
 /ai-writing-plugin:write "Run the writing workflow with examples/technical_solution_zh_demo_fixture/task.yaml"
 ```
 
-命令会输出类似下面的运行目录：
+Fixture是opt-in资产。运行时不会默认批量读取`examples/`。
 
-```text
-runs/<run_id>/
+## 使用Python Phase 0入口
+
+Python当前可以确定性地创建run起点：
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin init-run \
+  --task examples/generic_document_demo_fixture/task.yaml
 ```
 
-`runs/` 是本地 runtime output，仓库 `.gitignore` 已忽略它，不要提交。
-
-优先查看：
+输出仅包括：
 
 ```text
-runs/<run_id>/final/final_report.md
-runs/<run_id>/final/delivery_summary.md
+runs/<run_id>/input_refs.json
+runs/<run_id>/manifest.json
+runs/<run_id>/task_brief.json
 ```
 
-输出阅读顺序和 pending 状态解释见 [Reading Outputs](docs/READING_OUTPUTS.md)。
+这条命令不会生成inventory、source index、draft、review、verification或final report。
 
-完整第一次运行步骤见 [Quickstart](docs/QUICKSTART.md)。
-
-## 准备自己的输入
-
-插件的入口是 `task.yaml`。`task_type` 决定使用哪种文档模式，`inputs` 声明材料路径和角色。
-
-通用专业文档可以先从 `generic_document` 开始：
+## 准备task.yaml
 
 ```yaml
 task_type: generic_document
@@ -115,127 +120,70 @@ inputs:
     role: reference
 ```
 
-路径相对于 `task.yaml` 所在目录解析。你可以把 `path/to/task.yaml` 换成自己的文件路径；不需要使用 demo fixture。
+路径相对于task文件所在目录解析。当前Python使用受限YAML子集解析器；复杂YAML结构会显式失败。
 
-## 使用方式
+## 输入角色
 
-| 使用方式                           | 适合场景                                                              | 示例                                                              |
-| ---------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `generic_document` 通用模式      | 大多数有 `source` / `template` / `checklist` 的专业文档         | `examples/generic_document_demo_fixture/task.yaml`              |
-| external `document_profile.yaml` | 团队或项目内反复使用的自定义文档                                      | `examples/custom_technical_note_profile_demo_fixture/task.yaml` |
-| official built-in profiles         | 高价值、高风险、高频场景，带内置规则、fixture、测试和 Skill guideline | `hara` / `technical_solution` / `test_report` / `fsr`     |
+| Role | 用途 | 能否证明项目事实 |
+| --- | --- | --- |
+| `source` | 项目事实、要求、结果和约束 | 相关且正确解释时可以 |
+| `template` | 结构和格式 | 不可以 |
+| `checklist` | 审查覆盖 | 不可以 |
+| `reference` | 方法、背景和术语 | 不可以证明项目事实 |
+| `sample` | 风格、形状和颗粒度 | 不可以 |
 
-当前 official built-in profiles：
-
-| `task_type`          | 用途                                        |
-| ---------------------- | ------------------------------------------- |
-| `hara`               | HARA hazard analysis report 辅助写作        |
-| `technical_solution` | 技术方案、架构方案或实现方案写作            |
-| `test_report`        | 测试报告包写作                              |
-| `fsr`                | Functional Safety Requirements package 写作 |
-
-`generic_document` 是通用模式，不是 official built-in profile。
-`custom_technical_note` 是 external profile demo，不是 official built-in profile。
-项目未实现 TSC / Technical Safety Concept；当前没有 official TSC type、profile、Skill、fixture 或测试目标。
-
-## 运行示例
-
-这些 demo 用于体验不同场景，不代表插件只能写这些文档。
-
-当前 tracked Python scaffold 已实现 Phase 0 run 起点创建：
-
-```bash
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin init-run --task examples/generic_document_demo_fixture/task.yaml
-```
-
-完整 Phase 0-8 `write-run` 链路仍以后续 deterministic engine phase 实现为准；以下命令保留为目标 workflow 示例和 contract 对齐参考。
-
-```bash
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin write-run --task examples/generic_document_demo_fixture/task.yaml
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin write-run --task examples/custom_technical_note_profile_demo_fixture/task.yaml
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin write-run --task examples/hara_demo_fixture/task.yaml
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin write-run --task examples/technical_solution_zh_demo_fixture/task.yaml
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin write-run --task examples/technical_solution_demo_fixture/task.yaml
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin write-run --task examples/test_report_demo_fixture/task.yaml
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin write-run --task examples/fsr_demo_fixture/task.yaml
-```
-
-每个 demo 展示什么、推荐运行顺序、预期状态和边界检查，见 [Examples](docs/EXAMPLES.md)。
-
-## Claude Code 插件入口
-
-Plugin manifest：
+核心规则：
 
 ```text
-.claude-plugin/plugin.json
+fact source != sample document
 ```
 
-Command 文档：
+## 文档类型资产状态
 
-```text
-commands/write.md
-```
+仓库保留四个official L3产品/domain标签：
 
-在 Claude Code 加载本地插件后，可以使用：
+- `hara`
+- `technical_solution`
+- `test_report`
+- `fsr`
 
-```text
-/ai-writing-plugin:write "Run the writing workflow with path/to/task.yaml"
-```
+当前树包含相应Skills和fixtures，但没有Python document-type registry、type-specific content rules或端到端内容CLI测试。因此这里的official L3表示维护的产品/domain资产等级，不表示Python已经执行完整写作流程。
 
-command layer 保持通用；具体文档行为由 `task_type`、内置 `DocumentTypeRules` 和可选 external profile 决定。
+其他资产：
 
-## 核心证据边界
+- `generic_document`：generic Skill/profile/task资产；当前Python不加载profile或执行generic内容流程。
+- `custom_technical_note`：external profile demo；当前没有Python profile loader。
+- `TechnicalSafetyConcept`：非official的skill-layer prototype，已提交Skill、step overlays和fixture；没有Python rules、registry、端到端内容CLI或专门engine test。Official L3 TSC及HSC/SSC均deferred。
 
-- `source` 可以作为项目事实来源；
-- `sample` is not fact source；它只能作为结构、风格和表格形态参考；
-- `reference` is not project-specific fact support；它可以支持方法、背景或术语，但不能证明项目事实；
-- critical claim 必须有 `source` 或 HITL，否则保持 pending / `NEEDS_USER_CONFIRMATION`；
-- `final_report.md` 是 review-ready artifact，`final report` 不是专业批准文件；
-- eval、promotion report 和 candidate updates remain proposed/inactive；它们都不是专业批准；
-- candidate update / candidate patch 默认 proposed / inactive，不会自动覆盖 stable profile 或 Skill。
+## 输出与审批边界
 
-## 输出目录
+Agent worker成功运行时，可能按step生成`knowledge/`、`plans/`、`draft/`、`review/`、`verify/`、`final/`、`trace/`和`learning/`下的artifact。它们属于worker协议的预期输出，不是`init-run`的输出保证。
 
-运行输出写入：
-
-```text
-runs/<run_id>/
-```
-
-常用输出：
-
-```text
-runs/<run_id>/final/final_report.md
-runs/<run_id>/final/delivery_summary.md
-runs/<run_id>/review/review_report.json
-runs/<run_id>/verify/verify_report.json
-runs/<run_id>/learning/candidate_profile_update.yaml
-```
-
-先读哪些文件、哪些 artifact 适合审查或排查，见 [Reading Outputs](docs/READING_OUTPUTS.md)。
-
-完整 artifact contract 见 [Artifact Contracts](contracts/CURRENT_ARTIFACT_CONTRACTS.md)。
+- unsupported critical claims保持pending或`NEEDS_USER_CONFIRMATION`；
+- hash匹配只证明文件身份，不证明内容正确；
+- StepResult、ReviewResult和StageGateResult都不是专业批准；
+- `final_report.md`只能是review-ready交付物；
+- candidate material保持proposal，当前没有自动激活命令。
 
 ## 开发检查
 
-这些命令用于维护者检查，不是普通用户每次写文档都必须运行：
-
 ```bash
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_generalization_phase6_product_docs.py
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_skill_guidelines.py
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider
+.venv/bin/python -m ai_writing_plugin --help
 claude plugin validate .
+git status --short
 ```
+
+`runs/`是ignored runtime output，不应提交。
 
 ## 文档导航
 
-- [Documentation](docs/README.md)
 - [Quickstart](docs/QUICKSTART.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
-- [Reading Outputs](docs/READING_OUTPUTS.md)
 - [User Guide](docs/USER_GUIDE.md)
 - [Examples](docs/EXAMPLES.md)
-- [Document Profiles](docs/DOCUMENT_PROFILES.md)
+- [Reading Outputs](docs/READING_OUTPUTS.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Runbook](docs/RUNBOOK.md)
-- [Artifact Contracts](contracts/CURRENT_ARTIFACT_CONTRACTS.md)
-- [Document Type Development Guide](docs/DOCUMENT_TYPE_DEVELOPMENT_GUIDE.md)
+- [Current Artifact Contracts](contracts/CURRENT_ARTIFACT_CONTRACTS.md)
+- [Current Architecture](docs/maintainers/ARCHITECTURE.md)
+- [Current Project Context](docs/maintainers/PROJECT_CONTEXT.md)

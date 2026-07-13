@@ -1,5 +1,7 @@
 # HARA MVP Baseline
 
+> Historical imported snapshot. This file internally records its origin state as commit `d7628da`, but that commit object is not present in the current repository's reachable history. The commands, modules, tests, and full Phase 0-8 engine described below are not available in the current branch. Do not use this file as a current runbook or implementation instruction.
+
 ## 1. Purpose
 
 This baseline freezes the completed HARA MVP behavior before Generalization Phase 1 begins. Future generalization work must use this record to detect regressions in the existing HARA technical-preview workflow.

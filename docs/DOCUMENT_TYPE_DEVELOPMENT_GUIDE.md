@@ -1,117 +1,92 @@
 # Document Type Development Guide
 
-这份指南说明如何在未来新增 document type，同时不复制 pipeline、不削弱 evidence / HITL 边界。
+Status: completion criteria for a future active phase; not evidence that a current Python document-type engine exists.
 
-当前 official L3 built-in document types 是 `hara`、`technical_solution`、`test_report`、`fsr`。
-`generic_document` 是 L1 generic mode；validated external `document_profile.yaml` 是 L2 external profile mechanism。
+## Current baseline
 
-`TechnicalSafetyConcept`（TSC）已作为 document-type skill 层类型接入（PascalCase 路径 + 逐步子 skill + demo fixture，task_type: TechnicalSafetyConcept）。其下游 HSC / SSC（硬件/软件安全概念）仍 deferred；不要在没有单独 active phase/spec 的情况下顺手实现 HSC/SSC。
+The repository has document-type Skills, overlays, specs, profiles, and fixtures. Current Python code has no document-type registry, executable type rules, profile loader, or end-to-end content engine.
 
-## 标准扩展流程
+Repository policy retains four official L3 product/domain labels: `hara`, `technical_solution`, `test_report`, and `fsr`. Their present asset status must not be confused with Python enforcement.
 
-新增 official L3 document type 时，按以下顺序推进：
+`TechnicalSafetyConcept` is a nonofficial skill-layer prototype with Skill/overlay/fixture assets only. Official L3 TSC and HSC/SSC are deferred.
 
-1. 写 `docs/document_types/<task_type>_SPEC.md`。
-2. 写 `ai_writing_plugin/document_types/<task_type>.py`。
-3. 在 document type registry 中注册 rules。
-4. 创建 `examples/<task_type>_demo_fixture/`。
-5. 写 `tests/test_<task_type>_demo.py`。
-6. 只有在 guideline 支持有价值时，才新增 `skills/document-types/<task_type>/SKILL.md`。
-7. 跑现有 `hara`、`technical_solution`、`test_report`、`fsr` 回归。
+## Before implementation
 
-不要跳过现有 document types 的回归测试。
+Do not add executable document-type behavior without a dedicated active phase/spec. The spec must define:
 
-## Rules checklist
+- exact domain purpose and non-goals;
+- source, template, checklist, reference, and sample policies;
+- default/required sections;
+- critical claims and required human confirmations;
+- forbidden final claims and allowed final statuses;
+- artifact/API changes;
+- positive and negative fixtures;
+- regression and compatibility requirements.
 
-每个新的 `DocumentTypeRules` 定义至少覆盖：
+## Completion model
 
-- `task_type`
-- `display_name`
-- `description`
-- `default_sections`
-- `required_sections`
-- `optional_sections`
-- `critical_claims`
-- `requires_human_confirmation`
-- `forbidden_final_claims`
-- `confirmation_marker`
-- `fact_source_roles`
-- `non_fact_source_roles`
-- `reference_policy`
-- `sample_policy`
-- `default_final_status`
-- `allowed_final_statuses`
-- `review_focus`
-- `verification_focus`
-- `candidate_learning_policy`
-- terminology and output labels only when needed for user-facing wording
+A future official type is complete only when all layers exist:
 
-## Fixture checklist
+1. **Domain Spec**: human-readable purpose and safety boundaries.
+2. **Executable Rules**: integrated with the then-current Python content architecture.
+3. **Fixtures**: deterministic positive and negative cases.
+4. **Tests**: type rules, evidence, leakage, final status, and full supported flow.
+5. **Skill Guidance**: concise runtime instructions that do not replace executable rules.
+6. **Product Docs**: accurate setup, scope, limitations, and examples.
 
-demo fixture 应包含：
+A Skill or fixture alone is not an official executable implementation.
 
-- 用于项目事实的 `source` files；
-- 用于结构的 `template` file；
-- 用于 review criteria 的 `checklist` file；
-- 只用于 methodology/background 的 `reference` file；
-- 只用于 shape/style 的 `sample` file；
-- 带 `task_type` 的 task YAML。
+## Shared pipeline rule
 
-`sample` is not fact source。`reference` is not project-specific fact support。
+Future types must reuse one shared content pipeline. Domain-specific code may supply sections, claims, confirmation rules, terminology, review focus, and final-status policy. It must not duplicate the whole workflow.
 
-## Test checklist
+## Required safety tests
 
-推荐覆盖：
+At minimum, future tests must cover:
 
-- full run succeeds；
-- required artifacts exist；
-- input roles are correct；
-- `sample` 不进入 `source_index` 作为 fact source；
-- `sample` 不进入 `citation_plan` 作为 fact evidence；
-- `reference` 不证明 project facts；
-- critical claims require evidence or HITL；
-- forbidden final claims 不会成为 conclusions；
-- final status 保持 conservative；
-- candidate updates remain proposed/inactive；
-- unrelated document type terminology leakage checks；
-- 现有 `hara`、`technical_solution`、`test_report`、`fsr` 回归仍通过。
+- sample is never a fact source;
+- reference does not prove project facts;
+- unsupported critical claims remain pending;
+- forbidden approval language is blocked;
+- final report remains review-ready, not approved;
+- document-type terminology does not leak across domains;
+- candidate changes remain inactive;
+- existing types do not regress.
 
-使用 semantic assertions。不要写脆弱的 full-document golden snapshot。不要断言 registry 永远只有三类或四类 document types。
+## Fixture rule
 
-## Stable Skill policy
+Fixtures are deterministic test/demo inputs. They are never project fact sources outside their own test task, and expected outputs must not be hard-coded into product logic.
 
-`skills/document-types/<task_type>/SKILL.md` 是可选 guideline material。`Skill.md` 不能替代 Python engine、artifact contract、schema validation、source index、evidence trace、review/verify、HITL trace 或 candidate update state control。
+## Runtime context rule
 
-## 禁止变更
+Runtime files should load only the selected document type. Do not bulk-read sibling Skills or all examples. Domain overlays may refine current-step rules but cannot redefine Phase 0 ownership or the global artifact tree.
 
-- 不复制 pipeline；
-- 不把 `sample` 当成 fact source；
-- 不让 `reference` 证明 project facts；
-- 不自动确认 critical claims；
-- 不自动激活 candidate update；
-- 不把 `final report` 描述成专业批准文件；
-- 不引入大平台、RAG、LangChain、vector DB 或复杂 agent framework；
-- 不在没有单独设计和迁移计划时修改 artifact contract；
-- 不在当前任务中顺手实现 TSC。
+## Current verification commands
 
-对应英文 guardrails：
-
-- Do not copy a pipeline.
-- Do not use sample as fact source.
-- Do not let reference prove project facts.
-- Do not automatically confirm critical claims.
-
-## Minimum verification
+These checks exist now:
 
 ```bash
-.venv/bin/python -m pytest tests/test_document_type_rules.py -q
-.venv/bin/python -m pytest tests/test_technical_solution_demo.py -q
-.venv/bin/python -m pytest tests/test_test_report_demo.py -q
-.venv/bin/python -m pytest tests/test_fsr_demo.py -q
-.venv/bin/python -m pytest -q
+.venv/bin/python -m ai_writing_plugin --help
+.venv/bin/python -m pytest -q -p no:cacheprovider
+.venv/bin/python -m pytest -q -p no:cacheprovider tests/test_runtime_context_boundary.py
 claude plugin validate .
-.venv/bin/python -m ai_writing_plugin write-run --task examples/hara_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/technical_solution_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/test_report_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/fsr_demo_fixture/task.yaml
 ```
+
+They validate the current scaffold/metadata/runtime surfaces. They do not prove a future type's content engine. An active type phase must add its own real test files and acceptance commands before claiming support.
+
+## TSC rule
+
+Do not upgrade TSC from nonofficial Skill prototype to official L3 by documentation change. Official TSC requires its own active phase, executable rules, fixtures, negative cases, tests, and compatibility evidence. HSC/SSC remain out of scope until separately authorized.
+
+## Review checklist
+
+Before merging a future type implementation, verify:
+
+- every documented module and command exists;
+- every referenced test exists and passes;
+- support level wording matches actual implementation;
+- no professional approval is implied;
+- source/sample/reference boundaries are enforced;
+- current artifact contract is updated intentionally;
+- user and maintainer docs agree;
+- deferred types remain deferred.

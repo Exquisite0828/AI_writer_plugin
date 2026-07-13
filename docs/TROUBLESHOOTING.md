@@ -1,266 +1,175 @@
 # Troubleshooting
 
-这份文档覆盖普通 GitHub 用户首次本地运行时最常见的问题。
+本页只覆盖当前真实CLI和Claude Code agent-runtime协议。
 
-## `validate` 通过但插件命令不显示
+## 插件校验通过但命令不显示
 
-症状：
-
-```bash
-claude plugin validate .
-```
-
-通过，但 Claude Code 里看不到 `/ai-writing-plugin:write`。
-
-原因通常是：`validate` 只校验 manifest，不会把命令加载进当前 Claude Code 会话。
-
-从仓库根目录启动新的会话：
+`claude plugin validate .`只校验manifest。请从仓库根目录启动新会话：
 
 ```bash
 claude --plugin-dir .
 ```
 
-然后在新会话里运行：
+然后检查`/ai-writing-plugin:write`。
 
-```text
-/ai-writing-plugin:write "Run the writing workflow with examples/technical_solution_demo_fixture/task.yaml"
-```
+## Python提示unknown command
 
-## 当前目录不对
-
-请确认你在仓库根目录。根目录应包含：
-
-```text
-.claude-plugin/plugin.json
-commands/write.md
-pyproject.toml
-```
-
-如果缺少这些文件，先 `cd` 到实际 clone 的 `AI_writer_plugin` 目录。
-
-## Python 命令不可用
-
-优先使用仓库内 virtual environment：
+先查看当前命令：
 
 ```bash
-.venv/bin/python -m ai_writing_plugin write-run --task examples/technical_solution_demo_fixture/task.yaml
+.venv/bin/python -m ai_writing_plugin --help
 ```
 
-如果 `.venv/bin/python` 不存在，先创建并安装：
+当前CLI没有一键写作、resume、profile、eval或promotion命令。旧文档中的这些命令不适用于当前分支。
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -U pip
-python -m pip install -e ".[dev]"
-```
+## `init-run`找不到task
 
-如果已经激活 venv，也可以使用：
-
-```bash
-python -m ai_writing_plugin write-run --task examples/technical_solution_demo_fixture/task.yaml
-```
-
-## `runs/` 出现本地输出
-
-这是正常 runtime output。每次运行会写入：
+错误通常类似：
 
 ```text
-runs/<run_id>/
+task file not found
 ```
 
-不要提交这些输出。仓库 `.gitignore` 已忽略 `runs/`，提交前可以检查：
+确认命令从预期目录运行，并使用存在的task路径：
+
+```bash
+.venv/bin/python -m ai_writing_plugin init-run --task path/to/task.yaml
+```
+
+## task YAML解析失败
+
+当前parser只支持受限YAML子集。常见原因：
+
+- 顶层不是简单mapping；
+- 使用嵌套mapping或复杂inline collection；
+- list缩进不符合当前task格式；
+- bracket不平衡；
+- bool写成非`true/false`形式。
+
+按README中的task示例简化。解析失败不会被静默忽略。
+
+## 输入文件不存在
+
+`inputs[*].path`相对于task文件目录解析。路径必须指向普通文件，不能使用glob。修正路径后创建一个新run；不要手工修改已经生成的`input_refs.json`。
+
+## sample被强制降级
+
+如果路径看起来属于sample/example/expected output，系统会强制：
+
+```text
+fact_source_allowed = false
+```
+
+即使task请求把sample作为事实来源，也只会产生warning或validation failure。这是安全边界，不是bug。
+
+## run目录已存在
+
+同一`--run-id`不能覆盖已有目录。使用新的安全run id，或省略`--run-id`让工具生成时间戳id。不要删除或覆盖一个仍需审计的run。
+
+## `worker_unavailable`
+
+`/write`要求真实Task/Agent worker handoff。如果宿主环境没有该能力，主agent必须停止。处理方式：
+
+1. 确认当前Claude Code版本/环境支持独立worker；
+2. 确认插件是在新会话中加载；
+3. 不要要求主agent在同一长期上下文代执行step；
+4. 仅需验证Python层时，改用`init-run`和metadata命令。
+
+## `metadata_invalid`
+
+不要手工修JSON。按固定顺序重新检查：
+
+```text
+validate-step-context-package
+validate-step-worker-dispatch
+validate-step-result
+complete-step-worker-dispatch
+validate-progress-ledger
+```
+
+常见原因：
+
+- missing或extra field；
+- stage-step pair错误；
+- status不在允许集合；
+- path不是run-relative POSIX路径；
+- referenced file缺失；
+- SHA-256已变化；
+- result path list与hash map key不一致。
+
+## context package已经存在
+
+Builder默认拒绝覆盖。只有在你明确知道旧package不再有效时才使用对应`--overwrite`或`--overwrite-package`参数。覆盖后必须重新生成依赖它的dispatch/result绑定。
+
+## task brief或input ref hash mismatch
+
+这些文件是scaffold-owned输入边界。原task/input变化后，旧hash引用应失效。创建新run通常比手工修补安全。
+
+## ProgressLedger校验失败
+
+检查：
+
+- ledger的`run_id`是否等于run目录名；
+- 同一stage/step是否重复；
+- refs是否存在并匹配hash；
+- result本身是否先通过validator；
+- 是否在complete dispatch后又修改了result。
+
+Ledger只能通过当前builder更新，不要手工patch。
+
+## ReviewContextPackage构建失败
+
+Builder要求列出的每个step已经有：
+
+- 对应StepContextPackage；
+- 对应且有效的StepResult。
+
+`--step`顺序必须与当前stage实际steps一致。可选`stage_review_refs`只会引用已经存在的允许文件；builder不会创建review内容。
+
+## StageGateResult等待确认
+
+没有decision文件时，默认状态是：
+
+```text
+pending_user_confirmation
+```
+
+这是正确的fail-closed行为。不要伪造decision。即使status为`accepted`，也只表示编排可以继续，不是专业批准。
+
+注意：当前builder允许`--status`覆盖且validator只做结构校验；它本身不能证明存在用户决定或review。Agent runtime不得把无真实decision的`accepted`覆盖值当作继续依据。
+
+## context budget失败
+
+```bash
+.venv/bin/python -m ai_writing_plugin check-context-budget \
+  --root . --task-type hara --step step-input-materials --json
+```
+
+该检查测量runtime Markdown surface的确定性估算，不测量真实provider prompt-cache hit rate，也不评估文档质量。
+
+## pytest不可用
+
+安装dev依赖：
+
+```bash
+.venv/bin/python -m pip install -e ".[dev]"
+```
+
+然后运行：
+
+```bash
+.venv/bin/python -m pytest -q -p no:cacheprovider
+```
+
+## runtime output出现在Git状态中
 
 ```bash
 git status --short -- runs/
 git ls-files runs/
 ```
 
-`git ls-files runs/` 不应输出 tracked files。
+`runs/`应被ignore且没有tracked文件。不要提交runtime artifacts。
 
-## `resume-run` 提示不是 resumable run
+## TSC状态看起来冲突
 
-症状：
-
-```text
-resume-run failed: ... is not a resumable run; run_state.json is missing
-```
-
-原因通常是该目录来自旧版本运行，或只执行了 `init-run`。`init-run` 保持非 resumable；可恢复运行从 `ingest-run` 或 `write-run` 开始。
-
-处理方式：重新执行 `ingest-run` 或 `write-run` 创建新的 resumable run。
-
-## `resume-run` 提示 task/profile hash mismatch
-
-`run_state.json` 会记录原始 `task.yaml` 和 external `document_profile.yaml` 的 SHA-256。恢复时如果文件被修改、替换或删除，工具会拒绝继续，避免把不同任务混到同一个 run 里。
-
-处理方式：
-
-- 恢复原始 `task.yaml` / `document_profile.yaml` 后再运行 `resume-run`；
-- 如果任务或 profile 确实已经改变，启动新的 `write-run`。
-
-## `resume-run` 提示 lock 仍在运行
-
-症状类似：
-
-```text
-run_state lock exists and pid <pid> is alive; another process may be running this run
-```
-
-这表示 `.run_state.lock` 中记录的 PID 仍存活。不要同时对同一个 `runs/<run_id>/` 执行两个 workflow。
-
-如果进程已经崩溃且 PID 不存在，`resume-run` 会自动执行 stale lock recovery：替换 lock，把之前的 `running` stage 标记为 `interrupted`，然后继续。
-
-如果 lock 文件内容损坏、缺少 PID 或不是 JSON，工具会失败并要求人工检查。不要静默覆盖无法判断来源的 lock。
-
-## `resume-run` 提示 completed stage is dirty
-
-症状：
-
-```text
-resume-run failed: completed stage evidence is dirty: plans/evidence_map.json missing. Start a new write-run or restore the artifact; automatic upstream rewind is not supported in v1.
-```
-
-这表示 `run_state.json` 记录某个 stage 已完成，但该 stage 的 required output 缺失、为空、JSON/JSONL 不可解析。V1 不会自动回滚 manifest、删除下游 artifacts 或重跑上游 stage。
-
-处理方式：
-
-- 恢复缺失或损坏的 artifact 后再继续；
-- 或启动新的 `write-run`。
-
-## `prepare-stage-review` 提示 unknown stage
-
-`prepare-stage-review` 只接受当前 run lifecycle stage：
-
-```text
-ingest
-outline
-evidence
-planning
-draft
-review
-finalize
-learning
-```
-
-例如 `tsc` 不是当前 stage，也不是已实现的 official L3 document type。遇到 unknown stage 时，不会创建对应 `stage_reviews/<stage>/` 输出。
-
-## `prepare-stage-review` 提示 stage output missing
-
-Stage review package 只能针对已完成 stage 准备。若 required output 缺失、为空、JSON/JSONL 不可解析，先恢复该 stage artifact，或重新创建 run。S1 不会重跑 stage，也不会自动修复原 artifact。
-
-## `validate-stage-review` 提示 issues invalid
-
-常见原因：
-
-- `stage_reviews/<stage>/issues.json` 缺失或不是合法 JSON；
-- `schema_version` 不是 `1`，或 `kind` 不是 `stage_review_issues`；
-- `run_id` / `stage` 与当前 run 不匹配；
-- `status` 使用了 `approved`、`validated`、`compliant`、`professionally_approved` 等批准式语义；
-- 高风险 category 例如 `source_policy`、`critical_claim`、`hitl_required`、`citation_or_evidence`、`final_status_policy`、`candidate_update_policy` 设置了 `safe_auto_fix_eligible=true`；
-- issue 文本声称 sample/reference 可以证明项目事实；
-- issue 文本要求修改 stable profile / Skill，或直接删除 `NEEDS_USER_CONFIRMATION`。
-- 缺少 `reviewed_unit_ids` / `unchecked_unit_ids`；
-- `reviewed_unit_ids` 没有覆盖 `review_units.json` 中全部 required units；
-- `unchecked_unit_ids` 非空；
-- `reviewed_unit_ids`、`unchecked_unit_ids` 或 `issues[].unit_id` 引用了未知 unit id；
-- 同一个 unit id 同时出现在 `reviewed_unit_ids` 和 `unchecked_unit_ids`。
-
-校验失败时会写：
-
-```text
-runs/<run_id>/stage_reviews/<stage>/validation_report.json
-```
-
-根据 `errors` 修正 `issues.json` 后重新运行 `validate-stage-review`。
-
-`coverage_summary.coverage_complete=false` 只表示 S1R coverage validation 未通过。即使为 `true`，也只表示 required review units 被声明覆盖，不表示专业批准、合规批准或内容最终正确。
-
-## `record-stage-review-decision` 提示无法记录 decision
-
-常见原因：
-
-- `stage_reviews/<stage>/validation_report.json` 缺失；
-- `validation_report.status` 不是 `valid`；
-- `coverage_summary.coverage_complete` 不是 `true`；
-- `stage_reviews/<stage>/issues.json` 缺失；
-- `decision` 不是 `accepted`、`skipped`、`needs_revision` 或 `blocked`；
-- `decision=skipped` 但 `notes` 为空。
-
-`record-stage-review-decision` 只写 `stage_reviews/<stage>/decision.json`。该文件固定 `decision_scope=stage_review_gate_only` 和 `professional_approval=false`，不是 professional artifact，不写入 `manifest.artifacts`，也不会修改原 stage artifacts。
-
-如果该 stage 存在 `stage_reviews/<stage>/issues_index.json`，decision 必须绑定 `issues_index_ref` 的 path/hash。缺少绑定、stage path 不匹配、hash mismatch 或 `professional_approval=true` 都会 fail closed。重新生成或修改 issue index 后，需要基于新的 index 重新记录 decision。
-
-## `check-stage-review-gate` 提示 gate failed
-
-常见原因：
-
-- `validation_report.json` 缺失、invalid，或 `coverage_complete=false`；
-- `decision.json` 缺失；
-- `decision` 是 `needs_revision` 或 `blocked`；
-- `decision.json` 被手动改成 `professional_approval=true`；
-- 记录 decision 后，`validation_report.json` 或 `issues.json` 被修改，导致 `validation_report_sha256` 或 `issues_sha256` mismatch。
-
-通过 `check-stage-review-gate` 只表示 S2A gate check passed；不表示专业批准。若用户要继续使用修改后的 `issues.json` 或 validation report，应重新运行 `validate-stage-review`，再重新记录 `record-stage-review-decision`。
-
-## context budget 提示 warning
-
-`check-context-budget` 的 preferred budget warning 是维护者诊断信号，不是文档质量失败，也不是专业批准状态。只有 hard budget failure 才表示 runtime context boundary 需要修复。
-
-确定性检查不会调用 Claude Code 或任何 LLM API，因此 API prompt-cache read ratio 会报告为 `not_measured`。这不是测试失败；它只表示本地 harness 不能证明真实 provider cache hit rate。
-
-## `--require-stage-review-gates` 在某个 stage 前失败
-
-症状类似：
-
-```text
-Stage review gate required before <stage>
-```
-
-这表示 opt-in S2B gate enforcement 在继续执行前 fail closed。它不表示 professional rejection，也不表示专业批准失败。
-
-常见原因：
-
-- previous stage 的 `stage_reviews/<stage>/` package 缺失；
-- `issues.json` 缺失或 invalid；
-- `review_units.json` coverage 不完整；
-- `decision.json` 缺失；
-- `decision` 是 `needs_revision` 或 `blocked`；
-- `decision=skipped` 但缺少 notes；
-- 记录 decision 后修改了 `issues.json` 或 `validation_report.json`，导致 hash mismatch。
-
-处理顺序：
-
-```bash
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin prepare-stage-review --run runs/<run_id> --stage <previous_stage>
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage <previous_stage>
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin record-stage-review-decision --run runs/<run_id> --stage <previous_stage> --decision accepted --notes "Reviewed for stage gate only."
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin check-stage-review-gate --run runs/<run_id> --stage <previous_stage>
-```
-
-如果确实不希望使用 gated workflow，去掉 `--require-stage-review-gates`。默认 workflow remains non-gated。
-
-## `stage_reviews/` 是否需要提交
-
-不需要。`stage_reviews/` 位于 `runs/<run_id>/` 下，是本地 runtime output。`runs/` 不进 git，提交前仍用：
-
-```bash
-git status --short -- runs/
-git ls-files runs/
-```
-
-## 输出包含 `NEEDS_USER_CONFIRMATION`
-
-`NEEDS_USER_CONFIRMATION`、pending claims、open confirmations 或 blocked verification 通常不是失败。
-
-它们表示插件没有找到足够的项目 `source` 或已记录 HITL 来支持某个 critical claim。应补充真实项目材料，或在 workflow 中记录真实人工确认；不要把 `sample` 或 `reference` 当作项目事实来源。
-
-## `claude plugin validate` 没有在 CI 跑
-
-GitHub runner 未必安装 Claude Code CLI，所以 CI 不一定能运行：
-
-```bash
-claude plugin validate .
-```
-
-本地发布或交付前仍建议在安装了 Claude Code CLI 的环境中执行该检查。
+统一口径是：`TechnicalSafetyConcept`的Skill、step overlays和fixture存在；它不是official L3，且没有Python rules/registry、端到端内容CLI或专门engine test。Official L3 TSC与HSC/SSC仍deferred。

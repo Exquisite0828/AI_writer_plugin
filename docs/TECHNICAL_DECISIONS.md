@@ -1,210 +1,200 @@
 # Technical Decisions
 
-Status: Generalization Phase N8 之后的当前技术决策记录。
+Status: current tracked implementation decisions.
 
-## Implementation strategy
+## 1. Source of implementation truth
 
-仓库保留 deterministic Python engine 作为可信执行骨架，并通过 Claude Code command 暴露给用户。
+The current command parser, Python validators, tests, and plugin manifest define what is
+implemented. Product goals and historical baselines cannot promote removed code into a
+current capability.
 
-稳定开发顺序保持为：
+If documentation conflicts with code, update the documentation or create a new active
+phase/spec before changing implementation.
 
-1. Deterministic Python engine。
-2. Stable run artifacts。
-3. Tests and fixtures。
-4. Claude Code command wrapper。
-5. Skills and user-facing plugin polish。
+## 2. Runtime split
 
-当前实现遵循该顺序，通过一套共享 pipeline 加 document type rules 支持 `hara`、`technical_solution`、`test_report` 和 `fsr`。
+The system deliberately separates two responsibilities.
 
-## Language and runtime
+### Python deterministic metadata layer
 
-使用 Python 3.11+。
+Python owns:
 
-理由：
+- Phase 0 run initialization;
+- input path/role/hash metadata;
+- context telemetry and budget diagnostics;
+- step context packages;
+- worker dispatch metadata;
+- short StepResult and ReviewResult validation;
+- progress ledger updates;
+- review context packages;
+- strict stage-review issue index/detail metadata;
+- compact stage-gate results.
 
-1. engine 以文件和 artifact 为中心，适合 Python standard library workflow；
-2. CLI implementation 简单；
-3. pytest coverage 可本地确定性运行；
-4. JSON、JSONL、YAML 和 Markdown artifact 生成直接。
+Python currently does not own professional content generation, semantic review,
+verification conclusions, final delivery, profile evaluation, or profile promotion.
 
-## Package and CLI
+### Claude Code agent workflow
 
-Package name：
+The `/write` command and Skills define a 7-stage, 13-step agent workflow. The main agent
+is a thin controller. Independent workers read only referenced inputs/instructions, write
+their owned professional artifacts, and return compact path/hash results.
+
+Task/Agent handoff is required. There is no fallback in which the long-lived main agent
+silently performs a professional step when a worker is unavailable.
+
+## 3. Language and dependencies
+
+- Runtime language: Python 3.11+.
+- Runtime dependencies: Python standard library only in the current package metadata.
+- Test framework: pytest via the optional `dev` extra.
+- Structured metadata: JSON.
+- Human-readable runtime instructions and reports: Markdown.
+- Task configuration: a deliberately limited YAML subset parsed by
+  `ai_writing_plugin.run_scaffold`; the current package does not depend on PyYAML.
+
+The limited parser supports the current task shape and fails closed on unsupported
+structures. It must not be described as a general YAML implementation.
+
+## 4. Current CLI decision
+
+The CLI exposes 19 commands in these families:
+
+- Phase 0: `init-run`;
+- telemetry: `context-telemetry`, `check-context-budget`;
+- short-result validators;
+- step-context builders/validators;
+- progress-ledger builders/validators;
+- worker-dispatch preparation/completion/validation;
+- review-context builders/validators;
+- stage-review issue builders/validators;
+- stage-gate-result builders/validators.
+
+The canonical list belongs to `python -m ai_writing_plugin --help` and
+`contracts/CURRENT_ARTIFACT_CONTRACTS.md`.
+
+The old one-shot/stage content commands and resume lifecycle are not current interfaces.
+Future high-level commands require a dedicated active implementation phase.
+
+## 5. Artifact and path decisions
+
+- All runtime output is contained by `runs/<run_id>/`.
+- `init-run` creates `input_refs.json`, `manifest.json`, and `task_brief.json` only.
+- Orchestration metadata lives under `runs/<run_id>/orchestration/`.
+- Metadata carries run-relative paths and SHA-256 hashes, not artifact/input bodies.
+- Dispatch preparation propagates validated prior StepResult artifacts in fixed workflow
+  order. Stable merge order is defaults, automatic upstream refs, preserved package
+  extras, then new explicit refs; paths are deduplicated without reading bodies.
+- Validators reject path traversal, unexpected fields, invalid statuses, missing files,
+  and hash mismatches where file validation is requested.
+- Progress state is updated through builders rather than hand-patched.
+- Completion status/count/gate metadata comes from ReviewResult when present and StepResult
+  otherwise; `complete-step-worker-dispatch --status` is only an equality assertion.
+
+The artifact contract distinguishes Python-enforced metadata from professional artifacts
+owned by agent workers.
+
+## 6. Context-boundary decision
+
+Long-lived main-agent context retains only stable orchestration rules, compact state,
+paths, hashes, counts, and short summaries.
+
+Step workers receive a StepWorkerDispatch and StepContextPackage path. Review workers
+receive a ReviewContextPackage path. Runtime prompts do not bulk-read maintainer docs,
+all document types, the examples tree, or the full run tree.
+
+The current step wrapper and canonical workflow Skill are required. Document-type routing
+is lazy: the selected type's root Skill and per-step overlay are independently optional,
+and only an exact existing file is referenced and hash-validated. Root-only mode is valid;
+missing optional overlays do not fail and sibling document types are not scanned. The
+existence of a directory does not make it an official or engine-enforced document type.
+
+## 7. Review-cycle decision
+
+The review worker is read-only with respect to professional artifacts. Its fixed output
+order is strict `issues.json`, public issue build, public issue validation, then one
+ReviewResult per stage step. The source accepts only the documented issue fields and
+run-contained artifact refs. Python transactionally materializes the canonical compact
+`issues_index.json` and per-issue details; an actively referenced set cannot be replaced.
+
+Revision is performed by redispatching the affected original step worker. Redispatching an
+earlier step transactionally removes every later workflow step's old ContextPackage,
+Dispatch, and ledger entry; those workers must run again in fixed order because their
+inputs bind upstream artifact hashes. After all A2 and invalidated downstream StepResults
+are current, `build-review-context-package --overwrite` starts the next cycle:
+it strips consumed stage-review refs, synchronizes ContextPackage/Dispatch/Ledger hashes,
+preserves StepResult bindings, clears old ReviewResult bindings, and validates all
+candidate metadata before replacing anything. A failed write restores the old bytes. The
+next review replaces the fixed-path issue set and reviews the complete stage, so repeated
+A2 cycles do not retain stale issue hashes.
+
+## 8. Evidence and approval decision
 
 ```text
-ai_writing_plugin
+fact source != sample document
 ```
 
-CLI entry：
+- Only project `source` material may support project-specific facts.
+- `sample` and expected-output material are shape/style inputs only.
+- `reference` material cannot independently prove a project fact.
+- Critical claims without project evidence or explicit HITL remain pending.
+- Review and verification outputs are advisory/engineering artifacts.
+- A stage gate is orchestration permission, not professional approval.
+- The current StageGateResult `--status` override is structurally validated but does not
+  prove HITL; the agent protocol, not Python alone, enforces the genuine-user-decision
+  requirement before continuation.
 
-```bash
-python -m ai_writing_plugin
-```
+## 9. Document-type decision
 
-当前 commands：
+`hara`, `technical_solution`, `test_report`, and `fsr` remain official L3 product/domain
+labels with maintained Skill/fixture assets. Current Python code does not implement a
+document-type registry or type-specific content rules.
 
-```text
-init-run
-ingest-run
-resume-run
-outline-run
-evidence-run
-plan-run
-draft-run
-review-run
-finalize-run
-learning-run
-record-hitl
-write-run
-prepare-stage-review
-validate-stage-review
-record-stage-review-decision
-check-stage-review-gate
-```
+`generic_document`, external profile YAML, and `custom_technical_note` are design/config
+assets. They are not loaded or enforced by the current Python package.
 
-`write-run` 是完整非交互 helper。它不能伪造 HITL approval。
+`TechnicalSafetyConcept` is a nonofficial skill-layer prototype: its Skill, step overlays,
+and fixture are present, while Python rules, registry, end-to-end content execution, and
+dedicated engine tests are absent. Official L3 TSC and HSC/SSC are deferred.
 
-`resume-run` 使用 `runs/<run_id>/run_state.json` 从中断的 resumable run 继续。`prepare-stage-review` / `validate-stage-review` 生成并校验辅助审查包；`record-stage-review-decision` / `check-stage-review-gate` 记录并检查用户的 `stage_review_gate_only` decision。`--require-stage-review-gates` 是 opt-in stricter workflow flag；默认 `write-run`、`resume-run` 和 stage commands 不强制 gate。
+## 10. Candidate-learning decision
 
-S2B reuses existing S2A gate artifacts and is opt-in enforcement only; it does not auto-call Claude Code, does not auto-fix, and does not create professional approval.
+Skills may describe proposed candidate artifacts, but the current Python package does not
+generate, evaluate, activate, or promote them. Stable Skills and profiles cannot be
+overwritten automatically.
 
-## Document type rules
+## 11. Framework decision
 
-document type 差异由 `ai_writing_plugin/document_types/` 下的 Python `DocumentTypeRules` 表达。
+The current repository does not introduce RAG, a vector database, LangChain, a generic
+workflow platform, or a heavy agent framework. New dependencies require an active phase
+and a demonstrated need.
 
-当前已注册 task types：
+## 12. Verification decision
 
-- `hara`
-- `technical_solution`
-- `test_report`
-- `fsr`
+Current verification consists of:
 
-rules 目前保持为 Python dataclasses。除非未来 active phase/spec 明确要求，不新增 YAML rules loader。
+- pytest coverage for run scaffolding and orchestration metadata contracts;
+- CLI help inspection;
+- Claude Code plugin manifest validation when the CLI is available;
+- runtime-context boundary scans;
+- Git hygiene checks.
 
-`generic_document` 是 L1 generic mode。validated external `document_profile.yaml` 是 L2 external profile mechanism。`custom_technical_note` 是 external profile demo，不是 official L3 built-in document type。`TechnicalSafetyConcept` 为 document-type skill 层类型（与 `FunctionalSafetyRequirement`、`ItemDefinitionDocument` 同级），已接入；其下游 HSC / SSC 仍 deferred。
-
-## Test framework
-
-使用 pytest。
-
-测试必须 deterministic 且可本地运行。测试不能依赖：
-
-1. Network access；
-2. live LLM calls；
-3. optional local reference folders；
-4. 已提交到 git 的 generated `runs/` outputs。
-
-## Config and artifact formats
-
-task configuration files 使用 YAML。
-
-artifact 格式：
-
-1. JSON 用于 structured artifacts；
-2. Markdown 用于 human-readable reports；
-3. JSONL 用于 traces；
-4. YAML 用于 profiles 和 task configs。
-
-runtime output 写入：
-
-```text
-runs/<run_id>/
-```
-
-`runs/` 不能提交。
-
-## Schema validation
-
-artifact 和 task models 使用 Pydantic v2。
-
-理由：
-
-1. Python-first validation 适合 deterministic engine；
-2. runtime artifacts 可以在生成附近完成 validation；
-3. model definitions 在 contract 演进时仍然可读；
-4. 未来如有需要，可以导出 JSON Schema。
-
-## Dependencies
-
-当前 runtime dependencies：
-
-- `pydantic>=2,<3`
-- `PyYAML>=6,<7`
-
-当前 dev dependency：
-
-- `pytest>=8,<10`
-
-除非未来 active phase/spec 明确要求，否则避免 heavy dependencies：
-
-1. `langchain`
-2. `llama-index`
-3. `chromadb`
-4. `faiss`
-5. `celery`
-6. `fastapi`
-7. `sqlalchemy`
-8. `streamlit`
-9. complex agent frameworks
-
-## Source boundary decisions
-
-`source` 是正常项目事实来源角色。
-
-以下不是 project fact sources：
-
-- `sample`
-- `expected_output_shape`
-- `template`
-- `checklist`
-- `reference`
-
-`reference` 只能支持 methodology/background。它不能证明 project-specific facts、professional conclusions、test results、HARA ratings、architecture decisions 或 release readiness。
-
-## Context boundary and cache-pressure closure
-
-The repository uses deterministic context guards to reduce cache churn risk and keep runtime context below hard limits:
-
-1. static telemetry and budget checks measure `commands/**/*.md` and `skills/**/*.md`;
-2. `runs/<run_id>/input_refs.json` records inputs as path/hash metadata, without input body replay;
-3. runtime prompt and Skill surfaces are kept short and operational;
-4. compact StepContextPackage, ReviewContextPackage, StepResult, ReviewResult, StageGateResult, and ProgressLedger artifacts pass paths and hashes rather than artifact bodies;
-5. `stage_reviews/<stage>/issues_index.json` is the default review issue surface, while `issues/<issue_id>.json` details are read only on demand;
-6. stage gate decisions bind to `issues_index_ref` when an index exists.
-
-The deterministic harness does not call Claude Code or any LLM API. Therefore API-level prompt-cache read ratio remains `not_measured`; the project can claim structural cache-risk reduction, not a proven provider cache-hit percentage.
-
-Manual context guard commands:
-
-```bash
-python -m ai_writing_plugin check-context-budget --root . --task-type hara --step step-input-materials --json
-python -m ai_writing_plugin check-context-budget --root . --task-type hara --step step-evidence-map --json
-```
-
-No professional approval, S2B/S3/S4 policy automation, safe auto-fix, or target-drift cleanup is implied by these guards.
-
-## Candidate learning decision
-
-candidate learning artifacts 可以生成，但默认保持 proposed 和 inactive。
-
-engine 不能自动覆盖 stable Skill files，也不能自动激活 candidate updates。
+Tests do not currently prove end-to-end professional document generation or domain
+correctness.
 
 ## Current decision summary
 
-| Topic | Decision |
+| Topic | Current decision |
 | --- | --- |
-| Language | Python 3.11+ |
+| Python | 3.11+, standard-library runtime |
 | Tests | pytest |
-| Task config | YAML |
-| Structured artifacts | JSON |
-| Schema validation | Pydantic v2 |
-| Trace artifacts | JSONL |
-| Human reports | Markdown |
+| Task parsing | Limited YAML subset, fail closed |
+| Python ownership | Phase 0 scaffold and orchestration metadata |
+| Professional content | Independent Claude Code workers |
+| Long-lived controller | Paths/hashes/short state only |
+| Current high-level content CLI | None |
 | Runtime output | `runs/<run_id>/` |
-| Document type registry | Python `DocumentTypeRules` |
-| Supported official L3 task types | `hara`, `technical_solution`, `test_report`, `fsr` |
-| Extended modes | `generic_document`, validated external `document_profile.yaml` |
-| Live LLM dependency | No |
-| Heavy framework dependency | No |
-| Optional raw reference dependency | No |
-| Development order | deterministic engine first |
+| Domain labels | Four official L3 asset categories; no Python registry |
+| External profiles | Files/design only; no current loader |
+| TSC | Nonofficial skill prototype; official implementation deferred |
+| Professional approval | Always outside automated metadata results |
+| Heavy framework dependency | None |

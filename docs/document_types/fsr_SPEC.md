@@ -1,5 +1,7 @@
 # FSR Document Type Spec
 
+Implementation status: official L3 product/domain design asset. The current Python package has no executable FSR rules or end-to-end content pipeline; the constraints below are future acceptance requirements and runtime guidance. `TechnicalSafetyConcept` is currently a nonofficial Skill/overlay/fixture prototype, not an official downstream Python type.
+
 ## 1. Purpose
 
 FSR documents support traceable Functional Safety Requirements writing. They organize source-backed safety goal traces, functional safety requirement candidates, ASIL inheritance notes, verification method candidates, assumptions, and open confirmations.
@@ -116,7 +118,7 @@ Templates and checklists are non-fact inputs unless a future phase explicitly ch
 - critical claims confirmation
 - FSR claims require source evidence or HITL
 - candidate update inactive
-- TSC content not emitted from FSR (TSC is a separate downstream document type)
+- TSC content not emitted from FSR (TSC remains a separate downstream design concern)
 
 ## 12. Final Status Policy
 
@@ -159,4 +161,4 @@ The fixture should include enough source material to support part of the FSR pac
 
 ## 15. TSC Boundary
 
-TSC / Technical Safety Concept is a separate downstream document type (`task_type: TechnicalSafetyConcept`). FSR output may identify downstream technical allocation as an open item, but the FSR workflow itself must not generate a Technical Safety Concept, technical safety requirements, technical safety mechanisms, or TSC approval content.
+TSC / Technical Safety Concept is a separate downstream design concern. The repository contains a nonofficial `TechnicalSafetyConcept` Skill/overlay/fixture prototype, but no official Python type or end-to-end content implementation. FSR output may identify downstream technical allocation as an open item, but the FSR workflow itself must not generate a Technical Safety Concept, technical safety requirements, technical safety mechanisms, or TSC approval content.

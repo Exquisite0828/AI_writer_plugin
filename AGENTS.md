@@ -2,10 +2,10 @@
 
 This repository is for developing an AI professional document writing plugin for Claude Code.
 
-The HARA hazard analysis report MVP has completed Phase 0-8 and is now the historical baseline.
-Generalization Phase 0-6 has completed. Phase N8 has added `fsr` as the fourth official L3 built-in document type.
-The current baseline is a generalized technical preview supporting official L3 built-ins `hara`, `technical_solution`, `test_report`, and `fsr`.
-`generic_document` remains the generic mode, and `custom_technical_note` remains an external `document_profile.yaml` demo rather than an official L3 type.
+The former HARA Phase 0-8 MVP and Generalization Phase 0-6/N8 deliveries are historical records; they do not imply that the removed Python content engine remains available.
+The current code baseline is a technical preview with a Python Phase 0 scaffold/orchestration-metadata layer and a Claude Code agent-worker protocol.
+`hara`, `technical_solution`, `test_report`, and `fsr` are the four official L3 product/domain asset labels, backed by Skills and fixtures. The current Python package has no document-type rules registry or end-to-end content engine for them.
+`generic_document` remains a generic design/Skill asset, and `custom_technical_note` remains an external `document_profile.yaml` demo rather than an official L3 type; current Python does not load those profiles.
 
 The product should guide a user through a traceable, reviewable, evidence-aware writing workflow:
 
@@ -127,17 +127,17 @@ Unless the current generalization phase document explicitly asks for it, do not:
 
 ## Development Mode
 
-Build a deterministic engine first.
+Preserve the current deterministic Phase 0/metadata layer before expanding capability. Do not infer that the removed full writing engine should be restored.
 
-The safe development order is:
+For any future content stage authorized by an explicit active phase/spec, the safe development order is:
 
-1. Deterministic Python engine.
-2. Stable artifact contracts.
-3. Tests and fixtures.
-4. Claude Code command wrapper.
-5. Skills and user-facing plugin polish.
+1. Reconfirm the current CLI/code/test baseline.
+2. Stabilize the narrowly scoped artifact contract.
+3. Add deterministic positive and negative tests/fixtures.
+4. Implement only the authorized Python or agent-runtime responsibility.
+5. Update the Claude Code wrapper, Skills, and user documentation to the verified support level.
 
-The final product may expose `/write`, but early phases should prioritize testable CLI commands and stable artifacts.
+`/write` is currently an agent-worker protocol. New Python content commands or lifecycle behavior require an active phase/spec and testable contracts.
 
 ## Preferred Technical Defaults
 

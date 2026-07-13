@@ -1,5 +1,7 @@
 # Technical Solution Document Type Spec
 
+Implementation status: official L3 product/domain design asset. The current Python package has no executable technical-solution rules or end-to-end content pipeline; the constraints below are future acceptance requirements and runtime guidance.
+
 ## 1. Purpose
 
 Technical solution documents support backend, architecture, and technical review workflows. They organize project background, goals, requirements, architecture, interfaces, implementation plan, risks, rollout plan, and open issues.

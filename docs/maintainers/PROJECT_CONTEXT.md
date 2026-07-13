@@ -1,89 +1,126 @@
 # Project Context Brief
 
-Status: Post-N8 current context brief.
+Status: current implementation snapshot after the Python writing-engine removal and
+runtime metadata rebuild.
 
-本文档是当前项目状态的维护者索引。它不替代 `README.md`、`docs/RUNBOOK.md`、`contracts/CURRENT_ARTIFACT_CONTRACTS.md` 或 `docs/maintainers/ARCHITECTURE.md`。
+This page is the shortest maintainer-oriented statement of repository reality. Current
+Python code and tests take precedence over older design narratives.
 
-当前项目已经从 HARA 单点 MVP 泛化为一个 AI 专业文档写作 Claude Code 插件技术预览版，支持四类 official L3 built-in document types：
+## Current capability layers
+
+| Layer | Current state |
+| --- | --- |
+| Python-enforced | Phase 0 `init-run`, `input_refs.json`, context telemetry, and orchestration metadata builders/validators |
+| Claude Code runtime | `/ai-writing-plugin:write`, thin-controller instructions, 7 stages, 13 step workers, review-worker handoff, and user-controlled stage gates |
+| Domain assets | document-type Skills, step overlays, task fixtures, profile examples, and design specs |
+| Removed or future | one-shot content engine, `write-run`, resume lifecycle, Python document-type registry, profile loader, eval, correction harvesting, and promotion |
+
+The Python package does not currently generate professional drafts, review content,
+verification conclusions, final reports, or learning artifacts. Independent Claude Code
+workers may create those artifacts under the runtime protocol, then report paths and
+hashes through metadata validated by Python.
+
+## Product purpose
+
+The product goal remains an evidence-aware professional document workflow:
+
+```text
+input materials
+-> material inventory
+-> source index and provenance
+-> template outline
+-> research questions and evidence planning
+-> conservative draft
+-> review and verification
+-> revision and review-ready delivery
+-> run summary and proposed candidate update
+```
+
+This is the target product workflow and the current agent instruction topology. It is
+not a claim that a one-shot Python implementation exists.
+
+## Current entry points
+
+Claude Code plugin entry:
+
+```text
+/ai-writing-plugin:write "Run the writing workflow with path/to/task.yaml"
+```
+
+The entry requires an environment that exposes Task/Agent worker handoff. The main agent
+acts as a thin controller. If independent workers are unavailable, the runtime must fail
+closed with `worker_unavailable` rather than generate professional artifacts in the main
+context.
+
+Python entry:
+
+```bash
+python -m ai_writing_plugin --help
+python -m ai_writing_plugin init-run --task path/to/task.yaml
+```
+
+`init-run` creates only:
+
+```text
+runs/<run_id>/input_refs.json
+runs/<run_id>/manifest.json
+runs/<run_id>/task_brief.json
+```
+
+The remaining Python commands build or validate compact runtime metadata. The exact
+surface and schemas are defined in
+`contracts/CURRENT_ARTIFACT_CONTRACTS.md`.
+
+## Document-type status
+
+The repository retains four official L3 **product labels**:
 
 - `hara`
 - `technical_solution`
 - `test_report`
 - `fsr`
 
-`generic_document` 是 L1 generic mode，不是 official L3。`custom_technical_note` 是 external `document_profile.yaml` demo，不是 official L3。`TechnicalSafetyConcept` 为 document-type skill 层类型，已接入（task_type: TechnicalSafetyConcept）；其下游 HSC / SSC 仍 deferred。
+The current tree contains Skills and fixtures for these labels. It does not contain a
+Python document-type registry, Python rules modules, or end-to-end content-engine tests.
+“Official L3” therefore describes the maintained product/domain asset category, not a
+currently enforced Python execution level.
 
-## 当前入口
+Other asset levels:
 
-- 用户说明：`README.md`
-- 文档导航：`docs/README.md`
-- 泛化架构：`docs/maintainers/ARCHITECTURE.md`
-- Roadmap：`docs/maintainers/ROADMAP.md`
-- Runtime context boundary：`docs/maintainers/RUNTIME_CONTEXT_BOUNDARY.md`
-- Runbook：`docs/RUNBOOK.md`
-- Artifact contract：`contracts/CURRENT_ARTIFACT_CONTRACTS.md`
-- 新 document type 开发指南：`docs/DOCUMENT_TYPE_DEVELOPMENT_GUIDE.md`
-- HARA baseline：`docs/baselines/HARA_MVP_BASELINE.md`
+- `generic_document`: generic Skill/profile/task assets; current Python does not execute
+  a generic writing pipeline or load its profile.
+- `custom_technical_note`: external profile demo asset; current Python has no external
+  profile loader.
+- `TechnicalSafetyConcept`: nonofficial skill-layer prototype with a root Skill, step
+  overlays, and a demo fixture. It has no Python rules/registry, end-to-end content CLI,
+  or dedicated engine test. Official L3 TSC and downstream HSC/SSC remain deferred.
+- Additional directories under `skills/document-types/` are nonofficial runtime assets;
+  their presence alone is not a public support or compatibility guarantee.
 
-历史 phase / process / handoff 材料不再作为 tracked public docs 保留；如本地存在 `docs/archive/` 或 `local_archive/`，只作历史参考，不作为当前 Codex 执行指令。
+## Non-negotiable boundaries
 
-运行期 prompt / skill 不应把维护者文档、examples 或完整 artifact contract 当作默认上下文。边界规则见 `docs/maintainers/RUNTIME_CONTEXT_BOUNDARY.md`。
+- `source` may support project facts when relevant and correctly interpreted.
+- `template` and `checklist` constrain structure and review; they do not prove facts.
+- `reference` may support method or background, not project-specific facts.
+- `sample` and expected output may guide shape and style only.
+- Critical claims require project evidence or explicit human confirmation.
+- Missing support stays pending, open, or `NEEDS_USER_CONFIRMATION`.
+- A hash match, worker completion, review result, stage gate, or final report is not
+  professional approval.
+- Candidate updates remain proposals; no current Python command activates them.
+- Runtime output stays under ignored `runs/<run_id>/`.
 
-未来新增能力应先创建新的 active phase/spec 文档。
+## Repository map
 
-## 项目目标
+- User status and setup: `README.md`
+- Current artifact and metadata contract: `contracts/CURRENT_ARTIFACT_CONTRACTS.md`
+- Current architecture: `docs/maintainers/ARCHITECTURE.md`
+- Current technical decisions: `docs/TECHNICAL_DECISIONS.md`
+- Future sequencing: `docs/maintainers/ROADMAP.md`
+- Runtime context policy: `docs/maintainers/RUNTIME_CONTEXT_BOUNDARY.md`
+- Maintainer operations: `docs/RUNBOOK.md`
+- Historical HARA snapshot: `docs/baselines/HARA_MVP_BASELINE.md`
 
-本项目开发一个运行在 Claude Code 中的 AI 专业文档写作插件。
-
-系统目标是引导用户完成可追踪、可 review、证据边界明确的写作流程：
-
-```text
-input materials -> material inventory -> source index -> template outline -> evidence map -> citation plan -> section tasks -> conservative draft -> review -> verification -> revision -> final report -> run summary -> candidate profile update
-```
-
-当前实现由一套 deterministic Python engine 执行 artifact 生成、review、verify、final delivery、trace 和 proposed candidate learning。文档类型差异由 `DocumentTypeRules` 表达。
-
-## 核心原则
-
-- Template first：用户提供的 `template` 是目标文档结构约束；
-- Source first：`source` 是项目事实基础；
-- Sample is not fact source：`sample` 和 expected output 只能用于结构、风格、表格形态，不能支持事实或专业结论；
-- Reference is not project fact source：`reference` 可支持方法论或背景，不能证明项目事实；
-- Human-in-the-loop：critical claims 必须保留 HITL 边界；
-- No automatic stable skill/profile replacement：candidate profile update / candidate patch 只能保持 proposed/inactive，不能自动应用。
-
-## 当前支持范围
-
-| `task_type` | 文档类型 | 默认交付状态 | 关键边界 |
-| --- | --- | --- | --- |
-| `hara` | HARA 危害分析报告 | `finalized_with_open_items` | HARA 专业判断不能自动确认 |
-| `technical_solution` | 技术方案文档 | `ready_for_human_review` | 架构、性能、安全、成本、rollout 等判断需要 evidence/HITL |
-| `test_report` | 测试报告 | `ready_for_human_review` | pass/fail、缺陷、覆盖率、release readiness 不能编造 |
-| `fsr` | FSR 功能安全需求文档 | `ready_for_human_review` | FSR wording、safety goal linkage、ASIL inheritance、verification/compliance 结论需要 evidence/HITL；TSC 不自动生成 |
-
-扩展支持：
-
-- `generic_document`：L1 generic mode。
-- validated external `document_profile.yaml`：L2 external profile mechanism，包括 `custom_technical_note` demo。
-
-## Repository boundaries
-
-本仓库应包含插件源码、deterministic fixtures、测试、Claude Code command、Skills/guidelines 和必要文档。
-
-以下目录是可选本地参考资料，fresh clone 不依赖它们：
-
-- `superpowers本体架构/`
-- `HARA报告生成参考资料集_EPS/`
-
-如果这些目录存在，只能作为只读参考，不应修改，也不应让插件、CLI 或测试依赖它们。
-
-## 当前非目标
-
-当前技术预览不是：
-
-1. 自动合规批准系统；
-2. 任意专业文档自动生成平台；
-3. RAG / vector DB / LangChain 平台；
-4. 自动 stable skill/profile 替换系统；
-5. 无人值守专业结论生成系统；
-6. TSC / Technical Safety Concept L3 implementation。
+Historical phase plans and process records are retained by Git history, not used as
+current execution instructions. Any future content-engine work requires a new explicit
+active phase/spec before implementation.

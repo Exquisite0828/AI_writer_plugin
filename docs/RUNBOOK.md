@@ -1,407 +1,426 @@
 # Repository Runbook
 
-这是 generalized AI 专业文档写作 Claude Code 插件的当前运行维护说明。
+Status: current operations for the Phase 0 scaffold, orchestration metadata, and Claude Code worker protocol.
 
-当前 official L3 built-in document types：
-
-- `hara`
-- `technical_solution`
-- `test_report`
-- `fsr`
-
-扩展支持模式：
-
-- `generic_document`：L1 generic mode。
-- validated external `document_profile.yaml`：L2 external profile mechanism，包括 `custom_technical_note` external profile demo。
-
-如果本地存在历史 archive 目录，不要把它当成当前执行指令。
-
-## Environment
-
-所有命令默认从仓库根目录运行。推荐 runtime：
-
-```bash
-.venv/bin/python
-```
-
-如果 `.venv/` 不存在：
+## 1. Environment
 
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
 ```
 
-## Core validation
+All commands below assume the repository root.
 
-完整 pytest：
-
-```bash
-.venv/bin/python -m pytest -q
-```
-
-Claude Code plugin 校验：
+## 2. Baseline checks
 
 ```bash
+.venv/bin/python -m ai_writing_plugin --help
+.venv/bin/python -m pytest -q -p no:cacheprovider
 claude plugin validate .
+git status --short
+git ls-files runs/
 ```
 
-这两个命令是提交前的基础检查。pytest 覆盖 deterministic engine、document type rules、artifact contract、eval、correction harvesting、demo fixtures 和文档约束；plugin validate 检查 `.claude-plugin/plugin.json` 和 command 结构。
+The test suite covers scaffolding and orchestration metadata. It does not prove end-to-end professional content generation.
 
-运行期上下文边界专项检查：
+## 3. Current CLI inventory
 
-```bash
-.venv/bin/python -m pytest -q -p no:cacheprovider tests/test_runtime_context_boundary.py
-```
-
-该检查防止 runtime prompt 重新引用 maintainer docs、默认扫描 examples catalog、内嵌完整 artifact tree，或由 document-type overlay 重新声明 run 起点 ownership。
-
-## Demo runs
-
-运行六类 demo：
-
-```bash
-.venv/bin/python -m ai_writing_plugin write-run --task examples/hara_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/technical_solution_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/test_report_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/fsr_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/generic_document_demo_fixture/task.yaml
-.venv/bin/python -m ai_writing_plugin write-run --task examples/custom_technical_note_profile_demo_fixture/task.yaml
-```
-
-常见完成状态：
+The current parser has 19 commands:
 
 ```text
-completed_with_candidate_updates_proposed
-```
-
-这表示 workflow 完成，并生成 proposed/inactive candidate updates。它不表示专业批准。
-
-## Stage commands
-
-当前 tracked Python scaffold 已实现 Phase 0 run 起点命令：
-
-```bash
-.venv/bin/python -m ai_writing_plugin init-run --task examples/generic_document_demo_fixture/task.yaml
-```
-
-该命令只创建 `manifest.json` 与 `task_brief.json`，不预创建下游 stage 目录。完整 Phase 0-8 deterministic engine 目标暴露以下 stage commands，后续 engine phase 应按 artifact contract 逐步补齐：
-
-```text
+context-telemetry
+check-context-budget
 init-run
-ingest-run
-outline-run
-evidence-run
-plan-run
-draft-run
-review-run
-finalize-run
-learning-run
-resume-run
-record-hitl
-prepare-stage-review
-validate-stage-review
-write-run
+validate-step-result
+validate-review-result
+build-step-context-package
+validate-step-context-package
+init-progress-ledger
+record-step-progress
+validate-progress-ledger
+prepare-step-worker-dispatch
+complete-step-worker-dispatch
+validate-step-worker-dispatch
+build-review-context-package
+validate-review-context-package
+build-stage-review-issues
+validate-stage-review-issues
+build-stage-gate-result
+validate-stage-gate-result
 ```
 
-Claude Code 入口：
+Consult `--help` for exact arguments. No current command runs the full professional writing lifecycle or resumes it.
+
+## 4. Initialize a run
+
+```bash
+.venv/bin/python -m ai_writing_plugin init-run \
+  --task path/to/task.yaml
+```
+
+Expected root files:
 
 ```text
-/ai-writing-plugin:write
+input_refs.json
+manifest.json
+task_brief.json
 ```
 
-`write-run` 是非交互式完整链路 helper。它不会伪造 HITL approval。
-
-`ingest-run` 和 `write-run` 会创建 `runs/<run_id>/run_state.json`，用于断点续写。`init-run` 保持非 resumable。
-
-如果 Claude Code 或 Python 进程中断，使用：
-
-```bash
-.venv/bin/python -m ai_writing_plugin resume-run --run runs/<run_id>
-```
-
-`resume-run` 会从第一个非 `done` stage 继续执行。完成后的 run-level `completed` 只表示 deterministic engine lifecycle 完成，不表示专业批准、合规批准或候选更新批准。
-
-典型恢复流程：
-
-1. 找到上次输出的 `runs/<run_id>/`。
-2. 确认目录内存在 `run_state.json`。
-3. 不修改原 `task.yaml` 和 external `document_profile.yaml`。
-4. 执行 `resume-run --run runs/<run_id>`。
-5. 完成后照常检查 `review/`、`verify/`、`final/`、`trace/` 和 `learning/` artifacts。
-
-`resume-run` 会拒绝：
-
-- missing `run_state.json`；
-- `task.yaml` hash mismatch；
-- external `document_profile.yaml` hash mismatch；
-- live `.run_state.lock`；
-- completed stage output 缺失、空文件、JSON/JSONL 不可解析。
-
-如果 `.run_state.lock` 中的 PID 已不存在，工具会按 stale lock recovery 处理，把之前的 `running` stage 标记为 `interrupted` 后继续。
-
-## Stage review package
-
-Stage Review Gate S1/S1R/S2A 可以在某个 stage 完成后生成 advisory review package，供 Claude Code 读取后做语义审查，并由用户显式记录 stage review gate decision：
-
-```bash
-.venv/bin/python -m ai_writing_plugin prepare-stage-review --run runs/<run_id> --stage outline
-```
-
-输出位置：
+Verify:
 
 ```text
-runs/<run_id>/stage_reviews/<stage>/review_context.json
-runs/<run_id>/stage_reviews/<stage>/review_prompt.md
-runs/<run_id>/stage_reviews/<stage>/issues_schema.json
-runs/<run_id>/stage_reviews/<stage>/review_units.json
+manifest.status = initialized
+manifest.phase = phase_0
+input_refs.schema_version = input_refs.v1
 ```
 
-Claude Code 可以读取 `review_prompt.md`、`review_context.json` 和 `review_units.json`，然后只在同一目录下写：
+No downstream professional directory is expected at this point.
+
+`init-run` belongs to the controller. If it fails, stop: do not initialize the ledger or
+prepare any worker dispatch.
+
+## 5. Initialize orchestration state
+
+```bash
+.venv/bin/python -m ai_writing_plugin init-progress-ledger \
+  --run-dir runs/<run_id>
+```
+
+This creates:
 
 ```text
-claude_review.md
-issues.json
+orchestration/progress_ledger.json
 ```
 
-S1R 要求 `issues.json` 声明：
+The required startup sequence is `init-run → init-progress-ledger →
+prepare-step-worker-dispatch`.
+
+## 6. Prepare a step handoff
+
+Example for the first step:
+
+```bash
+.venv/bin/python -m ai_writing_plugin prepare-step-worker-dispatch \
+  --repo-root . \
+  --run-dir runs/<run_id> \
+  --stage ingest \
+  --step step-input-materials \
+  --task-type <task_type>
+```
+
+This creates/updates only metadata:
 
 ```text
-reviewed_unit_ids
-unchecked_unit_ids
-issues[].unit_id
+orchestration/context_packages/ingest/step-input-materials.json
+orchestration/worker_dispatches/ingest/step-input-materials.json
+orchestration/progress_ledger.json
 ```
 
-每个 required review unit 都必须出现在 `reviewed_unit_ids` 中。S1R 不允许 partial review；`unchecked_unit_ids` 非空、unknown unit id、issue 引用未知 `unit_id` 或 reviewed/unchecked 重叠都会导致 validation failed。
+For `step-input-materials`, the dispatched worker receives an already initialized run.
+It must not call `init-run` or modify the three root scaffold files. It checks their
+input-role and evidence boundaries and reports their final paths/hashes through
+StepResult. Its StepContextPackage points to `input_refs.json` separately and automatically
+includes both `task_brief.json` and `manifest.json` in `run_refs[]`.
 
-校验 review issues：
+For every later dispatch, `prepare-step-worker-dispatch` validates the ProgressLedger and
+each completed, Ledger-bound prior StepResult in the fixed 13-step order, then propagates every real reported
+artifact path/hash. `run_refs[]` order is always defaults, automatic upstream artifacts,
+preserved extras from an overwritten package, and newly explicit `--input-ref` values,
+with stable path deduplication. `input_refs.json` is not duplicated in `run_refs[]`; a
+Step 1-reported `manifest.json` therefore reaches later steps through upstream propagation.
+If an already-bound upstream result points to a stale or missing file, a bad hash, or the
+wrong stage/step, dispatch preparation stops. Earlier steps with no completed Ledger binding
+are skipped so isolated metadata preparation remains possible.
+
+Validate before dispatch:
 
 ```bash
-.venv/bin/python -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage outline
+.venv/bin/python -m ai_writing_plugin validate-step-context-package \
+  --path runs/<run_id>/orchestration/context_packages/ingest/step-input-materials.json \
+  --repo-root . --run-dir runs/<run_id>
+
+.venv/bin/python -m ai_writing_plugin validate-step-worker-dispatch \
+  --path runs/<run_id>/orchestration/worker_dispatches/ingest/step-input-materials.json \
+  --repo-root . --run-dir runs/<run_id>
 ```
 
-可选地指定 issues 文件：
+## 7. Worker execution boundary
+
+Pass only the StepWorkerDispatch and StepContextPackage paths to a real independent Task/Agent worker. The wrapper and canonical workflow Skill refs are required. The selected document-type root Skill and per-step overlay are independently optional and included only when the exact file exists; root-only document types are valid. Every included instruction ref must still exist and match its hash. The worker:
+
+1. reads referenced instructions and run/input refs;
+2. writes only its owned professional artifacts;
+3. writes `orchestration/step_results/<step>.json`;
+4. runs `validate-step-result` itself;
+5. returns a short summary/path, not artifact bodies.
+
+If no independent worker is available, stop with `worker_unavailable`.
+
+## 8. Close a step
 
 ```bash
-.venv/bin/python -m ai_writing_plugin validate-stage-review --run runs/<run_id> --stage outline --issues-file path/to/issues.json
+.venv/bin/python -m ai_writing_plugin validate-step-result \
+  --run-dir runs/<run_id> \
+  --path runs/<run_id>/orchestration/step_results/<step>.json
+
+.venv/bin/python -m ai_writing_plugin complete-step-worker-dispatch \
+  --run-dir runs/<run_id> \
+  --stage <stage> \
+  --step <step> \
+  --step-result orchestration/step_results/<step>.json
+
+.venv/bin/python -m ai_writing_plugin validate-progress-ledger \
+  --run-dir runs/<run_id> \
+  --path runs/<run_id>/orchestration/progress_ledger.json
 ```
 
-`validation_report.json` 会写入 `coverage_summary`，其中 `coverage_complete=true` 只表示 required review units 已被 deterministic coverage validation 接受，不表示 professional approval。
+Completion status is derived from ReviewResult when one is supplied and StepResult
+otherwise. The optional `complete-step-worker-dispatch --status` is an assertion only:
+omit it or pass that same status. A different value fails closed without changing the
+Dispatch or Ledger; blocking count and next-gate status come from the same result.
 
-记录 S2A gate decision：
+Do not modify a StepResult after completion. If it changes, revalidate and complete the dispatch again so the ledger binds the final hash.
+
+## 9. Build review handoff
+
+After all selected steps in a stage have valid StepResults:
 
 ```bash
-.venv/bin/python -m ai_writing_plugin record-stage-review-decision --run runs/<run_id> --stage outline --decision accepted --notes "Reviewed."
+.venv/bin/python -m ai_writing_plugin build-review-context-package \
+  --repo-root . \
+  --run-dir runs/<run_id> \
+  --stage <stage> \
+  --step <step-one> \
+  --step <step-two>
 ```
 
-`decision` 只允许 `accepted`、`skipped`、`needs_revision`、`blocked`。`skipped` 必须有非空 notes。该命令生成：
+Use the exact steps for that stage and repeat `--step` as needed. Validate:
+
+```bash
+.venv/bin/python -m ai_writing_plugin validate-review-context-package \
+  --path runs/<run_id>/orchestration/review_context_packages/<stage>.json \
+  --run-dir runs/<run_id>
+```
+
+Pass only that package path to one independent review worker for the stage. Step workers do not dispatch nested reviewers or create separate review-state files. The stage review worker is review-only: it records review material and issues but never modifies professional artifacts or StepResult.
+
+The review worker first writes the strict source file
+`stage_reviews/<stage>/issues.json`. It has exactly an `issues` list; each item has exactly
+`issue_id`, `severity`, `category`, `title`, `summary`, `location_refs`, `artifact_refs`,
+`recommendation`, and `rationale`. Severity is `P0`, `P1`, `P2`, `P3`, or `info`, and all
+artifact refs are run-contained path/hash pairs. Then it runs:
+
+```bash
+.venv/bin/python -m ai_writing_plugin build-stage-review-issues \
+  --run-dir runs/<run_id> \
+  --stage <stage> \
+  --source stage_reviews/<stage>/issues.json
+
+.venv/bin/python -m ai_writing_plugin validate-stage-review-issues \
+  --run-dir runs/<run_id> \
+  --path stage_reviews/<stage>/issues_index.json
+```
+
+This creates the canonical compact index and
+`stage_reviews/<stage>/issues/<issue_id>.json` details. Existing output requires
+`--overwrite`, and overwrite is allowed only after the prior issue set is no longer bound
+by active context/review/ledger/decision/gate metadata. Build/validation is transactional;
+failure leaves the previous issue set intact.
+
+Only after that succeeds does the worker follow `context_package_refs[]` and, in the exact
+`steps[]` order, write one validated ReviewResult per step under:
 
 ```text
-runs/<run_id>/stage_reviews/<stage>/decision.json
+orchestration/review_results/<stage>/<step>.json
 ```
 
-`decision.json` 固定 `decision_scope=stage_review_gate_only` 且 `professional_approval=false`，并记录 `validation_report_sha256` 和 `issues_sha256`。`accepted` / `skipped` 只表示用户允许该 stage review gate 继续；it does not indicate professional approval。
+Each referenced StepContextPackage already declares its own `result_paths.review_result`; ReviewContextPackage does not duplicate those paths. A single stage-aggregate ReviewResult is invalid. Missing, duplicate, unexpected, or stage/step-mismatched results are `metadata_invalid` and stop the stage.
 
-检查 gate：
+After the worker returns, close the review for every step in `steps[]` order:
 
 ```bash
-.venv/bin/python -m ai_writing_plugin check-stage-review-gate --run runs/<run_id> --stage outline
+.venv/bin/python -m ai_writing_plugin validate-review-result \
+  --run-dir runs/<run_id> \
+  --path runs/<run_id>/orchestration/review_results/<stage>/<step>.json
+
+.venv/bin/python -m ai_writing_plugin complete-step-worker-dispatch \
+  --run-dir runs/<run_id> \
+  --stage <stage> \
+  --step <step> \
+  --step-result orchestration/step_results/<step>.json \
+  --review-result orchestration/review_results/<stage>/<step>.json
 ```
 
-checker 要求 validation report 仍为 `valid`、`coverage_complete=true`、decision 为 `accepted` 或 `skipped`、`professional_approval=false`，并且 `validation_report.json` / `issues.json` hash 未在 decision 后改变。
+Then run `validate-progress-ledger` and confirm that every selected step still binds the final StepResult hash and now binds the matching final ReviewResult hash. Do not build the stage gate until all `review_result_ref` values are present and current.
 
-`stage_reviews/` 是 runtime assistance output，不写入 `manifest.artifacts`，不改变 `run_state.json` lifecycle，不证明项目事实，也不表示 professional approval。S1/S1R/S2A 不调用 Claude Code，不自动修改原 artifacts，不应用 patch，不阻塞下一 stage。
+### 9.1 Revision cycle
 
-## Stage Review Gate S2B opt-in gated workflow
-
-S2B 是 opt-in gate enforcement。默认 `write-run`、`resume-run` 和 single-stage commands 保持 non-gated 行为。只有显式传入 `--require-stage-review-gates` 时，engine 才会在进入下一阶段前读取上一阶段的 S2A artifacts 并 fail closed。
-
-启动 gated workflow：
+If any ReviewResult is `needs_revision`, keep the gate closed. Use the validated
+`stage_reviews/<stage>/issues_index.json`; the review worker does not repair the
+professional artifacts itself. For each affected step, re-prepare the original worker:
 
 ```bash
-.venv/bin/python -m ai_writing_plugin write-run --task <task.yaml> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin prepare-step-worker-dispatch \
+  --repo-root . \
+  --run-dir runs/<run_id> \
+  --stage <stage> \
+  --step <step> \
+  --task-type <task_type> \
+  --input-ref stage_reviews/<stage>/issues_index.json \
+  --overwrite-package \
+  --overwrite-dispatch
 ```
 
-该命令只创建 run 并完成 `ingest`，然后停止。下一步是为 `ingest` 准备和记录 stage review gate：
+This preserves the target ContextPackage's previous additional `run_refs[]`, appends the
+issue index once, and clears that step's stale StepResult/ReviewResult ledger bindings.
+Because later prepared steps contain hashes of upstream artifacts, the same transaction
+removes every later workflow step's old ContextPackage, StepWorkerDispatch, and ledger
+entry. It leaves fixed-path result/artifact files on disk but they are no longer bound.
+Any failure restores all touched metadata bytes.
+
+Dispatch the original step worker to perform its A2 instructions, then validate and
+complete its new StepResult normally. Next, re-prepare, rerun, validate, and complete every
+invalidated downstream step in fixed 13-step order so each package receives current
+upstream hashes. Do not reuse the old unbound StepResult merely because its file still
+exists.
+
+After the revised target and every invalidated downstream step are complete, start a new
+review cycle for the complete original stage step list:
 
 ```bash
-.venv/bin/python -m ai_writing_plugin prepare-stage-review --run <run_dir> --stage ingest
-# Claude Code reads review_prompt.md and review_units.json, then writes issues.json only.
-.venv/bin/python -m ai_writing_plugin validate-stage-review --run <run_dir> --stage ingest
-.venv/bin/python -m ai_writing_plugin record-stage-review-decision --run <run_dir> --stage ingest --decision accepted --notes "Reviewed."
-.venv/bin/python -m ai_writing_plugin check-stage-review-gate --run <run_dir> --stage ingest
-.venv/bin/python -m ai_writing_plugin resume-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin build-review-context-package \
+  --repo-root . \
+  --run-dir runs/<run_id> \
+  --stage <stage> \
+  --step <step-one> \
+  --step <step-two> \
+  --overwrite
 ```
 
-每次 gated `resume-run` 最多执行一个 pending stage。执行前会检查 immediate previous stage gate；执行成功后立即停止，并提示为刚完成的 stage 准备 review package。
+This overwrite is the review-cycle transaction boundary and must finish before the review
+worker overwrites fixed-path issue or ReviewResult files. It validates the current cycle,
+strips consumed `stage_reviews/<stage>/...` refs from selected ContextPackages, recomputes
+their refs, synchronizes affected Dispatch and Ledger bindings, preserves current
+StepResult refs, clears all selected steps' old ReviewResult refs, restores status/counts
+from StepResult, and creates a new ReviewContextPackage without the previous mutable
+`stage_review_refs`. Any failure restores every touched metadata file.
 
-带 flag 的 single-stage commands 也会检查上一阶段 gate：
+The worker can now replace the issue set with
+`build-stage-review-issues --overwrite`, validate it, and re-review every step in the
+stage. Validate and bind all new ReviewResults in order. Repeat the same sequence for a
+second or later A2 cycle: finish A2 StepResults, run review-context `--overwrite`, replace
+and validate issues, then perform a full-stage review. Never perform a partial re-review
+or build a gate from mixed review cycles.
+
+## 10. Build stage-gate metadata
+
+Without a decision file:
 
 ```bash
-.venv/bin/python -m ai_writing_plugin outline-run --run <run_dir> --require-stage-review-gates
-.venv/bin/python -m ai_writing_plugin evidence-run --run <run_dir> --require-stage-review-gates
-.venv/bin/python -m ai_writing_plugin plan-run --run <run_dir> --require-stage-review-gates
-.venv/bin/python -m ai_writing_plugin draft-run --run <run_dir> --require-stage-review-gates
-.venv/bin/python -m ai_writing_plugin review-run --run <run_dir> --require-stage-review-gates
-.venv/bin/python -m ai_writing_plugin finalize-run --run <run_dir> --require-stage-review-gates
-.venv/bin/python -m ai_writing_plugin learning-run --run <run_dir> --require-stage-review-gates
+.venv/bin/python -m ai_writing_plugin build-stage-gate-result \
+  --run-dir runs/<run_id> \
+  --stage <stage> \
+  --review-result orchestration/review_results/<stage>/<step-one>.json \
+  --review-result orchestration/review_results/<stage>/<step-two>.json
 ```
 
-S2B only reads:
+Repeat `--review-result` for every ReviewContextPackage step in the same order. One-step stages pass exactly one result. If any per-step ReviewResult is `needs_revision` or `blocked`, the agent protocol must not create an `accepted` gate. Even when all are `done`, the default remains `pending_user_confirmation` until a genuine user decision exists.
+
+The default is `pending_user_confirmation`. With a separately created explicit decision file, add:
 
 ```text
-stage_reviews/<stage>/validation_report.json
-stage_reviews/<stage>/issues.json
-stage_reviews/<stage>/decision.json
+--decision stage_reviews/<stage>/decision.json
 ```
 
-S2B 不调用 Claude Code，不自动生成 `issues.json`，不自动修改 professional artifacts，不应用 safe auto-fix，不改变 `run_state.json` schema。`accepted` / `skipped` does not indicate professional approval，`coverage_complete=true` 也不表示 professional approval。
+`build-stage-gate-result` also exposes `--status`, but that separate gate override is only
+structurally validated: it can produce `accepted` without proving a decision or review.
+Do not use it to bypass HITL.
+The agent protocol may continue only from a genuine explicit user decision that satisfies
+the review checks.
 
-## Focused regression matrix
-
-常用 focused regression：
+Validate:
 
 ```bash
-.venv/bin/python -m pytest tests/test_document_type_rules.py -q
-.venv/bin/python -m pytest tests/test_generalization_phase0_hara_baseline.py -q
-.venv/bin/python -m pytest tests/test_generalization_phase2_engine_rules_integration.py -q
-.venv/bin/python -m pytest tests/test_technical_solution_demo.py -q
-.venv/bin/python -m pytest tests/test_test_report_demo.py -q
-.venv/bin/python -m pytest tests/test_fsr_demo.py -q
-.venv/bin/python -m pytest tests/test_generic_document_demo.py -q
-.venv/bin/python -m pytest tests/test_document_profile_demo.py -q
-.venv/bin/python -m pytest tests/test_skill_guidelines.py -q
-.venv/bin/python -m pytest tests/test_generalization_phase4_skills.py -q
-.venv/bin/python -m pytest tests/test_generalization_phase6_product_docs.py -q
+.venv/bin/python -m ai_writing_plugin validate-stage-gate-result \
+  --run-dir runs/<run_id> \
+  --path runs/<run_id>/orchestration/stage_gate_results/<stage>.json
 ```
 
-完整回归仍然是：
+There is no current Python command that authors the user decision. Do not fabricate one. A gate controls continuation only and never records professional approval. If a bound ReviewResult changes, revalidate it, re-complete that step dispatch, revalidate the ledger, and rebuild any affected StageGateResult.
+
+## 11. Stage topology
+
+```text
+ingest:
+  step-input-materials
+  step-material-inventory
+  step-source-index
+outline:
+  step-template-outline
+evidence_planning:
+  step-research-questions
+  step-evidence-map
+draft:
+  step-conservative-draft
+review:
+  step-review
+  step-verification
+finalize:
+  step-revision
+  step-final-report
+learning:
+  step-run-summary
+  step-candidate-profile-update
+```
+
+The Python layer validates this topology but does not execute the professional work.
+
+## 12. Context diagnostics
 
 ```bash
-.venv/bin/python -m pytest -q
+.venv/bin/python -m ai_writing_plugin context-telemetry \
+  --root . --task-type hara --step step-evidence-map --json
+
+.venv/bin/python -m ai_writing_plugin check-context-budget \
+  --root . --task-type hara --step step-evidence-map --json
 ```
 
-## Eval regression
+These are deterministic surface estimates, not provider cache measurements or document-quality metrics.
 
-运行 deterministic eval runner：
+## 13. Document-type status
 
-```bash
-.venv/bin/python -m ai_writing_plugin.eval.runner --cases tests/evals/cases --output runs/eval-regression
-```
+- Official L3 product/domain asset labels: `hara`, `technical_solution`, `test_report`, `fsr`.
+- Current Python registry/type rules: absent.
+- Generic/external profile loading: absent.
+- TSC: nonofficial Skill/overlay/fixture prototype; official L3 implementation deferred.
 
-检查输出中的 `expectation_mismatch_count`。期望值通常应为 `0`。
+Do not infer execution support from a fixture or Skill directory alone.
 
-eval passed 只表示 deterministic engineering regression 通过，不表示专业批准、合规批准或内容可直接发布。
+## 14. Failure and recovery
 
-## Artifact checks
+Current recovery is metadata-oriented, not a Python content-resume lifecycle:
 
-对任意 `runs/<run_id>/`，重点检查：
+- inspect ProgressLedger;
+- validate the individual package/result/ref that failed;
+- regenerate the affected metadata through its builder when safe;
+- re-run the independent worker when professional artifacts are invalid;
+- never hand-patch hashes or accepted gate state.
 
-```text
-inputs/input_inventory.json
-knowledge/source_index.json
-knowledge/provenance_index.json
-plans/claim_support_matrix.json
-plans/citation_plan.json
-draft/full_draft.md
-review/review_report.json
-review/final_review.md
-verify/verify_report.json
-verify/failures.md
-revision_plan.json
-final/final_report.md
-final/delivery_summary.md
-trace/hitl_decisions.jsonl
-learning/candidate_profile_update.yaml
-learning/candidate_skill_patch.md
-learning/promotion_report.md
-```
-
-关键审查顺序：
-
-```text
-source_index -> provenance_index -> claim_support_matrix -> review_report -> verify_report -> final_report -> delivery_summary
-```
-
-## Sample / reference boundary check
-
-确认：
-
-- `source_index` 没有 sample fact source entries；
-- `citation_plan` 没有 sample fact evidence；
-- `reference` entries 不能作为 project-specific facts 的 `fact_support`，除非未来有明确设计变更；
-- `sample` / `reference` 不能证明 HARA facts、technical decisions、test results、pass/fail、defect state、coverage 或 release readiness；
-- critical claims 必须有 T0/T1 support，否则保持 pending / open / `NEEDS_USER_CONFIRMATION`；
-- T3/T4/T5 本身不能支持 critical claim。
-
-可搜索关键词：
-
-```text
-sample fact source
-reference fact_support
-source_index
-citation_plan
-```
-
-## Candidate update check
-
-在 `learning/candidate_profile_update.yaml` 中，期望状态：
-
-```text
-status: proposed
-active: false
-auto_applied: false
-rollback_supported: true
-```
-
-`candidate_profile_update` 和 `candidate_skill_patch` 只是 proposal。
-
-## Profile and Markdown Spec check
-
-- external `document_profile.yaml` 必须通过 validation 后才能使用；
-- `profile-from-spec` 只生成 candidate profiles；
-- `Markdown Spec` 是上游说明层，不是 runtime rule；
-- `custom_technical_note` 是 external profile demo，不是 official L3 document type；
-- candidate profiles 和 candidate skill patches 不能自动覆盖 active profiles 或 stable Skill files。
-
-## Leakage checks
-
-对 `technical_solution`，user-facing outputs 不应出现 HARA-only terms，例如 `ASIL`、`S/E/C`、`hazardous event` 或 `safety goal`。
-
-对 `test_report`，user-facing outputs 不应出现 HARA-only terms，也不应出现 technical_solution-only terms，例如 `architecture decision` 或 `rollout risk acceptance`。
-
-对 `fsr`，user-facing outputs 可以包含用户提供的 HARA trace、safety goal 和 ASIL terms，但不能变成 TSC deliverable。可扫描 TSC-only deliverable phrases，例如 `Technical Safety Concept final report`、`Technical Safety Requirement table`、`TSC approval statement` 或 `technical safety mechanism completeness`。
-
-不要把稳定 machine fields（例如 check ids）误判为用户可见 prose，除非它们真的进入了用户可见输出。
-
-## Common failures
-
-- `verify_report.json` 为 `blocked`：常见原因是 HITL confirmations 仍 pending，非交互 demo 中可能是预期行为；
-- `final_report.md` 包含 open confirmations：对未确认 critical claims 是预期行为；
-- `sample` 出现在 `source_index` 作为事实来源：blocking defect；
-- candidate update 自动变为 active：blocking defect；
-- run artifacts 出现在 git status：从 staging 移除，并保持 `runs/` ignored。
-
-## Git hygiene
-
-不要提交：
-
-```text
-runs/
-.venv/
-.pytest_cache/
-__pycache__/
-generalization_phase*_execution_package.md
-generalization_phase*_handoff.md
-```
-
-提交前检查：
+## 15. Git hygiene
 
 ```bash
 git status --short
 git status --short -- runs/
 git ls-files runs/
-git diff --stat
-git diff --cached --stat
+git diff --check
 ```
 
-`runs/` 应为空或仅包含未跟踪且被 ignore 的本地 runtime outputs。只提交有意的 source、fixture、test、skill 或 docs changes。
+Do not commit `runs/`, caches, local archives, or optional raw reference folders.
+
+## 16. Current contract
+
+For exact fields, fixed values, paths, statuses, and ref/hash rules, use:
+
+```text
+contracts/CURRENT_ARTIFACT_CONTRACTS.md
+```

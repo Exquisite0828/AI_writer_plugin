@@ -1,5 +1,7 @@
 # Test Report Document Type Spec
 
+Implementation status: official L3 product/domain design asset. The current Python package has no executable test-report rules or end-to-end content pipeline; the constraints below are future acceptance requirements and runtime guidance.
+
 ## 1. Purpose
 
 Test report documents support traceable reporting for test execution results, defect status, coverage limitations, and open release-review questions.

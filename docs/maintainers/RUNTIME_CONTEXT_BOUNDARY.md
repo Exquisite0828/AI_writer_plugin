@@ -22,7 +22,7 @@ The practical failure mode is over-eager runtime behavior, such as pre-creating 
 | `docs/maintainers/` | Maintainer design docs | Maintainer reference only. Do not use as runtime execution instructions. |
 | `docs/` user docs | Product documentation | Human-facing guidance. Do not treat as hidden command input. |
 | `examples/` | Demo fixtures | Read only when the user explicitly chooses a demo task or a test references a committed fixture. |
-| `runs/` | Runtime outputs | Generated output only. Do not commit. Read only for resume, review, diagnosis, or explicit user inspection. |
+| `runs/` | Runtime outputs | Generated output only. Do not commit. Read only for metadata continuation, review, diagnosis, or explicit user inspection. |
 
 ## Runtime Prompt Rules
 
@@ -53,7 +53,7 @@ Run start is owned by the deterministic engine, not by prompt text. The runtime 
 python -m ai_writing_plugin init-run --task <task.yaml>
 ```
 
-This command may create only `runs/<run_id>/manifest.json` and `runs/<run_id>/task_brief.json`. Runtime prompts may request or inspect those artifacts, but must not hand-write them or pre-create downstream artifact directories.
+This command may create only `runs/<run_id>/input_refs.json`, `runs/<run_id>/manifest.json`, and `runs/<run_id>/task_brief.json`. Runtime prompts may request or inspect those artifacts, but must not hand-write them or pre-create downstream artifact directories.
 
 ## Contract Boundary
 

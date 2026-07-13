@@ -2,7 +2,7 @@
 
 感谢你考虑参与 AI 专业文档写作 Claude Code 插件项目。
 
-本项目当前定位是 technical preview：一套 deterministic Python writing workflow，加 Claude Code command / Skill guideline / 文档类型规则。贡献时请优先保持可运行、可审查、可测试和证据边界清晰。
+本项目当前定位是 technical preview：deterministic Python Phase 0/metadata utilities，加 Claude Code agent-worker command / Skill protocol和domain assets。当前没有完整Python writing engine。贡献时请优先保持可运行、可审查、可测试和证据边界清晰。
 
 ## 开发准备
 
@@ -36,18 +36,18 @@ claude plugin validate .
 - critical claim 必须有 `source` 或 HITL，否则保持 pending / `NEEDS_USER_CONFIRMATION`。
 - `final_report.md`、eval passed、promotion report 和 candidate update 都不是专业批准。
 - candidate update / candidate patch 默认 proposed / inactive，不能自动覆盖 stable profile 或 Skill。
-- TSC / Technical Safety Concept 当前 deferred；不要新增 official TSC type、profile、Skill、fixture 或测试目标。
+- TSC / Technical Safety Concept 当前只有非official Skill、step overlays和fixture prototype；不要在没有active phase/spec时新增official Python type、registry、内容engine或测试目标。HSC/SSC仍deferred。
 
 ## 文档类型
 
-当前 official built-in profiles：
+当前 official L3 product/domain asset labels：
 
 - `hara`
 - `technical_solution`
 - `test_report`
 - `fsr`
 
-`generic_document` 是通用模式，不是 official built-in profile。`custom_technical_note` 是 external `document_profile.yaml` demo，不是 official built-in profile。
+当前Python没有document-type registry或type-specific content engine。`generic_document`和`custom_technical_note`是Skill/profile/demo设计资产，external profile不会被当前Python加载。
 
 新增 official built-in document type 需要单独 active phase/spec、fixture、tests、Skill guideline 和维护者 review；不要在普通 PR 中顺手添加。
 

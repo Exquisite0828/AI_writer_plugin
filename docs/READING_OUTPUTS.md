@@ -1,105 +1,125 @@
 # Reading Outputs
 
-这份指南说明运行完成后先读哪些文件、每类 artifact 的用途，以及如何理解 pending 状态。
+当前仓库有两类输出：Python强制生成/校验的metadata，以及Claude Code worker在真实执行后可能生成的专业artifact。不要把两者混为一谈。
 
-所有路径都位于当前 run directory 下：
+## 1. Python Phase 0输出
 
-```text
-runs/<run_id>/
-```
-
-## 推荐阅读顺序
-
-1. `runs/<run_id>/final/final_report.md`
-2. `runs/<run_id>/final/delivery_summary.md`
-3. `runs/<run_id>/review/final_review.md`
-4. `runs/<run_id>/verify/verify_report.json`
-5. `runs/<run_id>/plans/claim_support_matrix.json`
-6. `runs/<run_id>/learning/candidate_profile_update.yaml`
-
-先读 final package，再读 review and verification，再按需查 claim support 和 learning proposal。
-
-## User-Facing 输出
-
-优先给普通使用者阅读：
+`init-run`只创建：
 
 ```text
-runs/<run_id>/final/final_report.md
-runs/<run_id>/final/delivery_summary.md
-runs/<run_id>/review/final_review.md
+runs/<run_id>/input_refs.json
+runs/<run_id>/manifest.json
+runs/<run_id>/task_brief.json
 ```
 
-`final_report.md` 是 review-ready package。它用于集中查看 source facts、open confirmations、limitations、review findings 和 verification findings。
+推荐顺序：
 
-`delivery_summary.md` 用于快速了解 run status、主要输出、open items 和 candidate updates 状态。
+1. `manifest.json`：确认`status=initialized`、`phase=phase_0`和task路径。
+2. `task_brief.json`：确认task type、标题、受众和人工确认要求。
+3. `input_refs.json`：确认每个输入的path、hash、role、read policy和fact-source permission。
 
-`final_review.md` 是可读 review 摘要，适合在继续补材料或记录 HITL 前先看。
+Phase 0之后没有final report可读，因为Python没有执行内容阶段。
 
-## Review and Verification
+## 2. Orchestration metadata
 
-用于判断哪些 claim 被支持、哪些 claim 仍需要确认：
+当agent workflow开始调度worker后，重点查看：
 
 ```text
-runs/<run_id>/verify/verify_report.json
-runs/<run_id>/plans/claim_support_matrix.json
-runs/<run_id>/review/review_report.json
+orchestration/progress_ledger.json
+orchestration/context_packages/<stage>/<step>.json
+orchestration/worker_dispatches/<stage>/<step>.json
+orchestration/step_results/<step>.json
+orchestration/review_context_packages/<stage>.json
+orchestration/review_results/<stage>/<step>.json
+orchestration/stage_gate_results/<stage>.json
+stage_reviews/<stage>/issues.json
+stage_reviews/<stage>/issues_index.json
+stage_reviews/<stage>/issues/<issue_id>.json
 ```
 
-`verify_report.json` 可能包含 blocked verification、warnings 或 required action。`blocked` 不一定表示 run 失败；它可能表示仍缺少真实项目 `source` 或 HITL。
+推荐顺序：
 
-`claim_support_matrix.json` 用于检查 critical claims 的 evidence status、source support 和 confirmation status。
+1. ProgressLedger：当前step状态及result refs。
+2. StepResult：worker报告的artifact paths/hashes和blocking count。
+3. Stage-review issues：`issues.json`是review worker的严格source；`issues_index.json`是紧凑索引，逐issue detail保存有界的定位、理由和建议。先运行builder/validator，再使用这些输出。
+4. Per-step ReviewResults：同一个stage review worker为该stage每个step报告package refs和blocking count；逐项确认ledger中的`review_result_ref`已绑定最终hash。
+5. StageGateResult：是否可以继续、需要修订、blocked或等待用户确认。
 
-`review_report.json` 是结构化 review artifact，通常比 `final_review.md` 更适合排查细节。
+Metadata只能证明shape、path、hash和状态关系。它不证明专业内容正确。
 
-## Audit/Debug Artifacts
+## 3. Worker professional artifacts
 
-这些文件主要用于审计、排查和维护者检查：
+只有对应worker确实完成并在StepResult中报告后，才读取下列目录：
 
 ```text
-runs/<run_id>/inputs/input_inventory.json
-runs/<run_id>/knowledge/source_index.json
-runs/<run_id>/knowledge/provenance_index.json
-runs/<run_id>/plans/evidence_map.json
-runs/<run_id>/plans/citation_plan.json
-runs/<run_id>/trace/session_trace.jsonl
-runs/<run_id>/trace/hitl_decisions.jsonl
+inputs/
+knowledge/
+plans/
+draft/
+review/
+verify/
+revised/
+final/
+trace/
+learning/
 ```
 
-如果需要确认某条内容来自哪里，按这个顺序查：
+常见阅读路线：
 
 ```text
-source_index -> provenance_index -> claim_support_matrix -> verify_report -> final_report
+source/provenance
+-> evidence and claim support
+-> citation/section tasks
+-> draft
+-> review and verification
+-> revision
+-> review-ready final
 ```
 
-## Pending 状态不是失败
+具体路径由当前step Skill和`contracts/CURRENT_ARTIFACT_CONTRACTS.md`的worker ownership说明决定。Python当前不创建或语义校验这些内容。
 
-以下状态可以是正确输出：
+## 4. Pending和open状态
 
-- `NEEDS_USER_CONFIRMATION`
-- pending claims
-- open confirmations
-- blocked verification
+以下状态可能是正确结果：
 
-它们表示系统没有找到足够的项目 `source` 或已记录 HITL 来支持某个 critical claim。不要手工删除这些标记；应补充真实项目材料，或在 workflow 中记录真实人工决定。
+- `NEEDS_USER_CONFIRMATION`；
+- pending/open claim；
+- missing evidence；
+- blocked verification；
+- `pending_user_confirmation` stage gate；
+- proposed/inactive candidate material。
 
-## Learning Proposal
+它们表示系统没有足够项目证据或人工决定。不要通过手工删除标记把问题伪装成已解决。
 
-Learning artifacts 是 proposal，不会自动覆盖稳定配置：
+## 5. Approval boundary
 
-```text
-runs/<run_id>/learning/candidate_profile_update.yaml
-runs/<run_id>/learning/candidate_skill_patch.md
-runs/<run_id>/learning/promotion_report.md
-```
+- hash match不是事实认证；
+- StepResult done不是专业批准；
+- ReviewResult done不是专业批准；
+- StageGateResult accepted只允许编排继续；
+- verification没有发现机械错误，不代表结论正确；
+- `final_report.md`只能是review-ready文档；
+- candidate material不会被当前Python自动激活。
 
-`candidate_profile_update.yaml` 和 candidate skill patch 默认 proposed/inactive。它们不能自动覆盖 stable profile、stable Skill 或 built-in document type rules。
+## 6. Source boundary检查
 
-`promotion_report.md` 是工程 gate 信息，不改变专业结论。
+在worker artifact中追溯claim时，至少确认：
 
-## 证据边界
+1. citation指向存在的evidence；
+2. evidence指向明确source/provenance位置；
+3. source role允许事实支持；
+4. sample/reference没有被升级为项目事实；
+5. evidence内容真正支持claim，而不只是关键词相似；
+6. critical claim缺少T0/T1时仍保持open。
 
-- `source` 可以作为项目事实来源。
-- `sample` is not fact source。
-- `reference` is not project-specific fact support。
-- critical claim 必须有项目 `source` 或 HITL，否则保持 pending / `NEEDS_USER_CONFIRMATION`。
-- final report、eval passed、promotion report、candidate update 都不能替代真实人工审查和项目确认。
+## 7. Missing output
+
+不存在某个专业目录时，先检查：
+
+- 对应step是否真的被独立worker调度；
+- StepResult是否存在且通过validator；
+- ProgressLedger是否绑定该result；
+- stage是否blocked或等待用户确认；
+- 当前环境是否报告`worker_unavailable`。
+
+不要依据旧Phase 0-8文档假设所有目录都应由`init-run`预创建。

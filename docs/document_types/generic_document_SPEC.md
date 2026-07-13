@@ -1,5 +1,7 @@
 # Generic Document Markdown Spec
 
+Implementation status: candidate design asset. The current Python package does not load the referenced profile or execute a generic-document content pipeline.
+
 Spec title: Generic Document Markdown Spec
 Spec version: 0.1.0
 Spec status: candidate

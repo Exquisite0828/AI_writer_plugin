@@ -1,10 +1,12 @@
 # Document Profile Spec Template
 
-这个模板用于 Phase N3 的 `Markdown Spec` -> `document_profile.yaml` / candidate profile 工作。
+Status: future design template. The current Python package does not load profiles or generate candidate profiles from Markdown.
 
-`Markdown Spec` 是上游说明层，用来帮助 human reviewers、domain experts 和 Codex 以可审查方式描述一个 document type。它不是 engine runtime rule，`write-run` 不能把这个 Markdown 文件当成唯一 machine rule。可执行的机器规则仍然是通过 N2 profile loader 校验的 `document_profile.yaml`，或内置 Python `DocumentTypeRules`。
+这个模板用于讨论未来的 `Markdown Spec` -> `document_profile.yaml` / candidate profile 工作。
 
-生成结果始终是 candidate package。candidate profile 不能自动 promote，active profiles 不能被自动覆盖，stable Skill 不能被自动覆盖。任何 candidate profile 被复制到 active profile location、或用于真实项目材料前，都需要人工 review。
+`Markdown Spec` 是上游说明层，用来帮助 human reviewers、domain experts 和 Codex 以可审查方式描述一个 document type。它不是当前 engine runtime rule。当前仓库没有 profile loader、spec generator或Python document-type rules；未来实现必须先通过独立 active phase/spec。
+
+任何未来生成结果都必须是candidate package。candidate profile不能自动promote，active profiles和stable Skill不能被自动覆盖。当前Python不会生成或应用这些candidate。
 
 保留的英文边界原句：
 

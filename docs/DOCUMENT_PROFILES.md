@@ -1,82 +1,35 @@
-# Document Profiles
+# Document Profile Design Assets
 
-这份指南说明如何使用 `generic_document` 和 external `document_profile.yaml`，而不新增 built-in document type。
+Status: design/configuration reference; not consumed or enforced by the current Python package.
 
-## 支持级别
+The repository contains profile YAML and Markdown Spec assets that describe a future data-driven document-type mechanism. Current Python code records `task_type` in Phase 0 metadata but has no profile loader, profile schema validator, document-type registry, profile generator, eval runner, correction harvester, or promotion command.
 
-当前项目有三种支持级别：
-
-| 级别 | 机制 | 示例 |
-| --- | --- | --- |
-| official L3 built-in | 内置 `DocumentTypeRules`、fixtures、tests 和 Skill guideline | `hara`、`technical_solution`、`test_report`、`fsr` |
-| document-type skill 层 | PascalCase 路径下的 `SKILL.md` + 逐步子 skill + demo fixture | `ItemDefinitionDocument`、`FunctionalSafetyRequirement`、`TechnicalSafetyConcept` |
-| generic mode | 共享 generic rules，加用户声明的 task inputs | `generic_document` |
-| external profile | 由 task file 加载并通过校验的 `document_profile.yaml` | `custom_technical_note` demo |
-
-`generic_document` 和 `custom_technical_note` 都不是 official L3 built-ins。
-
-## 什么时候用 generic_document
-
-适合使用 `generic_document` 的情况：
-
-- 文档仍然由项目 `source` materials 驱动；
-- 你有 `template` 和 `checklist`；
-- 你希望使用共享 artifact tree；
-- unresolved critical claims 可以保持 open；
-- 当前没有适合该领域的 official L3 built-in。
-
-示例：
-
-```yaml
-task_type: generic_document
-task_title: Generate migration decision memo
-output_format: markdown
-allow_inference: false
-critical_claims:
-  - final decision recommendation
-  - release readiness conclusion
-requires_human_confirmation:
-  - final decision recommendation
-inputs:
-  - path: inputs/source.md
-    role: source
-  - path: inputs/template.md
-    role: template
-  - path: inputs/checklist.md
-    role: checklist
-  - path: inputs/reference.md
-    role: reference
-  - path: inputs/sample.md
-    role: sample
-```
-
-## 什么时候创建 external profile
-
-适合创建 external `document_profile.yaml` 的情况：
-
-- 该文档类型会在多次运行中复用；
-- 它有稳定 sections 和 critical claims；
-- 它需要可复用的 final-status policy；
-- 它不应成为 official L3 built-in；
-- 维护者希望 profile changes 作为数据接受 review。
-
-现有 external profile demo：
+## Current files
 
 ```text
+profiles/document_types/generic_document.yaml
 profiles/document_types/customer_demo/custom_technical_note.yaml
-examples/custom_technical_note_profile_demo_fixture/task.yaml
+docs/document_types/generic_document_SPEC.md
+docs/DOCUMENT_PROFILE_SPEC_TEMPLATE.md
 ```
 
-task file 通过以下字段引用 profile：
+These files are useful for design review and future active phases. Passing a `document_profile_path` in a task does not currently change Python behavior.
 
-```yaml
-task_type: custom_technical_note
-document_profile_path: profiles/document_types/customer_demo/custom_technical_note.yaml
-```
+## Intended support model
 
-## Profile fields overview
+The intended future model distinguishes:
 
-常见 profile fields：
+| Level | Intended role | Current implementation |
+| --- | --- | --- |
+| L1 generic | Shared workflow with task-declared constraints | Skill/profile assets only |
+| L2 external profile | Customer/project data loaded after validation | Loader absent |
+| L3 official type | Maintained executable rules, fixtures and regression tests | Product labels/Skills/fixtures exist; Python rules absent |
+
+Official product/domain labels currently retained by repository policy are `hara`, `technical_solution`, `test_report`, and `fsr`. That label does not mean a Python registry currently enforces their rules.
+
+## Profile field design
+
+A future external profile may need fields such as:
 
 ```yaml
 profile_id: customer_demo.custom_technical_note
@@ -102,90 +55,61 @@ non_fact_source_roles:
   - template
   - checklist
   - reference
-reference_policy: Reference materials may support methodology but must not prove project-specific facts.
-sample_policy: Sample documents may guide structure and style but must not be used as fact sources.
 default_final_status: ready_for_human_review
 allowed_final_statuses:
   - ready_for_human_review
   - finalized_with_open_items
   - blocked_pending_confirmation
-review_focus:
-  - unsupported critical claims
-verification_focus:
-  - sample not fact source
-  - reference not project fact source
-  - critical claims confirmation
-candidate_learning_policy: Generate candidate updates only; keep proposed/inactive unless explicitly reviewed.
+candidate_learning_policy: Generate proposals only; never auto-apply.
 ```
 
-具体 contract 由 profile loader 和 tests enforce。
+This is candidate design data, not a statement that these fields are currently parsed or enforced.
 
-## Profile validation boundary
+## Required future loader boundaries
 
-External profiles 必须先通过 validation。无效 profile 应 fail safely，不能生成 successful final package。
+If a future active phase implements profiles, it must provide:
 
-Profile validation 不等于专业批准。它只表示 profile data 在结构上可以被 engine 使用。
+1. an explicit schema and version policy;
+2. safe path resolution and profile hash binding;
+3. fail-closed behavior for invalid or missing profiles;
+4. tests proving sample/reference cannot become project fact support;
+5. critical-claim and final-status enforcement;
+6. positive and negative fixtures;
+7. no automatic profile or stable Skill overwrite;
+8. current documentation and rollback behavior.
 
-## Markdown Spec -> candidate profile
+Until those conditions exist, documentation must not call a profile “validated” or “active”.
 
-`Markdown Spec` 是给 human reviewers、domain experts 和 AI coding tools 使用的说明层。
+## Markdown Spec role
 
-它不是唯一 runtime machine rule。
+A Markdown Spec is an upstream human-readable description. It can help experts and maintainers discuss sections, claims, evidence rules, and review focus. It is not a machine rule and the current repository has no command that converts it into an executable profile.
 
-runtime engine 使用结构化规则：
+## Source boundary
 
-- built-in Python `DocumentTypeRules`；
-- YAML external `document_profile.yaml`；
-- review 后生成的 candidate profile material。
+Any future profile mechanism must retain:
 
-`profile-from-spec` command 可以从 `Markdown Spec` 生成 candidate profile material：
+- `source` may support project facts when relevant;
+- `template` constrains structure;
+- `checklist` constrains review coverage;
+- `reference` supports method/background only;
+- `sample` supports style/shape only;
+- critical claims require T0/T1 or remain open.
 
-```bash
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m ai_writing_plugin profile-from-spec --spec docs/document_types/generic_document_SPEC.md --out /tmp/candidate-profile
-```
+Profile data cannot waive these rules.
 
-生成内容是 candidate output，不会自动 active。
+## Candidate and promotion boundary
 
-## Correction harvesting 和 promotion gate
+Current Skills may describe proposed candidate artifacts, but current Python does not generate, evaluate, apply, or promote them. Any future promotion mechanism requires a separate active phase, explicit human approval, passing evaluation evidence, version/hash binding, and rollback metadata.
 
-Correction flow：
+## TSC boundary
 
-```text
-explicit correction events -> correction harvesting -> candidate patch -> eval -> promotion gate
-```
+`TechnicalSafetyConcept` has nonofficial Skill, step-overlay, and fixture assets. It is not an external profile and not an official L3 implementation. Python rules/registry, end-to-end content execution, and dedicated engine tests are absent. Official TSC and HSC/SSC remain deferred.
 
-关键边界：
+## What profiles must not imply
 
-- correction harvesting 不能自动修改 stable profile；
-- candidate patch 不能自动覆盖 stable profile；
-- candidate profile output 默认 proposed/inactive；
-- promotion 需要 explicit human approval、eval result、rollback metadata、schema checks 和 base hash checks；
-- stable Skill.md files 不会被 profile promotion 覆盖。
-
-## source / sample / reference 边界
-
-Profiles 必须保持和 built-in document types 一样的 source policy：
-
-- `source` 在可解析且相关时可以支持项目事实；
-- `template` 约束结构；
-- `checklist` 约束 review coverage；
-- `sample` 只用于 style 和 shape；
-- `reference` 只用于 methodology 或 background；
-- critical claims require source or HITL。
-
-不要写入允许 `sample` 提供事实、或允许 `reference` 证明项目事实的 profile policy。
-
-## Profiles 不应该做什么
-
-Profiles 不应该：
-
-- 创建一套独立 pipeline；
-- 绕过 Python deterministic engine；
-- 把 `Markdown Spec` 当成唯一 runtime rule；
-- 自动确认 critical claims；
-- 把 `final_report.md` 变成专业批准文件；
-- 让 eval passed 变成专业批准；
-- 自动 promote candidate patches；
-- 覆盖 stable Skills；
-- 用 external profile 重新实现 TSC（应直接使用内置 `task_type: TechnicalSafetyConcept`）；
-- 通过命名为 `hsc` / `ssc` 等方式实现下游 HSC/SSC（硬件/软件安全概念仍 deferred）。
+- an independent pipeline per document type;
+- automatic professional judgment or approval;
+- sample/reference fact support;
+- automatic candidate activation;
+- stable Skill modification;
+- current Python behavior that does not exist.
