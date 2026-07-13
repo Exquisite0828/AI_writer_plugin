@@ -61,6 +61,7 @@ def create_repo_and_run(tmp_path: Path, *, include_doc_type: bool = True):
         )
 
     write(run_dir / "task_brief.json", '{"task_type":"hara"}')
+    write(run_dir / "manifest.json", "{}")
     task_path = repo_root / "examples" / "hara_minimal" / "task.yaml"
     source_path = repo_root / "examples" / "hara_minimal" / "inputs" / "source.md"
     write(task_path, "task_type: hara\n")
@@ -143,6 +144,7 @@ def test_build_step_context_package_writes_canonical_package_with_hashes(tmp_pat
     ]
     assert [item["path"] for item in payload["run_refs"]] == [
         "task_brief.json",
+        "manifest.json",
         "inputs/upstream.json",
     ]
     assert payload["input_refs_ref"] == {
@@ -156,6 +158,61 @@ def test_build_step_context_package_writes_canonical_package_with_hashes(tmp_pat
         repo_root=repo_root,
         run_dir=run_dir,
     ) == payload
+
+
+def test_only_step_input_materials_receives_manifest_by_default(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    write(repo_root / "skills" / "step-material-inventory" / "SKILL.md", "wrapper")
+    write(
+        repo_root
+        / "skills"
+        / "workflow-steps"
+        / "step-material-inventory"
+        / "SKILL.md",
+        "canonical",
+    )
+
+    step_one = build_step_context_package(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        task_type="hara",
+    )
+    later_step = build_step_context_package(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-material-inventory",
+        task_type="hara",
+    )
+
+    assert [item["path"] for item in step_one["run_refs"]] == [
+        "task_brief.json",
+        "manifest.json",
+    ]
+    assert [item["path"] for item in later_step["run_refs"]] == [
+        "task_brief.json",
+    ]
+
+
+def test_input_refs_json_is_never_duplicated_into_run_refs(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+
+    payload = build_step_context_package(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        task_type="hara",
+        input_refs=["input_refs.json", "task_brief.json", "manifest.json"],
+    )
+
+    assert payload["input_refs_ref"]["path"] == "input_refs.json"
+    assert [item["path"] for item in payload["run_refs"]] == [
+        "task_brief.json",
+        "manifest.json",
+    ]
 
 
 def test_build_step_context_package_keeps_document_type_refs_lazy_and_task_scoped(tmp_path):
@@ -191,6 +248,114 @@ def test_build_step_context_package_keeps_document_type_refs_lazy_and_task_scope
     )
 
 
+@pytest.mark.parametrize("mutation", ["missing-required", "sibling-ref"])
+def test_validator_enforces_required_and_task_scoped_instruction_refs(
+    tmp_path,
+    mutation,
+):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    payload = build_step_context_package(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        task_type="hara",
+    )
+
+    if mutation == "missing-required":
+        payload["instruction_refs"] = []
+    else:
+        sibling = (
+            repo_root
+            / "skills"
+            / "document-types"
+            / "SoftwareArchitecture"
+            / "SKILL.md"
+        )
+        write(sibling, "sibling")
+        payload["instruction_refs"].append(
+            {
+                "path": "skills/document-types/SoftwareArchitecture/SKILL.md",
+                "sha256": sha256_file(sibling),
+            }
+        )
+
+    assert_invalid(
+        payload,
+        "instruction_refs must match",
+        repo_root=repo_root,
+        run_dir=run_dir,
+    )
+
+
+def test_validator_does_not_require_optional_refs_added_after_package_creation(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path, include_doc_type=False)
+    payload = build_step_context_package(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        task_type="hara",
+    )
+
+    write(repo_root / "skills" / "document-types" / "hara" / "SKILL.md", "later root")
+    write(
+        repo_root
+        / "skills"
+        / "document-types"
+        / "hara"
+        / "steps"
+        / "step-input-materials.md",
+        "later overlay",
+    )
+
+    assert validate_step_context_package(
+        payload,
+        repo_root=repo_root,
+        run_dir=run_dir,
+    ) == payload
+
+
+def test_run_dir_validation_requires_matching_context_package_run_id(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    payload = build_step_context_package(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        task_type="hara",
+    )
+    payload["run_id"] = "other-run"
+
+    assert_invalid(payload, "run_id must match run_dir", run_dir=run_dir)
+
+
+def test_input_refs_run_id_must_match_context_package_and_run_dir(tmp_path):
+    repo_root, run_dir = create_repo_and_run(tmp_path)
+    payload = build_step_context_package(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        task_type="hara",
+    )
+    input_refs_path = run_dir / "input_refs.json"
+    input_refs_payload = read_json(input_refs_path)
+    input_refs_payload["run_id"] = "other-run"
+    input_refs_path.write_text(
+        json.dumps(input_refs_payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    payload["input_refs_ref"]["sha256"] = sha256_file(input_refs_path)
+
+    assert_invalid(
+        payload,
+        "input_refs_ref run_id must match context package run_id",
+        repo_root=repo_root,
+        run_dir=run_dir,
+    )
+
+
 def test_missing_document_type_skill_or_overlay_does_not_fail(tmp_path):
     repo_root, run_dir = create_repo_and_run(tmp_path, include_doc_type=False)
 
@@ -206,6 +371,35 @@ def test_missing_document_type_skill_or_overlay_does_not_fail(tmp_path):
         "skills/step-input-materials/SKILL.md",
         "skills/workflow-steps/step-input-materials/SKILL.md",
     ]
+
+
+@pytest.mark.parametrize("task_type", ["technical_solution", "test_report", "fsr"])
+def test_root_only_document_type_skill_does_not_require_step_overlay(tmp_path, task_type):
+    repo_root, run_dir = create_repo_and_run(tmp_path, include_doc_type=False)
+    write(
+        repo_root / "skills" / "document-types" / task_type / "SKILL.md",
+        f"{task_type} root guidance",
+    )
+
+    payload = build_step_context_package(
+        repo_root=repo_root,
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        task_type=task_type,
+    )
+
+    instruction_paths = [item["path"] for item in payload["instruction_refs"]]
+    assert f"skills/document-types/{task_type}/SKILL.md" in instruction_paths
+    assert all(
+        not path.startswith(f"skills/document-types/{task_type}/steps/")
+        for path in instruction_paths
+    )
+
+
+@pytest.mark.parametrize("task_type", ["hara", "technical_solution", "test_report", "fsr"])
+def test_official_l3_root_skill_asset_exists(task_type):
+    assert (ROOT / "skills" / "document-types" / task_type / "SKILL.md").is_file()
 
 
 @pytest.mark.parametrize(

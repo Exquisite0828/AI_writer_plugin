@@ -37,6 +37,12 @@ from .stage_gate_results import (
     stage_gate_result_path,
     validate_stage_gate_result,
 )
+from .stage_review_issues import (
+    StageReviewIssueError,
+    build_issues_index,
+    issues_index_path,
+    validate_issues_index_file,
+)
 from .step_worker_dispatch import (
     StepWorkerDispatchError,
     complete_step_worker_dispatch,
@@ -208,12 +214,15 @@ def build_parser() -> argparse.ArgumentParser:
     step_worker_dispatch_prepare.add_argument(
         "--overwrite-package",
         action="store_true",
-        help="Overwrite the existing context package.",
+        help="Overwrite the context package while preserving existing additional run refs.",
     )
     step_worker_dispatch_prepare.add_argument(
         "--overwrite-dispatch",
         action="store_true",
-        help="Overwrite the existing worker dispatch.",
+        help=(
+            "Overwrite the dispatch, reset its stale result bindings, and invalidate "
+            "later workflow handoff metadata for ordered redispatch."
+        ),
     )
 
     step_worker_dispatch_complete = subparsers.add_parser(
@@ -234,7 +243,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     step_worker_dispatch_complete.add_argument(
         "--status",
-        help="Optional completion status override.",
+        help="Optional consistency assertion against the authoritative result status.",
     )
 
     step_worker_dispatch_validator = subparsers.add_parser(
@@ -275,7 +284,7 @@ def build_parser() -> argparse.ArgumentParser:
     review_context_package_builder.add_argument(
         "--overwrite",
         action="store_true",
-        help="Overwrite the existing review context package.",
+        help="Start a new review cycle and clear old review bindings.",
     )
 
     review_context_package_validator = subparsers.add_parser(
@@ -294,6 +303,46 @@ def build_parser() -> argparse.ArgumentParser:
     review_context_package_validator.add_argument(
         "--run-dir",
         help="Optional run directory for ref existence, sha256, and delegated checks.",
+    )
+
+    stage_review_issues_builder = subparsers.add_parser(
+        "build-stage-review-issues",
+        help="Build a stage review issue index and per-issue detail metadata.",
+    )
+    stage_review_issues_builder.add_argument(
+        "--run-dir",
+        required=True,
+        help="Run directory.",
+    )
+    stage_review_issues_builder.add_argument(
+        "--stage",
+        required=True,
+        help="Workflow stage.",
+    )
+    stage_review_issues_builder.add_argument(
+        "--source",
+        required=True,
+        help="Run-relative or run-contained absolute issues.json path.",
+    )
+    stage_review_issues_builder.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace an unreferenced existing issue index and detail set.",
+    )
+
+    stage_review_issues_validator = subparsers.add_parser(
+        "validate-stage-review-issues",
+        help="Validate a stage review issue index and its detail metadata.",
+    )
+    stage_review_issues_validator.add_argument(
+        "--run-dir",
+        required=True,
+        help="Run directory.",
+    )
+    stage_review_issues_validator.add_argument(
+        "--path",
+        required=True,
+        help="Run-relative or run-contained absolute issues_index.json path.",
     )
 
     stage_gate_result_builder = subparsers.add_parser(
@@ -612,6 +661,34 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
         print("review context package valid")
+        return 0
+
+    if args.command == "build-stage-review-issues":
+        try:
+            build_issues_index(
+                run_dir=Path(args.run_dir),
+                stage=args.stage,
+                source_path=Path(args.source),
+                overwrite=args.overwrite,
+            )
+        except (OSError, json.JSONDecodeError, StageReviewIssueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print(issues_index_path(Path(args.run_dir), args.stage))
+        return 0
+
+    if args.command == "validate-stage-review-issues":
+        try:
+            validate_issues_index_file(
+                run_dir=Path(args.run_dir),
+                path_value=Path(args.path),
+            )
+        except (OSError, json.JSONDecodeError, StageReviewIssueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        print("stage review issues valid")
         return 0
 
     if args.command == "build-stage-gate-result":

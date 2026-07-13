@@ -214,6 +214,40 @@ def test_record_step_progress_upserts_entry_with_run_relative_refs(tmp_path):
     assert read_json(progress_ledger_path(run_dir)) == payload
 
 
+@pytest.mark.parametrize("metadata_kind", ["context", "step", "review"])
+def test_record_step_progress_rejects_noncanonical_metadata_paths_without_writes(
+    tmp_path,
+    metadata_kind,
+):
+    _, run_dir, _, package_path, step_result_path, review_result_path = create_repo_and_run(
+        tmp_path
+    )
+    init_progress_ledger(run_dir)
+    originals = {
+        "context": package_path,
+        "step": step_result_path,
+        "review": review_result_path,
+    }
+    source_path = originals[metadata_kind]
+    alternate_path = source_path.with_name(f"alternate-{source_path.name}")
+    alternate_path.write_bytes(source_path.read_bytes())
+    ledger_path = progress_ledger_path(run_dir)
+    before = ledger_path.read_bytes()
+
+    with pytest.raises(ProgressLedgerError, match="canonical"):
+        record_step_progress(
+            run_dir=run_dir,
+            stage="ingest",
+            step="step-input-materials",
+            status="done" if metadata_kind != "context" else "context_ready",
+            context_package=alternate_path if metadata_kind == "context" else None,
+            step_result=alternate_path if metadata_kind == "step" else None,
+            review_result=alternate_path if metadata_kind == "review" else None,
+        )
+
+    assert ledger_path.read_bytes() == before
+
+
 def test_record_step_progress_updates_existing_entry_in_place(tmp_path):
     _, run_dir, _, package_path, step_result_path, _ = create_repo_and_run(tmp_path)
     init_progress_ledger(run_dir)
@@ -341,7 +375,7 @@ def test_run_dir_validation_requires_existing_files_and_matching_hashes(tmp_path
             }
         ]
     )
-    assert_invalid(missing, "ref path does not exist", run_dir=run_dir)
+    assert_invalid(missing, "canonical path", run_dir=run_dir)
 
     wrong_hash = valid_ledger(
         entries=[
@@ -373,6 +407,266 @@ def test_record_step_progress_delegates_to_context_package_and_result_validators
             context_package=package_path,
             step_result=step_result_path,
         )
+
+
+@pytest.mark.parametrize(
+    "metadata_kind,mismatch_field,mismatch_value,expected_message",
+    [
+        ("context", "run_id", "other-run", "context package run_id must match ledger target"),
+        ("context", "stage", "outline", "context package stage and step must match ledger target"),
+        ("context", "step", "step-source-index", "context package stage and step must match ledger target"),
+        ("step", "run_id", "other-run", "StepResult run_id must match ledger target"),
+        ("step", "stage", "outline", "StepResult stage and step must match ledger target"),
+        ("step", "step", "step-source-index", "StepResult stage and step must match ledger target"),
+        ("review", "run_id", "other-run", "ReviewResult run_id must match ledger target"),
+        ("review", "stage", "outline", "ReviewResult stage and step must match ledger target"),
+        ("review", "step", "step-source-index", "ReviewResult stage and step must match ledger target"),
+    ],
+)
+def test_record_step_progress_rejects_delegated_metadata_for_another_target_without_writes(
+    tmp_path,
+    metadata_kind,
+    mismatch_field,
+    mismatch_value,
+    expected_message,
+):
+    _, run_dir, _, package_path, step_result_path, review_result_path = create_repo_and_run(
+        tmp_path
+    )
+    init_progress_ledger(run_dir)
+    ledger_path = progress_ledger_path(run_dir)
+    ledger_before = ledger_path.read_bytes()
+
+    target_path = {
+        "context": package_path,
+        "step": step_result_path,
+        "review": review_result_path,
+    }[metadata_kind]
+    target_payload = read_json(target_path)
+    target_payload[mismatch_field] = mismatch_value
+    if metadata_kind == "context" and mismatch_field in {"stage", "step"}:
+        target_payload["result_paths"] = {
+            "step_result": (
+                "orchestration/step_results/"
+                f"{target_payload['step']}.json"
+            ),
+            "review_result": (
+                "orchestration/review_results/"
+                f"{target_payload['stage']}/{target_payload['step']}.json"
+            ),
+        }
+    write(target_path, json.dumps(target_payload))
+
+    kwargs = {
+        "run_dir": run_dir,
+        "stage": "ingest",
+        "step": "step-input-materials",
+        "status": "done" if metadata_kind != "context" else "context_ready",
+        "context_package": package_path if metadata_kind == "context" else None,
+        "step_result": step_result_path if metadata_kind == "step" else None,
+        "review_result": review_result_path if metadata_kind == "review" else None,
+    }
+    with pytest.raises(ProgressLedgerError, match=expected_message):
+        record_step_progress(**kwargs)
+
+    assert ledger_path.read_bytes() == ledger_before
+
+
+@pytest.mark.parametrize("with_review", [False, True])
+def test_record_step_progress_rejects_status_that_disagrees_with_authoritative_result_without_writes(
+    tmp_path,
+    with_review,
+):
+    _, run_dir, _, _, step_result_path, review_result_path = create_repo_and_run(tmp_path)
+    init_progress_ledger(run_dir)
+    ledger_path = progress_ledger_path(run_dir)
+    ledger_before = ledger_path.read_bytes()
+
+    with pytest.raises(ProgressLedgerError, match="status must match authoritative"):
+        record_step_progress(
+            run_dir=run_dir,
+            stage="ingest",
+            step="step-input-materials",
+            status="blocked",
+            step_result=step_result_path,
+            review_result=review_result_path if with_review else None,
+        )
+
+    assert ledger_path.read_bytes() == ledger_before
+
+
+def test_record_step_progress_uses_review_result_as_authority_for_all_completion_fields(
+    tmp_path,
+):
+    _, run_dir, _, _, step_result_path, review_result_path = create_repo_and_run(tmp_path)
+    review_payload = read_json(review_result_path)
+    review_payload.update(
+        status="needs_revision",
+        blocking_issues_count=3,
+        next_gate_status="revision_required",
+    )
+    write(review_result_path, json.dumps(review_payload))
+    init_progress_ledger(run_dir)
+
+    payload = record_step_progress(
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        status="needs_revision",
+        step_result=step_result_path,
+        review_result=review_result_path,
+    )
+
+    entry = payload["entries"][0]
+    assert entry["status"] == "needs_revision"
+    assert entry["blocking_issues_count"] == 3
+    assert entry["next_gate_status"] == "revision_required"
+
+
+@pytest.mark.parametrize(
+    "metadata_kind,mismatch_field,mismatch_value,expected_message",
+    [
+        ("context", "run_id", "other-run", "context package run_id must match ledger entry"),
+        ("context", "stage", "outline", "context package stage and step must match ledger entry"),
+        ("context", "step", "step-source-index", "context package stage and step must match ledger entry"),
+        ("step", "run_id", "other-run", "StepResult run_id must match ledger entry"),
+        ("step", "stage", "outline", "StepResult stage and step must match ledger entry"),
+        ("step", "step", "step-source-index", "StepResult stage and step must match ledger entry"),
+        ("review", "run_id", "other-run", "ReviewResult run_id must match ledger entry"),
+        ("review", "stage", "outline", "ReviewResult stage and step must match ledger entry"),
+        ("review", "step", "step-source-index", "ReviewResult stage and step must match ledger entry"),
+    ],
+)
+def test_validate_progress_ledger_rejects_delegated_metadata_for_another_entry(
+    tmp_path,
+    metadata_kind,
+    mismatch_field,
+    mismatch_value,
+    expected_message,
+):
+    _, run_dir, _, package_path, step_result_path, review_result_path = create_repo_and_run(
+        tmp_path
+    )
+    init_progress_ledger(run_dir)
+    record_step_progress(
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        status="done",
+        context_package=package_path,
+        step_result=step_result_path,
+        review_result=review_result_path,
+    )
+    payload = read_json(progress_ledger_path(run_dir))
+
+    target_path = {
+        "context": package_path,
+        "step": step_result_path,
+        "review": review_result_path,
+    }[metadata_kind]
+    target_payload = read_json(target_path)
+    target_payload[mismatch_field] = mismatch_value
+    if metadata_kind == "context" and mismatch_field in {"stage", "step"}:
+        target_payload["result_paths"] = {
+            "step_result": (
+                "orchestration/step_results/"
+                f"{target_payload['step']}.json"
+            ),
+            "review_result": (
+                "orchestration/review_results/"
+                f"{target_payload['stage']}/{target_payload['step']}.json"
+            ),
+        }
+    write(target_path, json.dumps(target_payload))
+    ref_field = {
+        "context": "context_package_ref",
+        "step": "step_result_ref",
+        "review": "review_result_ref",
+    }[metadata_kind]
+    payload["entries"][0][ref_field]["sha256"] = sha256_file(target_path)
+
+    assert_invalid(payload, expected_message, run_dir=run_dir)
+
+
+@pytest.mark.parametrize(
+    "entry_override,expected_message",
+    [
+        ({"status": "needs_revision"}, "status must match authoritative ReviewResult"),
+        ({"blocking_issues_count": 0}, "blocking_issues_count must match authoritative ReviewResult"),
+        ({"next_gate_status": "pending_user_confirmation"}, "next_gate_status must match authoritative ReviewResult"),
+    ],
+)
+def test_validate_progress_ledger_rejects_fields_inconsistent_with_authoritative_review_result(
+    tmp_path,
+    entry_override,
+    expected_message,
+):
+    _, run_dir, _, package_path, step_result_path, review_result_path = create_repo_and_run(
+        tmp_path
+    )
+    init_progress_ledger(run_dir)
+    record_step_progress(
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        status="done",
+        context_package=package_path,
+        step_result=step_result_path,
+        review_result=review_result_path,
+    )
+    payload = read_json(progress_ledger_path(run_dir))
+    payload["entries"][0].update(entry_override)
+
+    assert_invalid(payload, expected_message, run_dir=run_dir)
+
+
+@pytest.mark.parametrize(
+    "entry_override,expected_message",
+    [
+        ({"status": "needs_revision"}, "status must match authoritative StepResult"),
+        ({"blocking_issues_count": 2}, "blocking_issues_count must match authoritative StepResult"),
+        ({"next_gate_status": "revision_required"}, "next_gate_status must match authoritative StepResult"),
+    ],
+)
+def test_validate_progress_ledger_rejects_fields_inconsistent_with_authoritative_step_result(
+    tmp_path,
+    entry_override,
+    expected_message,
+):
+    _, run_dir, _, package_path, step_result_path, _ = create_repo_and_run(tmp_path)
+    init_progress_ledger(run_dir)
+    record_step_progress(
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        status="done",
+        context_package=package_path,
+        step_result=step_result_path,
+    )
+    payload = read_json(progress_ledger_path(run_dir))
+    payload["entries"][0].update(entry_override)
+
+    assert_invalid(payload, expected_message, run_dir=run_dir)
+
+
+@pytest.mark.parametrize("status", ["context_ready", "running"])
+def test_validate_progress_ledger_allows_in_progress_status_without_result_refs(
+    tmp_path,
+    status,
+):
+    _, run_dir, _, package_path, _, _ = create_repo_and_run(tmp_path)
+    init_progress_ledger(run_dir)
+    record_step_progress(
+        run_dir=run_dir,
+        stage="ingest",
+        step="step-input-materials",
+        status="context_ready",
+        context_package=package_path,
+    )
+    payload = read_json(progress_ledger_path(run_dir))
+    payload["entries"][0]["status"] = status
+
+    assert validate_progress_ledger(payload, run_dir=run_dir) == payload
 
 
 def test_cli_initializes_records_and_validates_progress_ledger(tmp_path):

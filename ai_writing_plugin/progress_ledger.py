@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ from .short_results import (
     STEPS,
     ShortResultError,
     validate_blocking_issues_count,
+    validate_files_and_hashes,
     validate_gate_status,
     validate_result_path,
     validate_review_result,
@@ -107,24 +109,123 @@ def record_step_progress(
 
     existing = find_entry(payload["entries"], stage, step)
     entry = dict(existing) if existing else default_entry(stage, step)
+    target_run_id = run_dir.name
+    authoritative_result: dict[str, Any] | None = None
+    authoritative_kind: str | None = None
 
     if context_package is not None:
         entry["context_package_ref"] = build_ref(run_dir, context_package)
-        validate_context_package_ref(entry["context_package_ref"], run_dir)
+        validate_canonical_entry_ref_paths(entry, stage, step)
+        validate_context_package_target(
+            entry["context_package_ref"],
+            run_dir,
+            run_id=target_run_id,
+            stage=stage,
+            step=step,
+            target_label="ledger target",
+        )
     if step_result is not None:
         entry["step_result_ref"] = build_ref(run_dir, step_result)
+        validate_canonical_entry_ref_paths(entry, stage, step)
         step_payload = validate_step_result_ref(entry["step_result_ref"], run_dir)
-        entry["blocking_issues_count"] = step_payload["blocking_issues_count"]
-        entry["next_gate_status"] = step_payload["next_gate_status"]
+        validate_metadata_target(
+            step_payload,
+            run_id=target_run_id,
+            stage=stage,
+            step=step,
+            kind="StepResult",
+            target_label="ledger target",
+        )
+        authoritative_result = step_payload
+        authoritative_kind = "StepResult"
     if review_result is not None:
         entry["review_result_ref"] = build_ref(run_dir, review_result)
+        validate_canonical_entry_ref_paths(entry, stage, step)
         review_payload = validate_review_result_ref(entry["review_result_ref"], run_dir)
-        entry["blocking_issues_count"] = review_payload["blocking_issues_count"]
-        entry["next_gate_status"] = review_payload["next_gate_status"]
+        validate_metadata_target(
+            review_payload,
+            run_id=target_run_id,
+            stage=stage,
+            step=step,
+            kind="ReviewResult",
+            target_label="ledger target",
+        )
+        authoritative_result = review_payload
+        authoritative_kind = "ReviewResult"
+
+    if authoritative_result is None:
+        if entry["review_result_ref"] is not None:
+            authoritative_result = validate_review_result_ref(
+                entry["review_result_ref"], run_dir
+            )
+            authoritative_kind = "ReviewResult"
+        elif entry["step_result_ref"] is not None:
+            authoritative_result = validate_step_result_ref(entry["step_result_ref"], run_dir)
+            authoritative_kind = "StepResult"
+
+    if authoritative_result is not None:
+        validate_metadata_target(
+            authoritative_result,
+            run_id=target_run_id,
+            stage=stage,
+            step=step,
+            kind=authoritative_kind or "result",
+            target_label="ledger target",
+        )
+        if status != authoritative_result["status"]:
+            raise ProgressLedgerError(
+                f"status must match authoritative {authoritative_kind}"
+            )
+        entry["blocking_issues_count"] = authoritative_result["blocking_issues_count"]
+        entry["next_gate_status"] = authoritative_result["next_gate_status"]
 
     now = utc_now()
     entry["status"] = status
     entry["updated_at"] = now
+    upsert_entry(payload["entries"], entry)
+    payload["updated_at"] = now
+
+    validate_progress_ledger(payload, run_dir=run_dir)
+    write_ledger(path, payload)
+    return payload
+
+
+def reset_step_for_redispatch(
+    run_dir: Path | str,
+    stage: str,
+    step: str,
+    context_package: Path | str,
+    *,
+    validated_ledger: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Reset one completed step before its original worker is dispatched again."""
+    run_dir = Path(run_dir).expanduser().resolve()
+    path = progress_ledger_path(run_dir)
+    if not path.is_file():
+        raise ProgressLedgerError(f"progress ledger does not exist: {path}")
+
+    if validated_ledger is None:
+        payload = load_ledger(path)
+        validate_progress_ledger(payload, run_dir=run_dir)
+    else:
+        payload = deepcopy(validated_ledger)
+
+    validate_stage_or_raise(stage)
+    validate_step_or_raise(step)
+    existing = find_entry(payload["entries"], stage, step)
+    if existing is None:
+        raise ProgressLedgerError(f"ledger entry does not exist: {stage}/{step}")
+
+    now = utc_now()
+    entry = dict(existing)
+    entry["status"] = "context_ready"
+    entry["updated_at"] = now
+    entry["context_package_ref"] = build_ref(run_dir, context_package)
+    validate_context_package_ref(entry["context_package_ref"], run_dir)
+    entry["step_result_ref"] = None
+    entry["review_result_ref"] = None
+    entry["blocking_issues_count"] = 0
+    entry["next_gate_status"] = "not_recorded"
     upsert_entry(payload["entries"], entry)
     payload["updated_at"] = now
 
@@ -160,7 +261,7 @@ def validate_progress_ledger(
 
     seen: set[tuple[str, str]] = set()
     for entry in entries:
-        validate_entry(entry, run_root)
+        validate_entry(entry, run_root, payload["run_id"])
         key = (entry["stage"], entry["step"])
         if key in seen:
             raise ProgressLedgerError(f"duplicate ledger entry: {key[0]}/{key[1]}")
@@ -199,7 +300,7 @@ def upsert_entry(entries: list[dict[str, Any]], entry: dict[str, Any]) -> None:
     entries.append(entry)
 
 
-def validate_entry(entry: Any, run_dir: Path | None) -> None:
+def validate_entry(entry: Any, run_dir: Path | None, run_id: str) -> None:
     if not isinstance(entry, dict):
         raise ProgressLedgerError("entries must contain objects")
 
@@ -214,17 +315,97 @@ def validate_entry(entry: Any, run_dir: Path | None) -> None:
     context_package_ref = validate_ref_or_none(entry["context_package_ref"], "context_package_ref")
     step_result_ref = validate_ref_or_none(entry["step_result_ref"], "step_result_ref")
     review_result_ref = validate_ref_or_none(entry["review_result_ref"], "review_result_ref")
+    validate_canonical_entry_ref_paths(entry, entry["stage"], entry["step"])
 
     if run_dir is not None:
+        step_payload: dict[str, Any] | None = None
+        review_payload: dict[str, Any] | None = None
         if context_package_ref is not None:
             validate_ref_file(context_package_ref, run_dir)
-            validate_context_package_ref(context_package_ref, run_dir)
+            validate_context_package_target(
+                context_package_ref,
+                run_dir,
+                run_id=run_id,
+                stage=entry["stage"],
+                step=entry["step"],
+                target_label="ledger entry",
+            )
         if step_result_ref is not None:
             validate_ref_file(step_result_ref, run_dir)
-            validate_step_result_ref(step_result_ref, run_dir)
+            step_payload = validate_step_result_ref(step_result_ref, run_dir)
+            validate_metadata_target(
+                step_payload,
+                run_id=run_id,
+                stage=entry["stage"],
+                step=entry["step"],
+                kind="StepResult",
+                target_label="ledger entry",
+            )
         if review_result_ref is not None:
             validate_ref_file(review_result_ref, run_dir)
-            validate_review_result_ref(review_result_ref, run_dir)
+            review_payload = validate_review_result_ref(review_result_ref, run_dir)
+            validate_metadata_target(
+                review_payload,
+                run_id=run_id,
+                stage=entry["stage"],
+                step=entry["step"],
+                kind="ReviewResult",
+                target_label="ledger entry",
+            )
+
+        authoritative_result = review_payload or step_payload
+        if authoritative_result is not None:
+            authoritative_kind = "ReviewResult" if review_payload is not None else "StepResult"
+            validate_authoritative_entry_fields(
+                entry,
+                authoritative_result,
+                authoritative_kind,
+            )
+
+
+def validate_canonical_entry_ref_paths(
+    entry: dict[str, Any],
+    stage: str,
+    step: str,
+) -> None:
+    expected_paths = {
+        "context_package_ref": f"orchestration/context_packages/{stage}/{step}.json",
+        "step_result_ref": f"orchestration/step_results/{step}.json",
+        "review_result_ref": f"orchestration/review_results/{stage}/{step}.json",
+    }
+    for field, expected_path in expected_paths.items():
+        ref = entry[field]
+        if ref is not None and ref["path"] != expected_path:
+            raise ProgressLedgerError(
+                f"{field} must use the canonical path for {stage}/{step}"
+            )
+
+
+def validate_metadata_target(
+    payload: dict[str, Any],
+    *,
+    run_id: str,
+    stage: str,
+    step: str,
+    kind: str,
+    target_label: str,
+) -> None:
+    if payload["run_id"] != run_id:
+        raise ProgressLedgerError(f"{kind} run_id must match {target_label}")
+    if payload["stage"] != stage or payload["step"] != step:
+        raise ProgressLedgerError(f"{kind} stage and step must match {target_label}")
+
+
+def validate_authoritative_entry_fields(
+    entry: dict[str, Any],
+    authoritative_result: dict[str, Any],
+    authoritative_kind: str,
+) -> None:
+    for field in ("status", "blocking_issues_count", "next_gate_status"):
+        if entry[field] != authoritative_result[field]:
+            raise ProgressLedgerError(
+                f"{field} must match authoritative {authoritative_kind}"
+            )
 
 
 def validate_ref_or_none(value: Any, field: str) -> dict[str, str] | None:
@@ -288,10 +469,35 @@ def validate_context_package_ref(ref: dict[str, str], run_dir: Path) -> dict[str
         raise ProgressLedgerError(str(exc)) from exc
 
 
+def validate_context_package_target(
+    ref: dict[str, str],
+    run_dir: Path,
+    *,
+    run_id: str,
+    stage: str,
+    step: str,
+    target_label: str,
+) -> dict[str, Any]:
+    raw_payload = load_json_for_ref(run_dir, ref["path"])
+    if raw_payload.get("run_id") != run_id:
+        raise ProgressLedgerError(
+            f"context package run_id must match {target_label}"
+        )
+    if raw_payload.get("stage") != stage or raw_payload.get("step") != step:
+        raise ProgressLedgerError(
+            f"context package stage and step must match {target_label}"
+        )
+    return validate_context_package_ref(ref, run_dir)
+
+
 def validate_step_result_ref(ref: dict[str, str], run_dir: Path) -> dict[str, Any]:
     payload = load_json_for_ref(run_dir, ref["path"])
     try:
-        return validate_step_result(payload, run_dir=run_dir)
+        validate_step_result(payload)
+        validate_files_and_hashes(
+            payload["artifact_paths"], payload["artifact_hashes"], run_dir
+        )
+        return payload
     except ShortResultError as exc:
         raise ProgressLedgerError(str(exc)) from exc
 
@@ -299,7 +505,13 @@ def validate_step_result_ref(ref: dict[str, str], run_dir: Path) -> dict[str, An
 def validate_review_result_ref(ref: dict[str, str], run_dir: Path) -> dict[str, Any]:
     payload = load_json_for_ref(run_dir, ref["path"])
     try:
-        return validate_review_result(payload, run_dir=run_dir)
+        validate_review_result(payload)
+        validate_files_and_hashes(
+            payload["review_package_paths"],
+            payload["review_package_hashes"],
+            run_dir,
+        )
+        return payload
     except ShortResultError as exc:
         raise ProgressLedgerError(str(exc)) from exc
 

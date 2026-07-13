@@ -72,8 +72,12 @@ def build_step_context_package(
     ]
 
     run_paths = ["task_brief.json"]
+    if step == "step-input-materials":
+        run_paths.append("manifest.json")
     for input_ref in input_refs or []:
         validate_run_ref_path(input_ref)
+        if input_ref == "input_refs.json":
+            continue
         if input_ref not in run_paths:
             run_paths.append(input_ref)
     run_refs = [build_run_ref(run_dir, path) for path in run_paths]
@@ -141,9 +145,22 @@ def validate_step_context_package(
     if repo_root is not None:
         validate_repo_refs(instruction_refs, Path(repo_root))
     if run_dir is not None:
-        validate_run_refs([input_refs_ref], Path(run_dir))
-        validate_input_refs_ref(input_refs_ref, Path(run_dir), repo_root)
-        validate_run_refs(run_refs, Path(run_dir))
+        run_root = Path(run_dir).expanduser().resolve()
+        if payload["run_id"] != run_root.name:
+            raise ContextPackageError("run_id must match run_dir name")
+        validate_run_refs([input_refs_ref], run_root)
+        validate_input_refs_ref(
+            input_refs_ref,
+            run_root,
+            repo_root,
+            expected_run_id=payload["run_id"],
+        )
+        validate_run_refs(run_refs, run_root)
+    validate_instruction_ref_contract(
+        instruction_refs,
+        task_type=payload["task_type"],
+        step=payload["step"],
+    )
 
     return payload
 
@@ -281,6 +298,25 @@ def validate_instruction_ref_path(path: str) -> None:
         raise ContextPackageError(f"instruction_refs path is not allowed: {path!r}")
 
 
+def validate_instruction_ref_contract(
+    refs: list[dict[str, str]],
+    *,
+    task_type: str,
+    step: str,
+) -> None:
+    allowed_paths = discover_instruction_refs(task_type, step)
+    required_paths = allowed_paths[:2]
+    actual_paths = [item["path"] for item in refs]
+    expected_paths = required_paths + [
+        path for path in allowed_paths[2:] if path in actual_paths
+    ]
+    if actual_paths != expected_paths:
+        raise ContextPackageError(
+            "instruction_refs must match the required wrapper/canonical refs and "
+            "any included optional refs for the selected task_type"
+        )
+
+
 def validate_run_ref_path(path: str) -> None:
     try:
         validate_run_relative_path(path)
@@ -352,6 +388,8 @@ def validate_input_refs_ref(
     ref: dict[str, str],
     run_dir: Path,
     repo_root: Path | str | None,
+    *,
+    expected_run_id: str,
 ) -> None:
     try:
         payload = load_json((run_dir.expanduser().resolve() / ref["path"]).resolve())
@@ -359,6 +397,10 @@ def validate_input_refs_ref(
             payload,
             repo_root=Path(repo_root) if repo_root is not None else None,
         )
+        if payload["run_id"] != expected_run_id:
+            raise ContextPackageError(
+                "input_refs_ref run_id must match context package run_id"
+            )
     except (OSError, json.JSONDecodeError, InputRefsError) as exc:
         raise ContextPackageError(f"invalid input_refs_ref: {exc}") from exc
 

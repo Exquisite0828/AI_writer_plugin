@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +57,18 @@ SUMMARY_FIELDS = {
     "issues",
 }
 REF_FIELDS = {"path", "sha256"}
+SOURCE_FIELDS = {"issues"}
+SOURCE_ISSUE_FIELDS = {
+    "issue_id",
+    "severity",
+    "category",
+    "title",
+    "summary",
+    "location_refs",
+    "artifact_refs",
+    "recommendation",
+    "rationale",
+}
 SEVERITIES = {"P0", "P1", "P2", "P3", "info"}
 SEVERITY_ORDER = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "info": 4}
 BLOCKING_SEVERITIES = {"P0", "P1"}
@@ -73,6 +88,18 @@ BODY_LIKE_FIELDS = {
     "markdown",
     "recommendation_long_text",
     "review_units_body",
+}
+ACTIVE_METADATA_SINGLE_REF_FIELDS = {
+    "context_package_ref",
+    "decision_ref",
+    "progress_ledger_ref",
+    "review_result_ref",
+    "step_result_ref",
+}
+ACTIVE_METADATA_REF_LIST_FIELDS = {
+    "context_package_refs",
+    "review_result_refs",
+    "step_result_refs",
 }
 
 
@@ -94,24 +121,42 @@ def build_issues_index(
     stage: str,
     issues: list[dict[str, Any]] | None = None,
     source_path: Path | str | None = None,
+    *,
+    overwrite: bool = False,
 ) -> dict[str, Any]:
     run_root = Path(run_dir).expanduser().resolve()
     validate_stage_or_raise(stage)
     run_id = run_root.name
     validate_run_id(run_id)
 
-    source_issues = load_source_issues(source_path) if issues is None else issues
+    existing_paths = current_issue_set_paths(run_root, stage)
+    if existing_paths and not overwrite:
+        raise StageReviewIssueError(
+            f"stage review issue output already exists: {issues_index_path(run_root, stage)}"
+        )
+    if existing_paths:
+        reject_active_issue_refs(run_root, existing_paths)
+
+    source_issues = (
+        load_source_issues(run_root, source_path)
+        if issues is None
+        else issues
+    )
     if not isinstance(source_issues, list):
         raise StageReviewIssueError("issues must be a list")
 
     index_items: list[dict[str, Any]] = []
+    detail_payloads: dict[str, dict[str, Any]] = {}
+    candidate_files: dict[Path, bytes] = {}
     for raw_issue in source_issues:
         if not isinstance(raw_issue, dict):
             raise StageReviewIssueError("issue entries must be objects")
         detail_payload = build_issue_detail_payload(raw_issue, run_id=run_id, stage=stage)
-        validate_issue_detail(detail_payload)
+        validate_issue_detail(detail_payload, run_dir=run_root)
         detail_path = issue_detail_path(run_root, stage, detail_payload["issue_id"])
-        write_json(detail_path, detail_payload)
+        detail_bytes = encode_json(detail_payload)
+        detail_payloads[detail_payload["issue_id"]] = detail_payload
+        candidate_files[detail_path] = detail_bytes
         index_items.append(
             {
                 "issue_id": detail_payload["issue_id"],
@@ -125,7 +170,10 @@ def build_issues_index(
                     "short_title",
                     160,
                 ),
-                "issue_ref": build_ref(run_root, detail_path),
+                "issue_ref": {
+                    "path": detail_path.relative_to(run_root).as_posix(),
+                    "sha256": hashlib.sha256(detail_bytes).hexdigest(),
+                },
             }
         )
 
@@ -139,14 +187,46 @@ def build_issues_index(
         "severity_counts": count_severities(index_items),
         "issues": index_items,
     }
-    validate_issues_index(payload, run_dir=run_root)
-    write_json(issues_index_path(run_root, stage), payload)
+    validate_candidate_issue_set(payload, detail_payloads, run_root)
+    candidate_files[issues_index_path(run_root, stage)] = encode_json(payload)
+
+    snapshot = snapshot_issue_set(run_root, stage)
+    try:
+        replace_issue_set(run_root, stage, candidate_files)
+        validate_issues_index(payload, run_dir=run_root)
+    except Exception as exc:
+        try:
+            restore_issue_set(run_root, stage, snapshot)
+        except OSError as rollback_exc:
+            raise StageReviewIssueError(
+                f"failed to update stage review issues and rollback failed: {rollback_exc}"
+            ) from exc
+        if isinstance(exc, StageReviewIssueError):
+            raise
+        raise StageReviewIssueError(f"failed to update stage review issues: {exc}") from exc
+    return payload
+
+
+def validate_issues_index_file(
+    run_dir: Path | str,
+    path_value: Path | str,
+) -> dict[str, Any]:
+    run_root = Path(run_dir).expanduser().resolve()
+    relative_path, absolute_path = normalize_run_path(run_root, path_value)
+    if not absolute_path.is_file():
+        raise StageReviewIssueError(f"issues index does not exist: {relative_path}")
+    payload = validate_issues_index(load_json(absolute_path), run_dir=run_root)
+    expected_path = issues_index_path(run_root, payload["stage"]).relative_to(run_root).as_posix()
+    if relative_path != expected_path:
+        raise StageReviewIssueError("issues index path must match its stage")
     return payload
 
 
 def validate_issues_index(
     payload: dict[str, Any],
     run_dir: Path | str | None = None,
+    *,
+    validate_artifact_refs: bool = True,
 ) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise StageReviewIssueError("issues index payload must be a JSON object")
@@ -174,7 +254,10 @@ def validate_issues_index(
             raise StageReviewIssueError("run_id must match run_dir name")
         for item in issues:
             detail_path = validate_ref_file(item["issue_ref"], run_root)
-            detail_payload = validate_issue_detail(load_json(detail_path), run_dir=run_root)
+            detail_payload = validate_issue_detail(
+                load_json(detail_path),
+                run_dir=run_root if validate_artifact_refs else None,
+            )
             if (
                 detail_payload["run_id"] != payload["run_id"]
                 or detail_payload["stage"] != payload["stage"]
@@ -302,13 +385,46 @@ def build_issue_detail_payload(
     return payload
 
 
-def load_source_issues(source_path: Path | str | None) -> list[dict[str, Any]]:
+def load_source_issues(
+    run_dir: Path,
+    source_path: Path | str | None,
+) -> list[dict[str, Any]]:
     if source_path is None:
         return []
-    payload = load_json(Path(source_path))
-    if isinstance(payload.get("issues"), list):
-        return payload["issues"]
-    raise StageReviewIssueError("source issues JSON must contain an issues list")
+    relative_path, absolute_path = normalize_run_path(run_dir, source_path)
+    if not absolute_path.is_file():
+        raise StageReviewIssueError(f"source issues path does not exist: {relative_path}")
+    payload = load_json(absolute_path)
+    validate_exact_fields(payload, SOURCE_FIELDS)
+    issues = payload["issues"]
+    if not isinstance(issues, list):
+        raise StageReviewIssueError("source issues JSON must contain an issues list")
+    seen_issue_ids: set[str] = set()
+    for issue in issues:
+        validate_public_source_issue(issue, run_dir)
+        if issue["issue_id"] in seen_issue_ids:
+            raise StageReviewIssueError("issues must not contain duplicate issue_id")
+        seen_issue_ids.add(issue["issue_id"])
+    return issues
+
+
+def validate_public_source_issue(value: Any, run_dir: Path) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise StageReviewIssueError("issue entries must be objects")
+    reject_body_like_fields(value)
+    validate_exact_fields(value, SOURCE_ISSUE_FIELDS)
+    validate_issue_id(value["issue_id"])
+    validate_severity(value["severity"])
+    validate_short_string(value["category"], "category", 80)
+    validate_short_string(value["title"], "title", 240)
+    validate_short_string(value["summary"], "summary", 600)
+    validate_metadata_list(value["location_refs"], "location_refs")
+    artifact_refs = validate_ref_list(value["artifact_refs"], "artifact_refs")
+    for artifact_ref in artifact_refs:
+        validate_ref_file(artifact_ref, run_dir)
+    validate_text_field(value["recommendation"], "recommendation", 2000)
+    validate_text_field(value["rationale"], "rationale", 2000)
+    return value
 
 
 def validate_issue_items(value: Any, stage: str) -> list[dict[str, Any]]:
@@ -400,6 +516,208 @@ def normalize_run_path(run_dir: Path, path_value: Path | str) -> tuple[str, Path
             raise StageReviewIssueError(f"ref path escapes run_dir: {relative_path}")
     validate_run_relative_path(relative_path)
     return relative_path, absolute_path
+
+
+def current_issue_set_paths(run_dir: Path, stage: str) -> list[Path]:
+    paths: list[Path] = []
+    index_path = issues_index_path(run_dir, stage)
+    if index_path.is_file():
+        paths.append(index_path)
+    details_dir = index_path.parent / "issues"
+    if details_dir.exists():
+        for candidate in sorted(details_dir.rglob("*")):
+            if not candidate.is_file():
+                raise StageReviewIssueError(
+                    f"stage review issue output contains a non-file entry: {candidate}"
+                )
+            paths.append(candidate)
+    return paths
+
+
+def reject_active_issue_refs(run_dir: Path, issue_paths: list[Path]) -> None:
+    target_paths = {path.relative_to(run_dir).as_posix() for path in issue_paths}
+    metadata_paths: set[Path] = set()
+    metadata_paths.update(
+        path
+        for path in (run_dir / "orchestration" / "context_packages").rglob("*.json")
+        if path.is_file()
+    )
+    metadata_paths.update(
+        path
+        for path in (run_dir / "orchestration" / "review_context_packages").glob("*.json")
+        if path.is_file()
+    )
+    ledger_path = run_dir / "orchestration" / "progress_ledger.json"
+    if ledger_path.is_file():
+        metadata_paths.add(ledger_path)
+    metadata_paths.update(
+        path
+        for path in (run_dir / "stage_reviews").glob("*/decision.json")
+        if path.is_file()
+    )
+    metadata_paths.update(
+        path
+        for path in (run_dir / "orchestration" / "stage_gate_results").glob("*.json")
+        if path.is_file()
+    )
+
+    for metadata_path in sorted(metadata_paths):
+        payload = load_json(metadata_path)
+        referenced_path = find_active_issue_ref(
+            payload,
+            target_paths,
+            run_dir,
+            visited=set(),
+        )
+        if referenced_path is not None:
+            metadata_relative = metadata_path.relative_to(run_dir).as_posix()
+            raise StageReviewIssueError(
+                "stage review issue output is still referenced by active metadata "
+                f"{metadata_relative}: {referenced_path}"
+            )
+
+
+def find_active_issue_ref(
+    payload: Any,
+    target_paths: set[str],
+    run_dir: Path,
+    *,
+    visited: set[str],
+) -> str | None:
+    direct_match = find_referenced_path(payload, target_paths)
+    if direct_match is not None:
+        return direct_match
+
+    for ref in iter_active_metadata_refs(payload):
+        relative_path = ref["path"]
+        if relative_path in visited:
+            continue
+        visited.add(relative_path)
+        absolute_path = validate_ref_file(ref, run_dir)
+        nested_match = find_active_issue_ref(
+            load_json(absolute_path),
+            target_paths,
+            run_dir,
+            visited=visited,
+        )
+        if nested_match is not None:
+            return nested_match
+    return None
+
+
+def iter_active_metadata_refs(value: Any):
+    if isinstance(value, dict):
+        for field, nested in value.items():
+            if field in ACTIVE_METADATA_SINGLE_REF_FIELDS:
+                if nested is not None:
+                    yield validate_ref(nested, field)
+            elif field in ACTIVE_METADATA_REF_LIST_FIELDS:
+                if not isinstance(nested, list):
+                    raise StageReviewIssueError(f"{field} must be a list")
+                for item in nested:
+                    yield validate_ref(item, field)
+            else:
+                yield from iter_active_metadata_refs(nested)
+    elif isinstance(value, list):
+        for nested in value:
+            yield from iter_active_metadata_refs(nested)
+
+
+def find_referenced_path(value: Any, target_paths: set[str]) -> str | None:
+    if isinstance(value, str):
+        return value if value in target_paths else None
+    if isinstance(value, list):
+        for item in value:
+            match = find_referenced_path(item, target_paths)
+            if match is not None:
+                return match
+    elif isinstance(value, dict):
+        for item in value.values():
+            match = find_referenced_path(item, target_paths)
+            if match is not None:
+                return match
+    return None
+
+
+def validate_candidate_issue_set(
+    index_payload: dict[str, Any],
+    detail_payloads: dict[str, dict[str, Any]],
+    run_dir: Path,
+) -> None:
+    validate_issues_index(index_payload)
+    if len(detail_payloads) != index_payload["issue_count"]:
+        raise StageReviewIssueError("issues must not contain duplicate issue_id")
+    for item in index_payload["issues"]:
+        detail_payload = detail_payloads.get(item["issue_id"])
+        if detail_payload is None:
+            raise StageReviewIssueError("issue detail must match index item")
+        validate_issue_detail(detail_payload, run_dir=run_dir)
+        detail_bytes = encode_json(detail_payload)
+        if hashlib.sha256(detail_bytes).hexdigest() != item["issue_ref"]["sha256"]:
+            raise StageReviewIssueError("issue detail sha256 must match index item")
+
+
+def snapshot_issue_set(run_dir: Path, stage: str) -> dict[Path, bytes]:
+    return {
+        path.relative_to(run_dir): path.read_bytes()
+        for path in current_issue_set_paths(run_dir, stage)
+    }
+
+
+def replace_issue_set(
+    run_dir: Path,
+    stage: str,
+    candidate_files: dict[Path, bytes],
+) -> None:
+    stage_dir = issues_index_path(run_dir, stage).parent
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    temporary_root = Path(tempfile.mkdtemp(prefix=".issues-build-", dir=stage_dir))
+    try:
+        staged_files: dict[Path, Path] = {}
+        for destination, content in candidate_files.items():
+            relative_to_stage = destination.relative_to(stage_dir)
+            staged_path = temporary_root / relative_to_stage
+            staged_path.parent.mkdir(parents=True, exist_ok=True)
+            staged_path.write_bytes(content)
+            staged_files[destination] = staged_path
+
+        index_path = issues_index_path(run_dir, stage)
+        detail_destinations = sorted(
+            path for path in candidate_files if path != index_path
+        )
+        details_dir = index_path.parent / "issues"
+        details_dir.mkdir(parents=True, exist_ok=True)
+        for destination in detail_destinations:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(staged_files[destination], destination)
+
+        expected_details = set(detail_destinations)
+        for existing_detail in sorted(details_dir.rglob("*"), reverse=True):
+            if existing_detail.is_file() and existing_detail not in expected_details:
+                existing_detail.unlink()
+            elif existing_detail.is_dir() and not any(existing_detail.iterdir()):
+                existing_detail.rmdir()
+
+        os.replace(staged_files[index_path], index_path)
+    finally:
+        shutil.rmtree(temporary_root, ignore_errors=True)
+
+
+def restore_issue_set(
+    run_dir: Path,
+    stage: str,
+    snapshot: dict[Path, bytes],
+) -> None:
+    index_path = issues_index_path(run_dir, stage)
+    details_dir = index_path.parent / "issues"
+    if index_path.exists():
+        index_path.unlink()
+    if details_dir.exists():
+        shutil.rmtree(details_dir)
+    for relative_path, content in snapshot.items():
+        destination = run_dir / relative_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(content)
 
 
 def count_blocking(issues: list[dict[str, Any]]) -> int:
@@ -538,10 +856,13 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    path.write_bytes(encode_json(payload))
+
+
+def encode_json(payload: dict[str, Any]) -> bytes:
+    return (
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
 
 
 def file_sha256(path: Path) -> str:

@@ -127,7 +127,10 @@ def _validate_result(
         raise ShortResultError(f"{hashes_field} hash keys must match path list")
 
     if run_dir is not None:
-        validate_files_and_hashes(paths, hashes, Path(run_dir))
+        run_root = Path(run_dir).expanduser().resolve()
+        if payload["run_id"] != run_root.name:
+            raise ShortResultError("run_id must match run_dir name")
+        validate_files_and_hashes(paths, hashes, run_root)
 
     return payload
 

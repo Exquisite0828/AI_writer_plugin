@@ -175,6 +175,28 @@ def test_run_dir_validation_requires_existing_files_and_matching_hashes(tmp_path
     assert_invalid(wrong_hash, "sha256 mismatch", run_dir=run_dir)
 
 
+@pytest.mark.parametrize("review", [False, True], ids=("step", "review"))
+def test_run_dir_validation_requires_matching_run_id(tmp_path, review):
+    run_dir = tmp_path / "runs" / "demo-run"
+    artifact = run_dir / "manifest.json"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text("{}", encoding="utf-8")
+    if review:
+        payload = valid_review_result(
+            run_id="foreign-run",
+            review_package_paths=["manifest.json"],
+            review_package_hashes={"manifest.json": sha256_text("{}")},
+        )
+    else:
+        payload = valid_step_result(
+            run_id="foreign-run",
+            artifact_paths=["manifest.json"],
+            artifact_hashes={"manifest.json": sha256_text("{}")},
+        )
+
+    assert_invalid(payload, "run_id must match run_dir", review=review, run_dir=run_dir)
+
+
 def test_review_result_uses_review_package_fields_only():
     payload = valid_review_result(artifact_paths=["manifest.json"])
 
