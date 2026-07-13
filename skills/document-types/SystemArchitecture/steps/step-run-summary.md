@@ -1,4 +1,4 @@
-# System Architecture 子 skill · Step 14 · 运行总结
+# System Architecture 子 skill · Step 12 · 运行总结
 
 骨架：`skills/workflow-steps/step-run-summary/SKILL.md`。领域规则：`skills/document-types/SystemArchitecture/SKILL.md`。
 

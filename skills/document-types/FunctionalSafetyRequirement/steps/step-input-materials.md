@@ -4,7 +4,7 @@
 
 ## 本步目的要点
 
-- 确认本步 run 元数据与 `task_type: FunctionalSafetyRequirement`（或 `fsr`）边界；共享 run 起点与 manifest / task_brief ownership 由通用 Step 1 / deterministic engine 负责。
+- 确认本步 run 元数据与 `task_type: FunctionalSafetyRequirement`（或 `fsr`）边界；`init-run` 只负责 Phase 0 scaffold，本 overlay 的专业内容由明确选中它的 agent worker 负责。
 - 登记 task.yaml 每份输入：`file_id`、path、title、format、`role`。
 - **source**：Item 定义、Safety Goals、HARA 摘要/追溯、项目约束 → `is_fact_source=true`。
 - **template**：FSR 模板 → T2。
@@ -31,7 +31,7 @@ HARA（Clause 6）→ Safety Goal（SG）
 
 ### 1.2 本仓库定位
 
-- 官方 L3 built-in，走统一 **13 步** workflow（无独立 `fsr_pipeline`）。
+- 官方 L3 标签是 `fsr`；本 PascalCase 目录是可选 overlay guidance，不构成另一个 built-in，也没有独立 `fsr_pipeline`。
 - 产出 **review-ready** FSR 候选包，**不是**需求批准书或合规认证。
 - **明确不做 TSC**：不生成技术安全概念、技术安全需求、技术安全机制终稿。
 

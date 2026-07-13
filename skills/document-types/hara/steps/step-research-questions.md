@@ -6,7 +6,7 @@
 
 - 对 Step 4 的 **L1 章 + L2 小节**（`outline_l1.md` + `outline_l2.md`）**逐段分析研究**，为 HARA 报告每一小段产出**写作计划**。
 - 按 L2 登记分析子任务（`sp-*`）于 `research_state.subtasks`，**顺序执行**：读该段 intent → 读 T0/T1 材料（L1→L2→L3）→ 结合 ISO 26262-3 / HARA 经验 → 写出该段写作计划。
-- 每完成一段，追加到 `section_writing_plans.json`，子任务 `done` 并**立即写回 state.json**。
+- 每完成一段，追加到 `section_writing_plans.json`，子任务 `done` 并**立即更新worker内部进度**。
 - **底线**：计划可描述表格形状、引导词扫描步骤、需 HITL 的 critical 项；**不得**在计划中写入已确认的 hazard/rating/ASIL/SG 结论；不得用 T4 sample 当事实依据。
 
 ## HARA 默认分析子任务（初始化 research_state）
@@ -43,7 +43,7 @@ With-Reference 须增 **sp-DIFF**：差异分析段写作计划（sample 只借�
 1. 读 `outline_l2.md` 该节 `intent`、`evidence` 预期。
 2. `topic_index` → `document_tocs` L1→L2→L3 → 读 T0/T1/T3 原文。
 3. 填写该段写作计划字段（见主 skill）；HARA critical 段 `requires_human_confirmation: true`。
-4. 可选写 `plans/section_plans/<section_id>.md`；子任务 `done`；更新 state.json。
+4. 可选写 `plans/section_plans/<section_id>.md`；子任务 `done`；更新worker内部进度。
 
 ### SEC-HAZ（sp-10）· 危害表写作计划要点
 
@@ -132,27 +132,6 @@ With-Reference 须增 **sp-DIFF**：差异分析段写作计划（sample 只借�
 2. 重读材料 L1→L2→L3，更新该段计划条目。
 3. 合并 `section_writing_plans.json`。
 
-## state.json 示例（HARA）
-
-```json
-{
-  "step": "research-questions",
-  "research_state": {
-    "subtasks": [
-      {"id": "sp-05", "section_id": "SEC-ITEM-L2-01", "parent_section_id": "SEC-ITEM", "desc": "功能清单：产出 F-xx 表写作计划", "status": "done"},
-      {"id": "sp-06", "section_id": "SEC-ITEM-L2-02", "parent_section_id": "SEC-ITEM", "desc": "系统边界：产出 scope 表写作计划", "status": "running"},
-      {"id": "sp-10", "section_id": "SEC-HAZ-L2-01", "parent_section_id": "SEC-HAZ", "desc": "危害表：引导词法写作计划", "status": "not_run"}
-    ]
-  },
-  "review_state": {
-    "subtasks": [
-      {"id": "rv-1", "desc": "核对每 L2 有写作计划且字段完整", "status": "not_run"}
-    ]
-  },
-  "revision_state": { "subtasks": [] }
-}
-```
-
 ## section_writing_plans.json 单条示例（HARA · SEC-ITEM 功能清单）
 
 ```json
@@ -181,4 +160,4 @@ With-Reference 须增 **sp-DIFF**：差异分析段写作计划（sample 只借�
 
 ## B 审核检查项（HARA）
 
-subagent 核对：outline_l2 每段是否有计划；计划是否只描述「怎么写」而未写 hazard/rating/ASIL/SG 结论；critical 段是否标 HITL；是否未用 T4 sample 作事实；sp-10 是否含充分引导词写作步骤。
+Stage review worker 核对：outline_l2 每段是否有计划；计划是否只描述「怎么写」而未写 hazard/rating/ASIL/SG 结论；critical 段是否标 HITL；是否未用 T4 sample 作事实；sp-10 是否含充分引导词写作步骤。

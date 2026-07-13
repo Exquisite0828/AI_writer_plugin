@@ -1,10 +1,10 @@
-# TSC 子 skill · Step 12 · 修订
+# TSC 子 skill · Step 10 · 修订
 
 骨架：`skills/workflow-steps/step-revision/SKILL.md`。领域规则：`skills/document-types/TechnicalSafetyConcept/SKILL.md`。
 
 ## 本步目的要点
 
-- 依 Step 10/11 findings 修订 → `revised/full_draft.md`、`change_log.md`。
+- 依 Step 8/9 findings 修订 → `revised/full_draft.md`、`change_log.md`。
 - 不新增无 EVD 支撑的 TSR、机制或 ASIL 结论。
 
 ## TSC 方法论（本步定位）
@@ -54,7 +54,7 @@
 
 ### 本步 Review 要点
 
-修订后仍须满足 **Step 10** 的 Clause 8 / TSC Checklist。
+修订后仍须满足 **Step 8** 的 Clause 8 / TSC Checklist。
 
 | From-Scratch | With-Reference |
 |---|---|

@@ -28,13 +28,13 @@ Functional Safety Requirement（FSR，功能安全需求）支撑 **ISO 26262-3:
 
 ## 总过程概览
 
-经 **13 个** workflow step skill 驱动（逻辑 Step 1–6、9–15；Step 6 含证据·引用·章节计划三阶段）。每步子 skill：`skills/document-types/FunctionalSafetyRequirement/steps/step-*.md`，内含 **FSR 方法论、Review/Checklist 要点**（ISO 26262-3 Clause 7 / FSC 对齐）。
+本目录按 **13 个** workflow step（Step 1–13；Step 6 含证据·引用·章节计划三阶段）提供 FSR worker overlay guidance。每步子 skill：`skills/document-types/FunctionalSafetyRequirement/steps/step-*.md`，内含 **FSR 方法论、Review/Checklist 要点**（ISO 26262-3 Clause 7 / FSC 对齐）。
 
 **一句话**：在已确认 SG 之下，用有来源、可追溯、有 open 项的方式整理 FSR 候选包；不做 TSC，不做批准或合规认证。
 
 ## Supported Level And Positioning
 
-`FunctionalSafetyRequirement` 为 **document-type skill 层**交付类型；通过 `task.yaml` 的 `task_type: FunctionalSafetyRequirement` 加载本子 skill 与各 step 子 skill。须遵守通用 `writing-core` 与 artifact 契约。
+`FunctionalSafetyRequirement` 是与官方 `fsr` 语义相关的 PascalCase Skill/overlay 资产，但它本身不是额外的 official L3 built-in。当前 metadata builder 可在同名 `task_type` 被明确选择时把本目录的路径/hash 放入 StepContextPackage；Python 不把它解释为 FSR rules registry，也不执行端到端内容引擎。
 
 与既有 `task_type: fsr` 共享同一文档语义；本目录为 PascalCase 技能路径与逐步子 skill 实现。TSC 是**独立下游文档类型**（`task_type: TechnicalSafetyConcept`）：本 FSR workflow **不**产出 TSC 内容，止于功能层需求。
 

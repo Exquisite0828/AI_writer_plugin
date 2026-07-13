@@ -4,7 +4,7 @@
 
 ## 本步目的要点
 
-- 确认本步 run 元数据与 `task_type: ItemDefinitionDocument` 边界；共享 run 起点与 manifest / task_brief ownership 由通用 Step 1 / deterministic engine 负责。
+- 确认本步 run 元数据与 `task_type: ItemDefinitionDocument` 边界；`init-run` 只负责 Phase 0 scaffold，本 overlay 的专业内容由明确选中它的 agent worker 负责。
 - 登记 task.yaml 中每份输入：`file_id`、path、title、format、`role`。
 - **source**：SyRS/SRS、架构、接口规范、ODD、假设清单等 → `is_fact_source=true`。
 - **template**：IDD 模板 → T2。
@@ -32,7 +32,7 @@ Item Definition（Item 定义）属于 **ISO 26262-3:2018 第 5 章**，是 **�
 - Item Definition **不是** HARA，不写 hazard、S/E/C、ASIL、Safety Goal。
 - Item Definition **不是** 合规批准书，不能写成「已满足 ISO 26262」「定义已最终批准」。
 
-IDD 经 **13 个** workflow step skill 产出 Item 定义报告（逻辑 Step 1–6、9–15）。本步是流程入口，对应 **阶段 0：启动与范围对齐**。
+IDD 经 **13 个** workflow step skill 产出 Item 定义报告（逻辑 Step 1–13）。本步是流程入口，对应 **阶段 0：启动与范围对齐**。
 
 ### 阶段 0 · 启动与范围对齐（本步执行）
 
@@ -88,7 +88,7 @@ IDD 经 **13 个** workflow step skill 产出 Item 定义报告（逻辑 Step 1�
 
 ## 本步 Review / Checklist 要点
 
-本步为审查奠基：Step 10/11 将回溯 manifest 的 role、tier、gap 登记是否完整。
+本步为审查奠基：Step 8/9 将回溯 manifest 的 role、tier、gap 登记是否完整。
 
 ### 输入阶段 Checklist（§5 材料登记）
 

@@ -1,4 +1,4 @@
-# IDD 子 skill · Step 10 · 审查
+# IDD 子 skill · Step 8 · 审查
 
 骨架：`skills/workflow-steps/step-review/SKILL.md`。领域规则：`skills/document-types/ItemDefinitionDocument/SKILL.md`。
 
@@ -44,7 +44,7 @@
 
 ## 本步 Review / Checklist 要点
 
-本步是 IDD **内容审查主 skill**（同行/系统工程师视角）。形式/机器验证见 Step 11。
+本步是 IDD **内容审查主 skill**（同行/系统工程师视角）。形式/机器验证见 Step 9。
 
 ### Clause 5 内容 Checklist（报告正文必查）
 
@@ -143,5 +143,5 @@
 ## A1 / A2 / B
 
 **A1**：checklist 项有结论；P0（sample 当事实、HARA 泄漏、接口无方向、误用缺失）无遗漏。  
-**A2**：按 findings 修订草稿计划（交 Step 12）。  
+**A2**：按 findings 修订草稿计划（交 Step 10）。
 **B**：review 与 IDD 边界一致，非合规批准。

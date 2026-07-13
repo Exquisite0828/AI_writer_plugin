@@ -1,4 +1,4 @@
-# FSR 子 skill · Step 10 · 审查
+# FSR 子 skill · Step 8 · 审查
 
 骨架：`skills/workflow-steps/step-review/SKILL.md`。领域规则：`skills/document-types/FunctionalSafetyRequirement/SKILL.md`。
 
@@ -98,5 +98,5 @@
 ## A1 / A2 / B
 
 **A1**：checklist 项有结论；P0 无遗漏。  
-**A2**：按 findings 交 Step 12。  
+**A2**：按 findings 交 Step 10。
 **B**：review 非合规批准。

@@ -1,4 +1,4 @@
-# Software Architecture 子 skill · Step 14 · 运行总结
+# Software Architecture 子 skill · Step 12 · 运行总结
 
 骨架：`skills/workflow-steps/step-run-summary/SKILL.md`。领域规则：`skills/document-types/SoftwareArchitecture/SKILL.md`。
 
@@ -9,17 +9,17 @@
 
 ## Software Architecture 方法论（本步定位）
 
-### 14.1 本步在八阶段方法链中的位置
+### 12.1 本步在八阶段方法链中的位置
 
 本步对应 **阶段 8：追溯与学习**。方法论目标是回答：
 
 1. 本次 run 走了哪种情景（from_scratch / with_reference）？
 2. 哪些 SEC 缺口最密集？
-3. 哪些流程信号值得进入 candidate profile（Step 15）？
+3. 哪些流程信号值得进入 candidate profile（Step 13）？
 
 **方法原则**：run_summary 描述 **过程**，不固化 **产品架构事实**。
 
-### 14.2 阶段 8 · 运行总结方法
+### 12.2 阶段 8 · 运行总结方法
 
 #### run_summary 叙事结构（建议顺序）
 
@@ -71,7 +71,7 @@
 - Δ 统计：Added / Removed / Modified / Scope-changed 各多少行。
 - reusable_patterns 可写 Δ-Analysis 方法学，**不写**本次具体差异内容。
 
-### 14.3 reusable_patterns 可写 / 不可写
+### 12.3 reusable_patterns 可写 / 不可写
 
 | 可写 | 不可写 |
 |---|---|

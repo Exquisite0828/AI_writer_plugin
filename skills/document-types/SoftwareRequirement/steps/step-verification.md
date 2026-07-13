@@ -1,4 +1,4 @@
-# SwRS 子 skill · Step 11 · 验证
+# SwRS 子 skill · Step 9 · 验证
 
 骨架：`skills/workflow-steps/step-verification/SKILL.md`。领域规则：`skills/document-types/SoftwareRequirement/SKILL.md`。
 
@@ -61,5 +61,5 @@
 ## A1 / A2 / B
 
 **A1**：规则验证通过，P0 清零。  
-**A2**：回 Step 12 修正后重验。  
+**A2**：回 Step 10 修正后重验。
 **B**：验证是守门，不是替代工程判断或人工批准。

@@ -1,4 +1,4 @@
-# SyRS 子 skill · Step 15 · 候选 profile 更新
+# SyRS 子 skill · Step 13 · 候选 profile 更新
 
 骨架：`skills/workflow-steps/step-candidate-profile-update/SKILL.md`。领域规则：`skills/document-types/SystemRequirement/SKILL.md`。
 
@@ -55,17 +55,17 @@
 | 可提案信号 | 写入位置示例 | 禁止内容 |
 |---|---|---|
 | 上游 ID 链接列强制（SYS.2 BP5） | Step 4 outline 必含 Linked upstream ID | 具体 SWRS-xxx 与 SYS-F-xxx 映射数据 |
-| SYS-IF Direction 列强制 | Step 4 / 11 checklist 加 Direction 机器规则 | 具体本项目 CAN/LIN 信号 |
-| SYS-IF Counterpart + Failure behavior 列 | Step 4 outline + Step 9 draft checklist | 本项目对端 ECU 名 |
-| Forbidden 措辞扫描规则增强 | Step 11 VC-3 词表 | 本项目客户措辞 |
-| 性能/限值单位检查 | Step 11 机器规则 | 本项目限值数字 |
-| HARA / ASIL / SG / TSR 防泄漏扫描 | Step 11 VC-4 词表 | hazard 模板内容 |
-| sample 升格防护（role / is_fact_source） | Step 1 / 11 检查 | 参考 SyRS 内容 |
-| ASPICE SYS.2 BP1–BP5 对照表 | Step 4 / 10 模板 | 客户/OEM 项目 |
-| With-Reference：SEC-DIFF 强制 | Step 4 / 9 模板 | 本次 Δ 具体内容 |
+| SYS-IF Direction 列强制 | Step 4 / 9 checklist 加 Direction 机器规则 | 具体本项目 CAN/LIN 信号 |
+| SYS-IF Counterpart + Failure behavior 列 | Step 4 outline + Step 7 draft checklist | 本项目对端 ECU 名 |
+| Forbidden 措辞扫描规则增强 | Step 9 VC-3 词表 | 本项目客户措辞 |
+| 性能/限值单位检查 | Step 9 机器规则 | 本项目限值数字 |
+| HARA / ASIL / SG / TSR 防泄漏扫描 | Step 9 VC-4 词表 | hazard 模板内容 |
+| sample 升格防护（role / is_fact_source） | Step 1 / 9 检查 | 参考 SyRS 内容 |
+| ASPICE SYS.2 BP1–BP5 对照表 | Step 4 / 8 模板 | 客户/OEM 项目 |
+| With-Reference：SEC-DIFF 强制 | Step 4 / 7 模板 | 本次 Δ 具体内容 |
 | With-Reference：Δ-Analysis 方法学（差异类型枚举、列定义） | reusable patterns | 本次差异条目 |
-| With-Reference：参考边界声明模板 | Step 13 交付包模板 | 客户名、参考项目名 |
-| shall 句式 / 单条单义机器规则 | Step 11 机器规则 | 本次具体语句 |
+| With-Reference：参考边界声明模板 | Step 11 交付包模板 | 客户名、参考项目名 |
+| shall 句式 / 单条单义机器规则 | Step 9 机器规则 | 本次具体语句 |
 | writing_mode_hint 默认值 | Step 5 计划默认 | — |
 
 ### SyRS 写作核心原则（candidate_skill_patch.md 可引用）
@@ -113,7 +113,7 @@
 
 - [ ] 可提案：SEC-DIFF 列定义、差异类型枚举、Δ-Analysis 方法学
 - [ ] **禁止**：本次具体差异条目、客户「沿用 / 取消」判断
-- [ ] 可提案：参考边界声明模板（Step 13）、参考 SyRS 升格 source 防护（Step 1 / 11）
+- [ ] 可提案：参考边界声明模板（Step 11）、参考 SyRS 升格 source 防护（Step 1 / 9）
 - [ ] 可提案：matrix `source_file_id ≠ ref_file_id` 机器规则
 
 ### 双情景 Review 对比

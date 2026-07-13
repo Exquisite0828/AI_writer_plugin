@@ -1,4 +1,4 @@
-# HARA 子 skill · Step 13 · 最终报告 (Final Report)
+# HARA 子 skill · Step 11 · 最终报告 (Final Report)
 
 通用骨架：`skills/workflow-steps/step-final-report/SKILL.md`。HARA 根规则：`skills/document-types/hara/SKILL.md`。
 
@@ -50,4 +50,4 @@ Final report must explicitly state, in Chinese or equivalent:
 
 **A1**：核对最终包未被误写为 HARA 批准、状态保守、critical claim/open items pending、artifact contract 满足。
 **A2**：汇编 final report 和 delivery summary，补齐 open items/evidence traceability/disclaimer；不改变专业结论状态。
-**B**：subagent 核对 final report 不等于专业批准或合规认证，且未移除 `NEEDS_USER_CONFIRMATION`。
+**B**：Stage review worker 核对 final report 不等于专业批准或合规认证，且未移除 `NEEDS_USER_CONFIRMATION`。

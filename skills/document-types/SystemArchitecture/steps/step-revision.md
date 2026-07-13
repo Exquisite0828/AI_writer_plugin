@@ -1,10 +1,10 @@
-# System Architecture 子 skill · Step 12 · 修订
+# System Architecture 子 skill · Step 10 · 修订
 
 骨架：`skills/workflow-steps/step-revision/SKILL.md`。领域规则：`skills/document-types/SystemArchitecture/SKILL.md`。
 
 ## 本步目的要点
 
-- 依 Step 10/11 findings 修订 → `revised/full_draft.md`、`change_log.md`。
+- 依 Step 8/9 findings 修订 → `revised/full_draft.md`、`change_log.md`。
 - 不新增无 EVD 支撑的架构元素/接口/分配结论。
 
 ## System Architecture 方法论（本步定位）
@@ -28,7 +28,7 @@
 
 ### 修订原则 Checklist
 
-- [ ] 每条修订**有 Step 10 / Step 11 issue ID 来源**
+- [ ] 每条修订**有 Step 8 / Step 9 issue ID 来源**
 - [ ] **未新增**无 EVD 的元素/接口/分配；如必须新增，需先经 HITL
 - [ ] 修订**不删除** open 项；除非提供 T0/T1 证据并记录 hitl 决策
 - [ ] 修订**不引入** HARA / TSR / TSC / SwRS / HwRS 内容
@@ -58,5 +58,5 @@
 ## A1 / A2 / B
 
 **A1**：P0 已关闭或显式 open；无 HARA/TSR；无 forbidden claims；change_log 可追溯。  
-**A2**：重跑未关闭项；二次过 Step 10/11。  
+**A2**：重跑未关闭项；二次过 Step 8/9。
 **B**：修订可追溯到 issue_id 与 decision_basis；With-Reference 未用参考架构关 P0。

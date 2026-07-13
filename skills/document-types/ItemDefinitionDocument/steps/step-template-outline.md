@@ -60,7 +60,7 @@
 
 ## 本步 Review / Checklist 要点
 
-本步产出将在 Step 10 审查「强制 L1 覆盖」与「无 HARA 章渗入」时被对照。
+本步产出将在 Step 8 审查「强制 L1 覆盖」与「无 HARA 章渗入」时被对照。
 
 ### 强制章节结构 Checklist（L1）
 

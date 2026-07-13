@@ -1,11 +1,11 @@
 ---
 name: writing-core
-description: 中文优先指导 AI coding tools 通过 deterministic Python engine 运行 AI professional document writing plugin，同时保留 artifact、source、provenance、HITL、final-status、profile 和 candidate-update 边界。
+description: 中文优先指导 AI coding tools 运行 agent-driven professional document workflow；Python 只负责 Phase 0 scaffold 与 orchestration metadata，同时保留 artifact、source、provenance、HITL 和 non-approval 边界。
 ---
 
 # Writing Core Skill
 
-Use this skill for shared writing boundaries across document types. This is not a prompt-only writing assistant: use `/ai-writing-plugin:write` and the deterministic Python engine. Runtime artifacts live under `runs/<run_id>/` and must not be committed.
+Use this skill for shared writing boundaries across document types. `/ai-writing-plugin:write` is an agent-worker protocol. The current deterministic Python layer creates Phase 0 scaffold and validates orchestration metadata; it does not generate professional content. Runtime artifacts live under `runs/<run_id>/` and must not be committed.
 
 ## Shared Workflow
 
@@ -55,19 +55,19 @@ Do not write unsupported professional approval language such as `approved`, `val
 
 ## Document Type And Profile Boundary
 
-Current repository guidance defines official L3 built-ins as `hara`, `technical_solution`, `test_report`, and `fsr`. `generic_document` is generic mode. External `document_profile.yaml` is an L2/customer profile mechanism and must validate before use; `custom_technical_note` is an external demo, not official L3.
+Current repository guidance defines official L3 product/domain asset labels as `hara`, `technical_solution`, `test_report`, and `fsr`. The current Python package has no document-type registry or type-specific content engine. `generic_document`, external `document_profile.yaml`, and `custom_technical_note` are design/config assets and are not loaded by current Python code.
 
 Other document-type runtime dirs may exist for historical or drift reasons. Do not load sibling document types by default and do not make them official from this skill.
 
 ## Candidate Learning
 
-Learning artifacts are proposals only:
+If a learning worker creates candidate artifacts, they are proposals only:
 
 - `learning/candidate_profile_update.yaml`
 - `learning/candidate_skill_patch.md`
 - `learning/promotion_report.md`
 
-candidate update proposed/inactive. candidate updates remain proposed/inactive. They must not overwrite stable Skill files, activate profiles, or apply runtime patches without separate human review and eval gates.
+candidate update proposed/inactive. They must not overwrite stable Skill files, activate profiles, or apply runtime patches. The current Python package has no candidate generation, eval, or promotion command.
 
 ## Common Failure Modes
 

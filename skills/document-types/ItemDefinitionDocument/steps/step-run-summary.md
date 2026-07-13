@@ -1,4 +1,4 @@
-# IDD 子 skill · Step 14 · 运行总结
+# IDD 子 skill · Step 12 · 运行总结
 
 骨架：`skills/workflow-steps/step-run-summary/SKILL.md`。领域规则：`skills/document-types/ItemDefinitionDocument/SKILL.md`。
 
@@ -22,10 +22,10 @@
 | 阶段 2：定大纲 | Step 4 模板大纲 | outline |
 | 阶段 3：逐段写作计划 | Step 5 大纲分析 | evidence_planning |
 | 阶段 4：证据·引用·任务 | Step 6 证据映射 | evidence_planning |
-| 阶段 5：撰写正文 | Step 9 保守草稿 | draft |
-| 阶段 6：审查与验证 | Step 10–11 | review |
-| 阶段 7：修订与交付 | Step 12–13 | finalize |
-| 追溯与学习 | Step 14–15 | learning |
+| 阶段 5：撰写正文 | Step 7 保守草稿 | draft |
+| 阶段 6：审查与验证 | Step 8–9 | review |
+| 阶段 7：修订与交付 | Step 10–11 | finalize |
+| 追溯与学习 | Step 12–13 | learning |
 
 ### 过程总览（叙事用）
 
@@ -70,8 +70,8 @@
 
 ### run_summary 须记录的审查相关项
 
-- [ ] Step 10 审查结论摘要（checklist 覆盖度、P0/P1 数量）
-- [ ] Step 11 验证 status（`passed_with_open_items` / `failed`，无 approved）
+- [ ] Step 8 审查结论摘要（checklist 覆盖度、P0/P1 数量）
+- [ ] Step 9 验证 status（`passed_with_open_items` / `failed`，无 approved）
 - [ ] gap 按 SEC-FUNC/BOUNDARY/IF/ENV/OPS/ASSUMP/MISUSE 分类统计
 - [ ] HITL 记录完整（或无 HITL 声明）
 - [ ] document_status 为保守表述

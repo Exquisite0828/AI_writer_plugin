@@ -51,7 +51,7 @@ Step 4 及以后读原文的**唯一导航入口**（L1→L2→L3→原文）。
 
 ## 本步 Review / Checklist 要点
 
-本步产出支撑 Step 11 **VC-2**（EVD 须含 L1/L2/L3 provenance）及 Step 10 证据匹配审查。
+本步产出支撑 Step 9 **VC-2**（EVD 须含 L1/L2/L3 provenance）及 Step 8 证据匹配审查。
 
 ### 与本步相关的 Clause 5 索引检查
 

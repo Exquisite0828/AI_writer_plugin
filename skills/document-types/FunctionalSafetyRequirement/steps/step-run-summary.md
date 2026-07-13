@@ -1,4 +1,4 @@
-# FSR 子 skill · Step 14 · 运行总结
+# FSR 子 skill · Step 12 · 运行总结
 
 骨架：`skills/workflow-steps/step-run-summary/SKILL.md`。领域规则：`skills/document-types/FunctionalSafetyRequirement/SKILL.md`。
 
@@ -20,10 +20,10 @@
 | 阶段 2：定大纲 | Step 4 | outline |
 | 阶段 3：写作计划 | Step 5 | evidence_planning |
 | 阶段 4：证据·引用·任务 | Step 6 | evidence_planning |
-| 阶段 5：成稿 | Step 9 | draft |
-| 阶段 6：审查与验证 | Step 10–11 | review |
-| 阶段 7：修订与交付 | Step 12–13 | finalize |
-| 学习 | Step 14–15 | learning |
+| 阶段 5：成稿 | Step 7 | draft |
+| 阶段 6：审查与验证 | Step 8–9 | review |
+| 阶段 7：修订与交付 | Step 10–11 | finalize |
+| 学习 | Step 12–13 | learning |
 
 ### 过程总览（叙事）
 
@@ -63,7 +63,7 @@
 
 ### 本步 Checklist
 
-- [ ] Step 10/11 结论摘要已记录
+- [ ] Step 8/9 结论摘要已记录
 - [ ] gap 按 **SEC-SG / SEC-FSR / SEC-ASIL / SEC-VERIF** 分类
 - [ ] 可复用模式**不含** FSR/SG 事实
 - [ ] `document_status` 保守

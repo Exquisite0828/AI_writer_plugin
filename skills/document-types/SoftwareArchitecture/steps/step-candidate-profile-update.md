@@ -1,4 +1,4 @@
-# Software Architecture 子 skill · Step 15 · 候选 profile 更新
+# Software Architecture 子 skill · Step 13 · 候选 profile 更新
 
 骨架：`skills/workflow-steps/step-candidate-profile-update/SKILL.md`。领域规则：`skills/document-types/SoftwareArchitecture/SKILL.md`。
 
@@ -10,13 +10,13 @@
 
 ## Software Architecture 方法论（本步定位）
 
-### 15.1 本步在八阶段方法链中的位置
+### 13.1 本步在八阶段方法链中的位置
 
 本步对应 **阶段 8：追溯与学习** 的 **候选改进输出**。
 
 **方法原则**：candidate 是「下次写 SwAD 时更好的检查单」，不是「上次项目的架构答案」。须人工审查后才可 promotion。
 
-### 15.2 阶段 8 · 候选提炼方法
+### 13.2 阶段 8 · 候选提炼方法
 
 #### 从 run 信号到 candidate 的映射
 
@@ -52,7 +52,7 @@
 - evidence_map 中 sample file_id 检测规则。
 - 「沿用参考」HITL 流程模板。
 
-### 15.3 promotion 边界
+### 13.3 promotion 边界
 
 - `promotion_report.md` 须列明：提案范围、未包含项、需人工确认点。
 - **禁止** auto-promotion；`active` 必须保持 `false` 直至人工批准。

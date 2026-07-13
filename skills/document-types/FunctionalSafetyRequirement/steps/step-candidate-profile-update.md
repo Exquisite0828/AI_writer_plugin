@@ -1,4 +1,4 @@
-# FSR 子 skill · Step 15 · 候选 profile 更新
+# FSR 子 skill · Step 13 · 候选 profile 更新
 
 骨架：`skills/workflow-steps/step-candidate-profile-update/SKILL.md`。领域规则：`skills/document-types/FunctionalSafetyRequirement/SKILL.md`。
 

@@ -1,4 +1,4 @@
-# SyRS 子 skill · Step 14 · 运行总结
+# SyRS 子 skill · Step 12 · 运行总结
 
 骨架：`skills/workflow-steps/step-run-summary/SKILL.md`。领域规则：`skills/document-types/SystemRequirement/SKILL.md`。
 
@@ -20,10 +20,10 @@
 | 阶段 2：定大纲 | Step 4 | outline |
 | 阶段 3：写作计划 | Step 5 | evidence_planning |
 | 阶段 4：证据·引用·任务 | Step 6 | evidence_planning |
-| 阶段 5：成稿 | Step 9 | draft |
-| 阶段 6：审查与验证 | Step 10–11 | review |
-| 阶段 7：修订与交付 | Step 12–13 | finalize |
-| 学习 | Step 14–15 | learning |
+| 阶段 5：成稿 | Step 7 | draft |
+| 阶段 6：审查与验证 | Step 8–9 | review |
+| 阶段 7：修订与交付 | Step 10–11 | finalize |
+| 学习 | Step 12–13 | learning |
 
 ### 过程总览（叙事）
 
@@ -73,7 +73,7 @@
 - [ ] **§3 阶段映射**：13 step 状态（done / skipped / failed）与 artifact 链接
 - [ ] **§4 关键统计**：SYS-F / SYS-IF / SEC-PERF / SEC-DIAG 条数；NEEDS_USER_CONFIRMATION 数；EVD 数；HITL 决策数
 - [ ] **§5 gap 分类**：按 SEC-* 分类统计
-- [ ] **§6 P0 / P1 关闭情况**：Step 10 / 11 findings 关闭状态
+- [ ] **§6 P0 / P1 关闭情况**：Step 8 / 9 findings 关闭状态
 - [ ] **§7 流程信号**：本 run 出现的风险（如「参考 SyRS 险被升格 source」「Direction 列大面积 open」）
 - [ ] **§8 与 SyRS 边界一致性声明**：非批准、非合规
 
@@ -104,7 +104,7 @@
 - [ ] **Sample 升格风险**：是否出现 sample/参考 SyRS 被误标 source 的修正记录
 - [ ] **Direction 列**：SYS-IF Direction 缺失/重新确认的次数
 - [ ] **HITL 频次**：哪些章节 HITL 最密集
-- [ ] **Forbidden 措辞清洗**：Step 11/12 触发的 forbidden 词条数与位置
+- [ ] **Forbidden 措辞清洗**：Step 9/10 触发的 forbidden 词条数与位置
 - [ ] **With-Reference**：参考 SyRS 误用迹象（误标 source / 渗入 matrix / Δ 缺失）次数
 
 ### reusable_patterns.md 规则 Checklist

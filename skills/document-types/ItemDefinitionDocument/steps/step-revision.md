@@ -1,10 +1,10 @@
-# IDD 子 skill · Step 12 · 修订
+# IDD 子 skill · Step 10 · 修订
 
 骨架：`skills/workflow-steps/step-revision/SKILL.md`。领域规则：`skills/document-types/ItemDefinitionDocument/SKILL.md`。
 
 ## 本步目的要点
 
-- 依 Step 10/11 findings 修订草稿 → `revised/full_draft.md`、`change_log.md`、`revision_plan.json`。
+- 依 Step 8/9 findings 修订草稿 → `revised/full_draft.md`、`change_log.md`、`revision_plan.json`。
 - 修订优先：**补边界/接口/误用**、修正 tier 违规、去除 HARA 泄漏、补 `NEEDS_USER_CONFIRMATION`。
 - 不新增无 EVD 支撑的功能或接口结论。
 - 修订后仍不得写 forbidden final claims。
@@ -42,7 +42,7 @@
 
 ## 本步 Review / Checklist 要点
 
-本步按 Step 10/11 findings 闭环修订；修订后须重新满足 Clause 5 与 Forbidden Claims 要求。
+本步按 Step 8/9 findings 闭环修订；修订后须重新满足 Clause 5 与 Forbidden Claims 要求。
 
 ### 修订优先 Checklist（按 P0 顺序）
 

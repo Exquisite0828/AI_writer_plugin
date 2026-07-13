@@ -26,7 +26,7 @@ HARA 流程把各类输入材料拆解为可索引的 inventory 记录。本步�
 
 ## 本步将被审查的关键点（Review / Verification 自检清单）
 
-本步输出（material inventory、各 role 提取要点、parse_status）将在 Step 10/11 被以下检查点定位。subagent 交付前应自检：
+本步输出（material inventory、各 role 提取要点、parse_status）将在 Step 8/9 被以下检查点定位。Stage review worker 交付前应自检：
 
 | 关联检查 | 检查项 | 自检方法 |
 |---|---|---|
@@ -118,33 +118,6 @@ HARA 流程把各类输入材料拆解为可索引的 inventory 记录。本步�
 3. 标注 role/parse_status/is_fact_source（HARA 样例/reference 标 false）。
 4. 校验 summary 计数一致、failed/unsupported/missing 如实登记。
 
-## state.json 示例（HARA）
-
-```json
-{
-  "step": "material-inventory",
-  "review_state": {
-    "chosen_plan": "<选定审核方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rv-1", "desc": "逐条核对 role/parse_status/is_fact_source", "status": "done"},
-      {"id": "rv-2", "desc": "核对 sample HARA 报告 is_fact_source=false", "status": "running"},
-      {"id": "rv-3", "desc": "核对 summary 计数一致、失败/缺失如实登记", "status": "not_run"}
-    ]
-  },
-  "revision_state": {
-    "chosen_plan": "<选定修订方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rt-1", "desc": "枚举待解析材料并探测格式", "status": "done"},
-      {"id": "rt-2", "desc": "逐份抽取文本生成清单记录", "status": "running"},
-      {"id": "rt-3", "desc": "标注 role/parse_status/is_fact_source", "status": "not_run"},
-      {"id": "rt-4", "desc": "校验 summary 计数、失败/缺失如实登记", "status": "not_run"}
-    ]
-  }
-}
-```
-
 ## B 审核检查项（HARA）
 
-subagent 逐项核对：每条记录的 `role` / `parse_status` / `is_fact_source` 是否正确（HARA sample 报告与 reference 方法学必须 `is_fact_source=false`）；`missing` / `unsupported` / `failed` 是否如实登记；`summary` 计数是否一致。
+Stage review worker 逐项核对：每条记录的 `role` / `parse_status` / `is_fact_source` 是否正确（HARA sample 报告与 reference 方法学必须 `is_fact_source=false`）；`missing` / `unsupported` / `failed` 是否如实登记；`summary` 计数是否一致。

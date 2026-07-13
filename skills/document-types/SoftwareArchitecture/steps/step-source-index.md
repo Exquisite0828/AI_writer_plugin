@@ -132,7 +132,7 @@
 |---|---|
 | 历史 SwAD 组件/接口编入 `topic_index` 作事实 | 事实来源违规 |
 | SwRS 主题无索引且无 gap | 追溯链断裂 |
-| L3 无 `location` | Step 11 VC-2 失败 |
+| L3 无 `location` | Step 9 VC-2 失败 |
 | sample 进 topic_index 事实条目 | tier 违规 |
 
 ### P1 失效项

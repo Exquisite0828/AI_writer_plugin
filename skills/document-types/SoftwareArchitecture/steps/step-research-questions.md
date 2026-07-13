@@ -152,7 +152,7 @@
 
 | 失效 | 后果 |
 |---|---|
-| 无证据标 supported | Step 9 静默填值 |
+| 无证据标 supported | Step 7 静默填值 |
 | sample/历史 SwAD 作 required_evidence | 事实来源违规 |
 | With-Reference 缺 sp-diff | Δ 分析缺失 |
 | sp-safe-arch 含新安全分析步骤 | 文档边界破坏 |

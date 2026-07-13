@@ -1,10 +1,10 @@
 # HARA 子 skill · Step 1 · 输入材料 (Input Materials)
 
-通用骨架：`skills/workflow-steps/step-input-materials/SKILL.md`。HARA 根规则：`skills/document-types/hara/SKILL.md`。本 overlay 只补充 HARA 输入分类与审查边界；run 起点、manifest/task_brief ownership、input_refs 由 deterministic engine 和通用 Step 1 负责。
+通用骨架：`skills/workflow-steps/step-input-materials/SKILL.md`。HARA 根规则：`skills/document-types/hara/SKILL.md`。本 overlay 只补充 HARA 输入分类与审查边界；`init-run` 只创建 `input_refs.json`、`manifest.json` 和 `task_brief.json`，专业 artifact 由 agent worker 负责。
 
 ## Purpose
 
-- 确认 `task_type: hara`，加载 HARA `DocumentTypeRules`。
+- 确认 `task_type: hara`，加载 HARA Skill/overlay guidance；当前 Python 不提供 HARA `DocumentTypeRules`。
 - 按 task 声明登记每份输入材料：file_id、path、title、format、role、parse_status。
 - 判定 role：item definition、operational situations、assumptions、system architecture 通常为 `source`；HARA template 为 `template`；safety/review checklist 为 `checklist`；ISO/methodology 为 `reference`；既有 HARA 报告样例为 `sample`。
 - 声明 HARA critical claims（hazard、hazardous event、S/E/C、ASIL、safety goal、final acceptability）`requires_human_confirmation`。
@@ -30,4 +30,4 @@ P1：接口信号方向材料缺失；假设隐式；引用文档缺版本号；
 
 **A1**：核对 `task_type=hara`、inputs/role、sample/reference 隔离、critical claims confirmation 声明、缺失/不支持材料可见。
 **A2**：只修正材料登记、role/tier/is_fact_source、gap 记录；不得生成 HARA 专业判断。
-**B**：subagent 核对 source≠sample、manifest/task_brief/input refs 边界、HARA claims pending 状态。
+**B**：Stage review worker 核对 source≠sample、manifest/task_brief/input refs 边界、HARA claims pending 状态。

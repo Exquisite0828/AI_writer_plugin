@@ -1,4 +1,4 @@
-# HARA 子 skill · Step 14 · 运行总结 (Run Summary)
+# HARA 子 skill · Step 12 · 运行总结 (Run Summary)
 
 本文件是通用骨架 `skills/workflow-steps/step-run-summary/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
@@ -25,7 +25,7 @@
 
 ## 本步将被审查的关键点（Review / Verification 自检清单）
 
-本步输出（`run_summary.md`）是本次 HARA run 的中性叙事，subagent 交付前应自检：
+本步输出（`run_summary.md`）是本次 HARA run 的中性叙事，Stage review worker 交付前应自检：
 
 | 关联检查 | 检查项 | 自检方法 |
 |---|---|---|
@@ -168,33 +168,6 @@ run_summary 是本次 HARA run 的可追溯记录，**只描述发生了什么�
 3. 生成中性 `learning/run_summary.md`（描述流程，不重下 HARA professional 结论，不把 completed 当批准）。
 4. 提炼 HARA 场景可复用模式 `learning/reusable_patterns.md`（流程结构、HITL 节点设计，不含事实结论）。
 
-## state.json 示例（HARA）
-
-```json
-{
-  "step": "run-summary",
-  "review_state": {
-    "chosen_plan": "<选定审核方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rv-1", "desc": "核对总结未重下 HARA 专业结论", "status": "done"},
-      {"id": "rv-2", "desc": "核对非交互 run 未伪造 HARA HITL 确认", "status": "running"},
-      {"id": "rv-3", "desc": "核对 completed 未被当作 HARA 专业批准", "status": "not_run"}
-    ]
-  },
-  "revision_state": {
-    "chosen_plan": "<选定修订方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rt-1", "desc": "重建 HARA run session_trace 与 hitl_decisions", "status": "done"},
-      {"id": "rt-2", "desc": "抽取 HARA HITL 决策与 open items（仍 pending 的 HARA 条目）", "status": "running"},
-      {"id": "rt-3", "desc": "生成中性 run_summary（不重下 HARA 专业结论）", "status": "not_run"},
-      {"id": "rt-4", "desc": "提炼 HARA 场景可复用模式（流程结构，不含事实结论）", "status": "not_run"}
-    ]
-  }
-}
-```
-
 ## B 审核检查项（HARA）
 
-subagent 逐项核对：总结是否只描述发生了什么而未重下 HARA 专业结论（hazard/rating/ASIL/safety goal 等）；非交互 run 是否未伪造 HARA HITL 确认；`completed` 是否未被当作 HARA 专业批准或合规认证；`trace/hitl_decisions.jsonl` 是否如实记录了 HARA HITL 决策点；reusable_patterns 是否仅记录流程/结构模式而不掺入 HARA 事实结论。
+Stage review worker 逐项核对：总结是否只描述发生了什么而未重下 HARA 专业结论（hazard/rating/ASIL/safety goal 等）；非交互 run 是否未伪造 HARA HITL 确认；`completed` 是否未被当作 HARA 专业批准或合规认证；`trace/hitl_decisions.jsonl` 是否如实记录了 HARA HITL 决策点；reusable_patterns 是否仅记录流程/结构模式而不掺入 HARA 事实结论。

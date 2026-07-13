@@ -31,13 +31,13 @@ System Requirement（SyRS，系统需求规格）支撑 **汽车控制器（ECU�
 
 ## 总过程概览
 
-经 **13 个** workflow step skill 驱动（逻辑 Step 1–6、9–15；Step 6 含证据·引用·章节计划三阶段）。每步子 skill：`skills/document-types/SystemRequirement/steps/step-*.md`，内含 **SyRS 方法论、Review/Checklist 要点**（ASPICE SYS.2 + ISO 26262 系统层输入对齐）。
+本目录按 **13 个** workflow step（Step 1–13；Step 6 含证据·引用·章节计划三阶段）提供 SyRS worker overlay guidance。每步子 skill：`skills/document-types/SystemRequirement/steps/step-*.md`，内含 **SyRS 方法论、Review/Checklist 要点**（ASPICE SYS.2 + ISO 26262 系统层输入对齐）。
 
 **一句话**：在已登记的上游客户需求与项目 source 之下，用有来源、可追溯、有 open 项的方式整理控制器 SyRS 候选包；不做 HARA/FSR/TSC，不做批准或合规认证。
 
 ## Supported Level And Positioning
 
-`SystemRequirement` 为 **document-type skill 层**交付类型；通过 `task.yaml` 的 `task_type: SystemRequirement` 加载本子 skill 与各 step 子 skill。须遵守通用 `writing-core` 与 artifact 契约。
+`SystemRequirement` 是非 official L3 的 Skill/overlay 指导资产。当前 metadata builder 可在同名 `task_type` 被明确选择时把本目录的路径/hash 放入 StepContextPackage；Python 不把它解释为 SyRS rules registry，也不执行端到端内容引擎。
 
 **上下游关系**：
 

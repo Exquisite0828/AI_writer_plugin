@@ -1,10 +1,10 @@
-# SwRS 子 skill · Step 12 · 修订
+# SwRS 子 skill · Step 10 · 修订
 
 骨架：`skills/workflow-steps/step-revision/SKILL.md`。领域规则：`skills/document-types/SoftwareRequirement/SKILL.md`。
 
 ## 本步目的要点
 
-- 根据 Step 10/11 findings 修订草稿
+- 根据 Step 8/9 findings 修订草稿
 - 写 `revised/full_draft.md` 与 `change_log.md`
 - 不新增无证据的软件需求事实
 

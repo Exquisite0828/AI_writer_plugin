@@ -30,13 +30,13 @@ Software Requirement（SwRS，软件需求规格）支撑汽车控制器软件�
 
 ## 总过程概览
 
-经 **13 个** workflow step skill 驱动（逻辑 Step 1–6、9–15；Step 6 含证据·引用·章节计划三阶段）。每步子 skill 位于 `skills/document-types/SoftwareRequirement/steps/step-*.md`，内含 **SwRS 方法论、Checklist 与 Review 要点**，对齐 ASPICE SWE.1 与 ISO 26262-6。
+本目录按 **13 个** workflow step（Step 1–13；Step 6 含证据·引用·章节计划三阶段）提供 SwRS worker overlay guidance。每步子 skill 位于 `skills/document-types/SoftwareRequirement/steps/step-*.md`，内含 **SwRS 方法论、Checklist 与 Review 要点**，对齐 ASPICE SWE.1 与 ISO 26262-6。
 
 **一句话**：在已登记的系统需求、系统架构、接口规范与项目软件 source 之下，用有来源、可追溯、有 open 项的方式整理控制器软件需求候选包；不做架构终稿、不做安全分析、不做批准或合规认证。
 
 ## Supported Level And Positioning
 
-`SoftwareRequirement` 为 document-type skill 层交付类型；通过 `task.yaml` 的 `task_type: SoftwareRequirement` 加载本 skill 与各 step 子 skill。
+`SoftwareRequirement` 是非 official L3 的 Skill/overlay 指导资产。当前 metadata builder 可在同名 `task_type` 被明确选择时把本目录的路径/hash 放入 StepContextPackage；Python 不把它解释为 SwRS rules registry，也不执行端到端内容引擎。
 
 ```text
 Stakeholder / Customer Need

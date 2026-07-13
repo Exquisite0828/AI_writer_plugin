@@ -6,15 +6,15 @@
 
 ### 阶段 A · 定 L1（文档结构与一级大纲）
 
-- 从 `task_brief` 读取 HARA 写作任务：`critical_claims`、是否 `strict_template`、目标读者、With-Reference / From-Scratch 情景。
+- 从 `task_brief` 只读取当前 Schema 具有的 `task_type`、`strict_template`、`target_audience` 等字段。With-Reference / From-Scratch 情景与 critical-claim 类要求必须根据已选输入材料与 evidence policy 判定；材料未声明时保持 pending 并要求人工确认。
 - 经 Step 3 三级目录 **L1→L2→L3** 阅读 `role=template` 的 HARA 模板（T2），提取强制章节与顺序。
 - 经三级目录阅读 `role=sample` 或用户提供的**同类型 HARA 参考报告**（T4），提取**章节划分与表格形状**（不提取 hazard/S-E-C/ASIL/SG 事实）。
-- 合并 HARA `DocumentTypeRules` 与 ISO 26262-3 期望的 12 个 L1 章（SEC-DOC … SEC-REVIEW），产出 `outline_l1.md` 与 `template_structure.json` 的 L1 节点。
+- 合并 HARA Skill/overlay guidance 与 ISO 26262-3 期望的 12 个 L1 章（SEC-DOC … SEC-REVIEW），产出 `outline_l1.md` 与 `template_structure.json` 的 L1 节点；当前 Python 不提供 HARA executable rules。
 - **底线**：sample 只借结构；L1 不写 hazard/评级结论。
 
 ### 阶段 B · 定 L2（二级大纲，L1 定稿后）
 
-- **逐 L1 章**展开 L2，依据：模板在该章下的子节/表格列、sample 同章的小节粒度、任务对该章的 critical claim、`topic_index` 中 Item/工况/接口等材料是否可支撑。
+- **逐 L1 章**展开 L2，依据：模板在该章下的子节/表格列、sample 同章的小节粒度、已选输入材料明确的关键要求、`topic_index` 中 Item/工况/接口等材料是否可支撑。
 - 例：SEC-ITEM 的 L2 可含「功能清单 F-xx」「系统边界表」「外部接口 IF-xx」「运行约束」；SEC-OPS 的 L2 可含「工况分类说明」「OS-xx 工况表」——**按模板与参考文档实际形状裁剪**，不机械硬套。
 - 材料缺口时 L2 保留占位并标 `evidence: pending`；写入 `outline_l2.md` 与 `template_structure.json` 的 `level=2` 节点（`parent_id` 指向 L1）。
 - **底线**：L2 只定义写作块与 intent，不填 S/E/C 数值或 ASIL 结论。
@@ -23,7 +23,7 @@
 
 | 输入 | 角色 | 本步如何使用 |
 |---|---|---|
-| `task_brief` | 写作任务 | 定范围、强制章、确认要求 |
+| `task_brief` | 写作任务 | 读取 task type、目标读者与 strict-template 开关 |
 | template（HARA 模板） | T2 结构 | 定 L1 强制节、L2 子节与表格列 |
 | sample / 同类型 HARA 参考 | T4 形状 | 对照章节粒度与表格形状，不借事实 |
 | reference（ISO 26262-3 等） | T3 方法学 | 可选：标准章节/Table 引用位置，不借评级值 |
@@ -95,22 +95,6 @@ L2 的 `section_id` 建议：`{L1_id}-L2-{序号}` 或 `{L1_id}-{短名}`，与 
 4. **L1 定稿后**逐章定 L2 → `outline_l2.md` + JSON L2 节点。
 5. 标注 `needs_human_confirmation` 与 `evidence: pending`。
 
-## state.json 示例（HARA）
-
-```json
-{
-  "step": "template-outline",
-  "revision_state": {
-    "subtasks": [
-      {"id": "rt-1", "desc": "读 task+template+sample 定 L1", "status": "done"},
-      {"id": "rt-2", "desc": "写入 outline_l1 与 L1 节点", "status": "done"},
-      {"id": "rt-3", "desc": "逐 L1 章定 L2 大纲", "status": "running"},
-      {"id": "rt-4", "desc": "写入 outline_l2 与 L2 节点", "status": "not_run"}
-    ]
-  }
-}
-```
-
 ## B 审核检查项（HARA）
 
-subagent 逐项核对：L1 是否综合任务+template+同类型参考且覆盖 HARA 强制章；L2 是否在 L1 定稿后按实际情况展开；template/sample 是否经三级目录读取；sample 是否仅借结构；`outline_l1` / `outline_l2` / `template_structure.json` 是否一致；是否未预设 hazard/rating/ASIL/SG 结论。
+Stage review worker 逐项核对：L1 是否综合任务+template+同类型参考且覆盖 HARA 强制章；L2 是否在 L1 定稿后按实际情况展开；template/sample 是否经三级目录读取；sample 是否仅借结构；`outline_l1` / `outline_l2` / `template_structure.json` 是否一致；是否未预设 hazard/rating/ASIL/SG 结论。

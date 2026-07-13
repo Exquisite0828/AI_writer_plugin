@@ -1,4 +1,4 @@
-# HARA 子 skill · Step 11 · 验证 (Verification)
+# HARA 子 skill · Step 9 · 验证 (Verification)
 
 通用骨架：`skills/workflow-steps/step-verification/SKILL.md`。HARA 根规则：`skills/document-types/hara/SKILL.md`。
 
@@ -31,4 +31,4 @@ P0 examples: 失败项静默通过；status 写 approved/validated/compliant；�
 
 **A1**：核对 failures/report 是否真实反映失败项、status 保守、VC-1~VC-5 逐项有结论、sample 非事实。
 **A2**：按 REQUIRED_CHECKS 执行确定性验证，收集 blocking_failures，写 failures/report。
-**B**：subagent 核对无静默通过、无批准语义、pending/candidate inactive/source tier/provenance 全部保留。
+**B**：Stage review worker 核对无静默通过、无批准语义、pending/candidate inactive/source tier/provenance 全部保留。

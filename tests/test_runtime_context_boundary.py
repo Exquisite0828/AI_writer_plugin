@@ -114,10 +114,45 @@ def test_document_type_input_steps_do_not_own_shared_run_start():
     assert not matches, f"document-type overlays must not own run start artifacts: {matches}"
 
 
-def test_runtime_prompts_delegate_run_start_to_engine():
+def test_document_type_overlays_do_not_invent_mutable_task_brief_fields():
+    system_requirement = read(
+        ROOT / "skills/document-types/SystemRequirement/steps/step-input-materials.md"
+    )
+    hara_outline = read(
+        ROOT / "skills/document-types/hara/steps/step-template-outline.md"
+    )
+
+    forbidden_system_requirement = [
+        "task_brief notes",
+        "task_brief 预声明",
+        "task_brief 显式列出 critical claim",
+        "补 task_brief",
+    ]
+    assert not [
+        phrase for phrase in forbidden_system_requirement if phrase in system_requirement
+    ]
+    assert "从 `task_brief` 读取 HARA 写作任务：`critical_claims`" not in hara_outline
+    for field in ["`task_type`", "`strict_template`", "`target_audience`"]:
+        assert field in hara_outline
+
+
+def test_controller_owns_run_start_before_step_one_worker_dispatch():
     required = "python -m ai_writing_plugin init-run --task <task.yaml>"
-    for path in [
-        ROOT / "commands/write.md",
-        ROOT / "skills/workflow-steps/step-input-materials/SKILL.md",
-    ]:
-        assert required in read(path)
+    command = read(ROOT / "commands/write.md")
+    step_one = read(ROOT / "skills/workflow-steps/step-input-materials/SKILL.md")
+
+    assert required in command
+    assert required not in step_one
+    assert "Step 1 worker 不得调用 `init-run`" in step_one
+
+
+def test_artifact_contract_distinguishes_persisted_metadata_from_authoritative_bindings():
+    contract = read(ROOT / "contracts/CURRENT_ARTIFACT_CONTRACTS.md")
+    normalized = " ".join(contract.split())
+
+    assert "all seven orchestration metadata families are persisted" in normalized
+    assert "authoritative continuation and gate bindings" in normalized
+    assert (
+        "ProgressLedger, per-step ReviewResults, and StageGateResult are the\n"
+        "persisted orchestration state"
+    ) not in contract

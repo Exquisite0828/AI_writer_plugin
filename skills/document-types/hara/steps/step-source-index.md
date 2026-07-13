@@ -87,21 +87,6 @@
 4. 写入 `topic_index` 与 `provenance_index`。
 5. 登记 `knowledge_gaps.md`。
 
-## state.json 示例（HARA）
-
-```json
-{
-  "step": "source-index",
-  "revision_state": {
-    "subtasks": [
-      {"id": "rt-1", "desc": "逐份建 L1/L2/L3 目录树", "status": "done"},
-      {"id": "rt-2", "desc": "生成 document_tocs 与 topic_index", "status": "running"},
-      {"id": "rt-3", "desc": "写入 provenance_index 与 knowledge_gaps", "status": "not_run"}
-    ]
-  }
-}
-```
-
 ## B 审核检查项（HARA）
 
-subagent 逐项核对：三级目录完整且 `document_tocs` 与 JSON 一致；L3（或 gap 下 L2 叶子）均有 `location`；`topic_index` 覆盖 HARA 检索主题；sample/reference 仅导航不作事实；缺口已写入 `knowledge_gaps.md`；**未**遗留「可直接全文读输入文件」的旧访问指引。
+Stage review worker 逐项核对：三级目录完整且 `document_tocs` 与 JSON 一致；L3（或 gap 下 L2 叶子）均有 `location`；`topic_index` 覆盖 HARA 检索主题；sample/reference 仅导航不作事实；缺口已写入 `knowledge_gaps.md`；**未**遗留「可直接全文读输入文件」的旧访问指引。

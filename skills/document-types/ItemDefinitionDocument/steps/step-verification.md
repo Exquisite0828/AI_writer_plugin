@@ -1,4 +1,4 @@
-# IDD 子 skill · Step 11 · 验证
+# IDD 子 skill · Step 9 · 验证
 
 骨架：`skills/workflow-steps/step-verification/SKILL.md`。领域规则：`skills/document-types/ItemDefinitionDocument/SKILL.md`。
 
@@ -36,7 +36,7 @@
 
 ## 本步 Review / Checklist 要点
 
-本步是 IDD **形式/合规验证主 skill**（安全工程师/机器检查视角）。内容审查见 Step 10。
+本步是 IDD **形式/合规验证主 skill**（安全工程师/机器检查视角）。内容审查见 Step 8。
 
 ### 形式/合规验证要点（VC-1～VC-5）
 

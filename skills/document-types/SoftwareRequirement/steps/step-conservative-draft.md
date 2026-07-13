@@ -1,4 +1,4 @@
-# SwRS 子 skill · Step 9 · 保守草稿
+# SwRS 子 skill · Step 7 · 保守草稿
 
 骨架：`skills/workflow-steps/step-conservative-draft/SKILL.md`。领域规则：`skills/document-types/SoftwareRequirement/SKILL.md`。
 

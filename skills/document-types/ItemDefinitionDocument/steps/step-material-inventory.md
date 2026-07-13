@@ -58,7 +58,7 @@
 
 ## 本步 Review / Checklist 要点
 
-本步产出将在 Step 10 审查「sample 是否当事实」、Step 11 验证 VC-2 tier 合规时被回溯。
+本步产出将在 Step 8 审查「sample 是否当事实」、Step 9 验证 VC-2 tier 合规时被回溯。
 
 ### 与本步相关的 Clause 5 预备检查
 

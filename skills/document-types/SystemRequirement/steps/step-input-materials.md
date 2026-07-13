@@ -4,13 +4,13 @@
 
 ## 本步目的要点
 
-- 确认本步 run 元数据与 `task_type: SystemRequirement` 边界；共享 run 起点与 manifest / task_brief ownership 由通用 Step 1 / deterministic engine 负责。
-- 登记 task.yaml 每份输入：`file_id`、path、title、format、`role`。
-- **source**：SWRS/RFQ、架构、接口规范、ODD、诊断规范、法规清单、既有 FSR（若有）→ `is_fact_source=true`。
+- 确认本步 run 元数据与 `task_type: SystemRequirement` 边界；`init-run` 只负责 Phase 0 scaffold，本 overlay 的专业内容由明确选中它的 agent worker 负责。
+- 只读核对 `input_refs.json` 中每份输入的 `material_id`、path/hash、mime type、`role`、`read_policy`与 `fact_source_allowed`。
+- **source**：SWRS/RFQ、架构、接口规范、ODD、诊断规范、法规清单、既有 FSR（若有）→ `fact_source_allowed=true`。
 - **template**：SyRS 模板 → T2。
-- **checklist / reference**：SYS.2 检查项、ASPICE/ISO 写法参考 → T2/T3，`is_fact_source=false`。
+- **checklist / reference**：SYS.2 检查项、ASPICE/ISO 写法参考 → T2/T3，`fact_source_allowed=false`。
 - **sample**：参考项目 SyRS → T4，**仅形状**。
-- 声明 SyRS critical claims 须 `requires_human_confirmation`。
+- 从已选输入与 task source 识别 SyRS critical-claim 类开放项；无可验证声明时在 StepResult 中标记需人工确认。
 - **底线**：不得把 sample 中的 SYS-F/IF/限值当作本项目事实；不得把 reference 当 SWRS 事实。
 
 ## SyRS 方法论（本步定位）
@@ -59,7 +59,7 @@ SyRS（ASPICE SYS.2）← 本类型
 
 | 问题 | 对应内容 | 本步动作 |
 |---|---|---|
-| 本文档范围是什么？ | 适用 ECU、变型、不含 HARA/TSC | task_brief 声明 |
+| 本文档范围是什么？ | 适用 ECU、变型、不含 HARA/TSC | 核对已选 source；缺口写入 StepResult summary |
 | 基于哪些输入？ | SWRS、RFQ、架构、接口 | 登记 source |
 | 每条 SYS-xx 追溯哪个上游需求？ | SWRS/RFQ 链接 | 登记 swrs_source 等 |
 | 还缺什么？ | 开放项 | `knowledge_gaps` |
@@ -104,31 +104,31 @@ SyRS（ASPICE SYS.2）← 本类型
 | 诊断 | diagnostic_spec | source | DTC 范围 | SEC-DIAG |
 | 安全输入（可选） | fsr_source、SG 清单 | source | 仅作 SEC-SAFE 引用，**非新 HARA** | SEC-SAFE |
 | 标定/平台约束 | calibration_constraints | source | 平台版本 | SEC-ASSUMP |
-| 模板/检查 | syrs_template、aspice_sys2_checklist | template/checklist | `is_fact_source=false` | 结构/审查 |
-| 方法学 | iso26262_part3_excerpt、aspice_guidance | reference | `is_fact_source=false` | T3 |
-| 参考 SyRS（仅 With-Reference） | reference_syrs | **sample** | `is_fact_source=false` | 仅形状 |
+| 模板/检查 | syrs_template、aspice_sys2_checklist | template/checklist | `fact_source_allowed=false` | 结构/审查 |
+| 方法学 | iso26262_part3_excerpt、aspice_guidance | reference | `fact_source_allowed=false` | T3 |
+| 参考 SyRS（仅 With-Reference） | reference_syrs | **sample** | `fact_source_allowed=false` | 仅形状 |
 
 ### 通用 Checklist（每次 run 必查）
 
 - [ ] `task_type: SystemRequirement` 已确认
-- [ ] manifest 每份输入：file_id、path、title、format、role 齐全
-- [ ] 每份 source 标注 `is_fact_source=true`；template/checklist/reference/sample 标 `false`
+- [ ] `input_refs.json` 每份输入的 material_id、path/hash、mime_type、role、read_policy 齐全
+- [ ] 每份 source 的 `fact_source_allowed=true`；template/checklist/reference/sample 为 `false`
 - [ ] **swrs_source / rfq 至少一份**（P0：若全无且无 HITL，禁止开跑）
 - [ ] 接口规范登记或 gap（影响 SEC-IF Direction 列）
 - [ ] 诊断规范登记或 gap（影响 SEC-DIAG）
-- [ ] 法规/标定/平台约束登记或在 task_brief 显式声明不适用
+- [ ] 法规/标定/平台约束已有 source，否则在 StepResult summary 标记不适用或材料缺口
 - [ ] 安全输入：若有 `fsr_source` 须 notes 标明「**仅供 SEC-SAFE 引用，不做新 HARA**」
-- [ ] task_brief 显式列出 critical claim 列表与对应 `requires_human_confirmation`
-- [ ] 缺失项写入 `knowledge_gaps.md`，不静默跳过
-- [ ] task_brief 显式声明：**非** HARA/FSR/TSC/SwRS 终稿、**非** ASPICE/ISO 26262 合规认证
+- [ ] critical-claim 类开放项在 StepResult summary 中标记需人工确认
+- [ ] 缺失项先写入 StepResult summary，交由后续步骤落入 `knowledge_gaps.md`，不静默跳过
+- [ ] StepResult summary 重申：**非** HARA/FSR/TSC/SwRS 终稿、**非** ASPICE/ISO 26262 合规认证
 
 ### ASPICE / ISO 26262 接口准备 Checklist
 
 - [ ] **ASPICE SYS.2 BP1**：客户/干系人需求材料齐全或登记 gap（无则 SEC-STAKE 不可成稿）
-- [ ] **ASPICE SYS.2 BP5**：上游 ID 命名规则在 task_brief 中固定（如 SWRS-xxx → SYS-F-xx）
+- [ ] **ASPICE SYS.2 BP5**：上游 ID 命名规则已有 source（如 SWRS-xxx → SYS-F-xx）；否则登记 gap
 - [ ] **ISO 26262-3 §5（下游 IDD 接口）**：SyRS 须覆盖 IDD 所需的功能、边界、接口、工况源材料
 - [ ] **ISO 26262-3 §7（下游 FSR 接口）**：若有 FSR 上游材料须登记，仅作 SEC-SAFE 引用
-- [ ] **ISO 26262-4（下游 TSC/系统设计接口）**：本 SyRS **不写**技术安全机制/TSR；登记界面在 task_brief
+- [ ] **ISO 26262-4（下游 TSC/系统设计接口）**：本 SyRS **不写**技术安全机制/TSR；缺失接口登记为 gap
 
 ### From-Scratch 专属 Checklist
 
@@ -140,10 +140,10 @@ SyRS（ASPICE SYS.2）← 本类型
 ### With-Reference 专属 Checklist
 
 - [ ] 参考项目 SyRS **必须** `role=sample`，**P0** 不得标 source
-- [ ] 参考 SyRS 与本项目 SWRS **分 file_id 登记**，不得合并
-- [ ] task_brief notes 明确：**参考 SyRS 仅作结构/列定义参考，需求事实来源不变**
-- [ ] task_brief 预声明 **SEC-DIFF（Δ-Analysis）** 章节
-- [ ] 平台/变型差异类别（接口/诊断/性能/法规）在 task_brief 列出，供后续 Δ 任务参考
+- [ ] 参考 SyRS 与本项目 SWRS **分 material_id 登记**，不得合并
+- [ ] StepResult summary 明确：**参考 SyRS 仅作结构/列定义参考，需求事实来源不变**
+- [ ] 将 **SEC-DIFF（Δ-Analysis）** 登记为下游 outline 要求
+- [ ] 平台/变型差异类别（接口/诊断/性能/法规）登记为后续 Δ 任务的 open items
 
 ### 本步 Review 要点（双情景对比）
 
@@ -152,7 +152,7 @@ SyRS（ASPICE SYS.2）← 本类型
 | 上游 source 完备性 | 缺即 gap，不得用 reference 补 | 参考 SyRS **不能**替代 SWRS source |
 | sample 边界 | 若有 sample，仅形状 | 参考 SyRS **不得**升格为 source（P0） |
 | 安全输入处理 | 通常无 FSR 输入 → SEC-SAFE 留 open | 参考 SyRS 的 SEC-SAFE 内容不可照抄 |
-| manifest 完整性 | role/tier/file_id 齐全 | 参考与本项目 source **分 file_id 登记** |
+| `input_refs.json` 完整性 | role/read_policy/material_id 齐全 | 参考与本项目 source **分 material_id 登记** |
 | HITL 预声明 | 大量 critical claim 须 HITL | Δ 项决策须 HITL |
 
 ### 常见 P0（本步重点防）
@@ -163,7 +163,7 @@ SyRS（ASPICE SYS.2）← 本类型
 | sample / 参考 SyRS 标为 source | 事实来源违规；下游 ASPICE 审计失败 |
 | reference 标为 SWRS 事实 | tier 违规 |
 | fsr_source 被默认升级为新 HARA 判断依据 | 文档类型漂移 |
-| 参考 SyRS 与本项目 SWRS 同 file_id 合并登记 | 证据可追溯性丧失 |
+| 参考 SyRS 与本项目 SWRS 同 material_id 合并登记 | 证据可追溯性丧失 |
 
 ### 常见 P1
 
@@ -173,6 +173,8 @@ SyRS（ASPICE SYS.2）← 本类型
 
 ## A1 / A2 / B
 
-**A1**：manifest 完整；sample/reference `is_fact_source=false`；SWRS source 或 gap 已处理；ASPICE BP1 输入齐全或显式 gap。  
-**A2**：补登材料、修正 role、登记 gap、补 task_brief 中的 critical claim 声明。  
-**B**：核对 role/tier/gap；sample 未升格为 source；与 IDD/FSR/TSC 的接口在 task_brief 显式列出。
+**A1**：`input_refs.json` 完整；sample/reference `fact_source_allowed=false`；SWRS source 或 gap 已处理；ASPICE BP1 输入齐全或显式 gap。
+
+**A2**：重新核对 controller-owned scaffold 与当前材料，只更新本步 StepResult；需改动 `input_refs.json`、`manifest.json` 或 `task_brief.json` 的问题退回 controller/用户，step worker 不直接修改。
+
+**B**：核对 role/read_policy/gap；sample 未升格为 source；与 IDD/FSR/TSC 的接口缺口已在 StepResult summary 明确。

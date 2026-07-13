@@ -107,7 +107,7 @@
 
 ## 本步 Review / Checklist 要点
 
-本步产出是 Step 11 **VC-2**（tier 合规、L1/L2/L3 provenance）的核心检查对象。
+本步产出是 Step 9 **VC-2**（tier 合规、L1/L2/L3 provenance）的核心检查对象。
 
 ### Critical Claims 与证据要求（本步须落实）
 

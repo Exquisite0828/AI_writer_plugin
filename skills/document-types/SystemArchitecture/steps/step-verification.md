@@ -1,4 +1,4 @@
-# System Architecture 子 skill · Step 11 · 验证
+# System Architecture 子 skill · Step 9 · 验证
 
 骨架：`skills/workflow-steps/step-verification/SKILL.md`。领域规则：`skills/document-types/SystemArchitecture/SKILL.md`。
 

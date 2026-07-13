@@ -180,4 +180,4 @@ With-Reference 须含 **TASK-DIFF**。
 
 ## B 审核检查项（HARA）
 
-subagent 逐项核对：Phase A EVD provenance 完整；Phase B matrix tier 合规、无编造引用；Phase C TASK 覆盖 12 章、writing_mode 保守、allowed_evidence 可追溯；`unresolved_questions.md` 含全部 open 项。
+Stage review worker 逐项核对：Phase A EVD provenance 完整；Phase B matrix tier 合规、无编造引用；Phase C TASK 覆盖 12 章、writing_mode 保守、allowed_evidence 可追溯；`unresolved_questions.md` 含全部 open 项。

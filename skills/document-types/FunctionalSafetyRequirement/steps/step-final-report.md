@@ -1,4 +1,4 @@
-# FSR 子 skill · Step 13 · 最终报告
+# FSR 子 skill · Step 11 · 最终报告
 
 骨架：`skills/workflow-steps/step-final-report/SKILL.md`。领域规则：`skills/document-types/FunctionalSafetyRequirement/SKILL.md`。
 

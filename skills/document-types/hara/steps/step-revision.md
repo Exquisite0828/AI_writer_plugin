@@ -1,10 +1,10 @@
-# HARA 子 skill · Step 12 · 修订 (Revision)
+# HARA 子 skill · Step 10 · 修订 (Revision)
 
 通用骨架：`skills/workflow-steps/step-revision/SKILL.md`。HARA 根规则：`skills/document-types/hara/SKILL.md`。
 
 ## Purpose
 
-依据 Step 10/11 的明确 issue 生成定向修订计划并局部修订草稿。修订不得引入未支撑 HARA 新结论，不得把 HITL pending 改为 confirmed，不得输出批准类措辞。变更记录写入 `revised/change_log.md`，并在修订后回到 Step 10/11 重审验证。
+依据 Step 8/9 的明确 issue 生成定向修订计划并局部修订草稿。修订不得引入未支撑 HARA 新结论，不得把 HITL pending 改为 confirmed，不得输出批准类措辞。变更记录写入 `revised/change_log.md`，并在修订后回到 Step 8/9 重审验证。
 
 ## Revision Rules
 
@@ -36,4 +36,4 @@
 
 **A1**：核对修订严格依据 issue，未引入无支撑 hazard/S-E-C/ASIL/SG，open items 保持 pending，change_log 完整。
 **A2**：先处理 P0，再 P1；每个修订只读取最小必要 artifact/source 片段。
-**B**：subagent 核对修订后 pending/HITL、source tier、sample/reference 边界和重审要求未被破坏。
+**B**：Stage review worker 核对修订后 pending/HITL、source tier、sample/reference 边界和重审要求未被破坏。

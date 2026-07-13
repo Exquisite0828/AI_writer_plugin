@@ -1,6 +1,6 @@
 ---
 name: step-research-questions
-description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划」：对 Step 4 大纲逐段分析研究，读参考文档与领域经验，为每一 L2 小节产出写作计划；state.json 顺序跟踪子任务，汇总 section_writing_plans.json。
+description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划」：对 Step 4 大纲逐段分析研究，读参考文档与领域经验，为每一 L2 小节产出写作计划；worker内部顺序跟踪子任务，汇总 section_writing_plans.json。
 ---
 
 # Step 5 · 大纲分析与写作计划 (Outline Analysis & Section Writing Plans)
@@ -11,8 +11,8 @@ description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划
 
 1. **读取前步大纲**：理解 Step 4 的 L1 章 + L2 小节、`intent`、强制要求、证据预期。
 2. **逐段分析研究**：按大纲顺序（L1 → L2）遍历；对每个 L2（无 L2 的 L1 则按 L1 一条）登记一条**分析子任务**。
-3. **登记执行进度**：主执行上下文为本步维护 `research_state.subtasks`；状态**仅三种**：`not_run` / `running` / `done`。该进度不等于 subagent 审核 state。
-4. **顺序执行**：取第一条 `not_run` → `running` → 分析研究该段 → 写出该段写作计划 → `done` → 写回 state.json → 继续下一条。
+3. **登记执行进度**：当前 step worker可在隔离执行上下文中维护 `research_state.subtasks`；状态仅为 `not_run` / `running` / `done`。该进度不持久化为独立runtime artifact，也不进入controller上下文或ProgressLedger。
+4. **顺序执行**：取第一条 `not_run` → `running` → 分析研究该段 → 写出该段写作计划 → `done` → 更新worker内部进度 → 继续下一条。
 5. **汇总产出**：各段写作计划合并写入 `plans/section_writing_plans.json`（可选配套 `plans/section_plans/<section_id>.md` 可读稿）。
 
 ## 单个子任务的职能
@@ -46,7 +46,7 @@ description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划
 
 ## 何时使用
 
-- 已完成 Step 4（模板大纲），run 处于 phase_2。
+- 已完成 Step 4（模板大纲），对应 artifacts 已由 worker 生成并在 StepResult 中报告。
 - 需要在大纲骨架上，为每小段形成「写之前该怎么写」的计划，供后续证据映射与成稿使用。
 
 ## 输入
@@ -74,30 +74,6 @@ description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划
 
 - `plans/section_writing_plans.json`（**主产出**：每 L2 一条写作计划）
 - `plans/section_plans/<section_id>.md`（可选：单段可读计划）
-- 本步执行进度 state（由主执行上下文维护，不作为 subagent 审核 state）
-
-## state.json 结构
-
-```json
-{
-  "step": "research-questions",
-  "research_state": {
-    "subtasks": [
-      {
-        "id": "sp-001",
-        "section_id": "SEC-ITEM-L2-01",
-        "parent_section_id": "SEC-ITEM",
-        "desc": "分析 Item 功能清单 L2：读 item 材料，产出功能表写作计划",
-        "status": "not_run"
-      }
-    ]
-  },
-  "review_state": { "chosen_plan": "", "rejected_plans": [], "subtasks": [] },
-  "revision_state": { "chosen_plan": "", "rejected_plans": [], "subtasks": [] }
-}
-```
-
-**状态规则**：仅 `not_run` | `running` | `done`；同时最多一条 `running`；每完成一条立即写回 `done`。
 
 ## 执行顺序（主流程）
 
@@ -105,9 +81,9 @@ description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划
 2. **顺序执行**（直至无 `not_run`）：
    - 取第一条 `not_run` → `running`
    - 分析研究该段 → 写出该段 `section_writing_plan` 条目（及可选 `.md`）
-   - `done` → 写 state.json
+   - `done` → 更新worker内部进度
 3. **合并定稿**：全部 `done` 后写入 `section_writing_plans.json`。
-4. **子代理审核**：进入下方审核循环。
+4. **完成交接**：写入并校验StepResult后返回controller。
 
 ## 边界与约束
 
@@ -117,23 +93,29 @@ description: 中文优先指导 workflow 第 5 步「大纲分析与写作计划
 - 子任务粒度默认 **outline L2 小节**；复杂 L2 可在子 skill 拆多条 `sp-*`（仍顺序执行）。
 - 不引入 RAG / 向量库 / 复杂 agent 框架。
 
-## 加载任务专属子 skill（必做）
+## 当前 worker 与 document-type guidance
 
-- 路径：`skills/document-types/<task_type>/steps/step-research-questions.md`
-- 例：`task_type: hara` → HARA 各 L2 的默认分析子任务表、单段计划模板、A1/A2、B 检查项
+当前 step worker 只能通过 StepContextPackage.instruction_refs[] 中的 path/hash 读取已纳入 package 的 instructions。wrapper 与本 canonical workflow Skill 是必需引用；document-type root Skill 与 per-step overlay 都按文件存在性懒加载，未出现时不加入 package。root Skill 存在但 per-step overlay 缺失是合法的 root-only 模式；可选 document-type root Skill 或 overlay 未出现不得判为 `metadata_invalid`。所有实际出现在 `instruction_refs[]` 中的引用都必须通过 path/hash 校验；已包含的引用缺失或 hash 无效时返回 `metadata_invalid` 并停止。不得由 controller 直接加载这些正文，不得读取 sibling document types。
 
-## 子代理审核 (Subagent Review)
+## StepResult 与 stage review交接
 
-`research_state` 全部 `done` 且 `section_writing_plans.json` 初稿完成后，新 subagent 审核已产出的 artifacts。subagent 默认只审核；只有发现 P0/P1 或用户明确 `needs_revision` 时才允许进入局部修订。
+当前 step worker 读取允许的refs，生成本步声明的专业artifacts，写入并自行校验StepResult，然后返回并结束。它不得继续派发其他worker，也不得创建独立审核状态或stage gate。
 
-### A1 / A2
+Stage review worker 在本stage所有StepResult完成后由controller统一调度，只接收ReviewContextPackage路径。它按 `steps[]` 顺序沿 `context_package_refs[]` 读取本canonical与当前document-type guidance；overlay存在时叠加其领域检查。
 
-- **A1**：按子 skill 典型审核子任务核对（覆盖 outline_l2、计划字段完整、无预设结论、无 sample 当事实）。
-- **A2**：仅 P0/P1 或用户明确 `needs_revision` 时执行。修订必须绑定具体 `issue_id`、`target_artifact`、`changed_paths`，只修受影响段或对应 JSON 条目；P2/P3 只记录为待用户确认的问题，不得自动修订。
+### A1/B 通用审核检查
 
-### B
+- 本步声明的必需artifact均存在，StepResult path/hash与最终文件一致。
+- 产出满足本canonical的输入、输出、顺序和边界约束。
+- sample/reference未被当作项目事实，critical claim缺T0/T1时仍为pending或 `NEEDS_USER_CONFIRMATION`。
+- 未生成批准、合规、风险接受或生产就绪结论。
+- 当前document-type guidance存在时，其A1/B领域检查全部执行。
 
-交付 `section_writing_plans.json`、本步执行进度 state、边界 + 子 skill「B 审核检查项」。subagent 只能写入 `runs/<run_id>/subagent/step-research-questions/state.json` 与 stage-review 材料；无 P0/P1 时不得重写 `section_writing_plans.json` 或重跑本步。
+### A2 局部修订
+
+Stage review worker只记录问题，不修改专业artifact或StepResult。它必须先汇总写入 `stage_reviews/<stage>/issues.json`，再对该stage一次性调用 `build-stage-review-issues` 与 `validate-stage-review-issues`，由builder原子生成并校验固定路径的index/details。本step存在P0/P1或明确返工项时，其ReviewResult返回 `needs_revision`；P2/P3只进入review/open items。A2由重新派发的原step worker执行，并绑定 `issue_id`、`target_artifact`、`changed_paths`；A2 worker不得自行派发其他step。若目标不是最后一步，controller按自动依赖协议重跑被失效的后续step。
+
+Stage review worker为本step写入并校验一个ReviewResult，不创建第二套持久化编排状态。
 
 ## 交接到下一步
 

@@ -9,9 +9,9 @@ Use this guideline for `task_type: fsr`. Default communication is Chinese; keep 
 
 ## Purpose
 
-`fsr` is an official L3 built-in for review-ready Functional Safety Requirements packages. It organizes FSR candidates, Safety Goal traceability, ASIL inheritance, rationale, verification method candidates, assumptions, limitations, and open confirmations. It must not approve safety requirements, confirm compliance, validate ASIL inheritance, or claim completeness without T0/T1 evidence.
+`fsr` is an official L3 product/domain asset label for review-ready Functional Safety Requirements packages. Current Python has no FSR rules registry or end-to-end content engine. This Skill guides workers to organize FSR candidates, Safety Goal traceability, ASIL inheritance, rationale, verification method candidates, assumptions, limitations, and open confirmations without approving unsupported claims.
 
-Use the shared plugin workflow and deterministic engine. No fsr-specific pipeline, no `fsr_pipeline.py`, no duplicated workflow.
+Use the shared agent workflow; current Python supplies only the Phase 0 scaffold and orchestration-metadata tools. There is no fsr-specific pipeline, `fsr_pipeline.py`, or duplicated content engine.
 
 ## TSC Boundary
 

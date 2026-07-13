@@ -11,7 +11,7 @@ Use this skill for `task_type: hara`. Default user-facing communication is Chine
 
 HARA assists creation of a traceable, review-ready ISO 26262-3 hazard analysis report package. It may organize item definition, operational situations, hazards, hazardous events, S/E/C candidate ratings, ASIL candidates, safety goal candidates, open confirmations, review, and verification artifacts. It must not automatically approve professional HARA judgments.
 
-`hara` is an official L3 built-in. It preserves HARA terminology and uses the shared workflow; each step overlay under `skills/document-types/hara/steps/` supplies step-specific domain rules.
+`hara` is an official L3 product/domain asset label. It preserves HARA terminology through this Skill and its step overlays; current Python has no HARA rules registry or end-to-end content engine.
 
 ## Typical Inputs
 

@@ -1,4 +1,4 @@
-# Software Architecture 子 skill · Step 10 · 审查
+# Software Architecture 子 skill · Step 8 · 审查
 
 骨架：`skills/workflow-steps/step-review/SKILL.md`。领域规则：`skills/document-types/SoftwareArchitecture/SKILL.md`。
 
@@ -10,13 +10,13 @@
 
 ## Software Architecture 方法论（本步定位）
 
-### 10.1 本步在八阶段方法链中的位置
+### 8.1 本步在八阶段方法链中的位置
 
 本步对应 **阶段 6：审查与验证** 中的 **内容审查**（软件架构师 / 软件工程师视角）。
 
 **方法原则**：审查不是「把 open 关掉」，而是验证：(1) 有证据的写得对；(2) 没证据的标得诚实；(3) 没有越权内容。
 
-### 10.2 阶段 6 · 内容审查方法
+### 8.2 阶段 6 · 内容审查方法
 
 #### ASPICE SWE.2 七维审查法
 
@@ -60,11 +60,11 @@
 - **Δ 质量**：每行是否有本项目 evidence；是否仅写「同参考」。
 - **差异覆盖**：Added/Removed/Modified/Scope-changed 是否检视。
 
-### 10.3 审查产出
+### 8.3 审查产出
 
 - `review/review_report.json`：每项 D1–D7 + 12 项结论。
 - findings 分级：P0（阻断）/ P1（应修）/ P2（建议）。
-- P0 交 Step 12 修订；无法修则保持 open 并记录。
+- P0 交 Step 10 修订；无法修则保持 open 并记录。
 
 ## 本步 Review / Checklist 要点
 
@@ -178,5 +178,5 @@
 ## A1 / A2 / B
 
 **A1**：16 项 checklist 有结论；ASPICE BP1–BP7 全部覆盖；P0 无遗漏。  
-**A2**：按 findings 编修订单交 Step 12。  
+**A2**：按 findings 编修订单交 Step 10。
 **B**：review 非 sign-off；状态 `passed_with_open_items` 或 `failed`。

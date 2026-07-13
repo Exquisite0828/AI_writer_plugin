@@ -1,4 +1,4 @@
-# HARA 子 skill · Step 9 · 保守草稿 (Conservative Draft)
+# HARA 子 skill · Step 7 · 保守草稿 (Conservative Draft)
 
 通用骨架：`skills/workflow-steps/step-conservative-draft/SKILL.md`。HARA 根规则：`skills/document-types/hara/SKILL.md`。
 
@@ -41,4 +41,4 @@ P0 examples: H-xx 抽象层次错误；HE 后果只考虑本车乘员；ASIL 与
 
 **A1**：核对草稿未超证据范围、critical claims pending、forbidden final claims absent、tier/claim/HITL status preserved。
 **A2**：按 section_tasks 和 allowed_evidence 局部修订；证据不足只写 pending/open，不补事实。
-**B**：Step 10/11 应能重算 S/E/C→ASIL、追溯 EVD、确认 sample/reference 未作事实。
+**B**：Step 8/9 应能重算 S/E/C→ASIL、追溯 EVD、确认 sample/reference 未作事实。

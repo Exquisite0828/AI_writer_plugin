@@ -1,26 +1,26 @@
-# Software Architecture 子 skill · Step 11 · 验证
+# Software Architecture 子 skill · Step 9 · 验证
 
 骨架：`skills/workflow-steps/step-verification/SKILL.md`。领域规则：`skills/document-types/SoftwareArchitecture/SKILL.md`。
 
 ## 本步目的要点
 
 - 确定性检查：artifact 链、tier 合规、文档类型纯净性、forbidden claims。
-- 与 Step 10 人工审查互补：本步为 **机器可重复** 规则验证。
+- 与 Step 8 人工审查互补：本步为 **机器可重复** 规则验证。
 - 失败写入 `verify/failures.md`。
 
 ## Software Architecture 方法论（本步定位）
 
-### 11.1 本步在八阶段方法链中的位置
+### 9.1 本步在八阶段方法链中的位置
 
 本步对应 **阶段 6** 中的 **形式/合规验证**（质量工程师 / 自动化检查）。
 
 **方法原则**：验证不改变正文，只判定 pass/fail。大量 `NEEDS_USER_CONFIRMATION` 在 From-Scratch 下 **不** 单独构成 fail。
 
-### 11.2 阶段 6 · 形式验证方法
+### 9.2 阶段 6 · 形式验证方法
 
 #### VC-1 · Artifact 链完整性
 
-验证 Step 1–10 产物齐全且可链接：manifest → inventory → index → outline → plans → evidence_map → section_tasks → draft → review。
+验证前置 Step 1–8 产物齐全且可链接：manifest → inventory → index → outline → plans → evidence_map → section_tasks → draft → review。
 
 #### VC-2 · Tier 与 Provenance
 
@@ -76,7 +76,7 @@
 - [ ] `input_inventory.json`、`source_index.json`、`provenance_index.json` 存在
 - [ ] `outline_l1/l2`、`section_writing_plans.json`、`evidence_map.json`、`citation_plan.json`、`claim_support_matrix.json`、`section_tasks.json`、`writing_plan.md`、`unresolved_questions.md` 齐全
 - [ ] `draft/full_draft.md`、`review/review_report.json` 存在
-- [ ] Step 1–10 产物路径在 manifest 可追溯
+- [ ] 前置 Step 1–8 产物路径可追溯
 
 ### VC-2 · Tier 与 Provenance Checklist
 
@@ -128,7 +128,7 @@
 - [ ] evidence_map/matrix 中 `source_file_id` ≠ 历史 SwAD file_id（**P0**）
 - [ ] 历史 SwAD 在 inventory：`role=sample`，`is_fact_source=false`
 - [ ] SEC-DIFF 存在；≥1 行；Δ Type 具体
-- [ ] delivery 参考边界声明将在 Step 13 出现（预检 task_brief）
+- [ ] delivery 参考边界声明将在 Step 11 出现（预检 task_brief）
 
 ### 验证结论枚举
 
@@ -142,7 +142,7 @@
 |---|---|
 | T4 支撑 critical claim | 回 Step 6 修 matrix |
 | 历史 SwAD 进 evidence_map | 删 EVD、改 open |
-| forbidden claims | 交 Step 12 删改 |
+| forbidden claims | 交 Step 10 删改 |
 | 接口 Direction 空且 confirmed | 改 open 或补 EVD |
 | artifact 链断裂 | 回对应 Step 补产物 |
 

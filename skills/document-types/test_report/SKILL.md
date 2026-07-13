@@ -13,7 +13,7 @@ Use this guideline for `task_type: test_report`.
 
 如果测试计划、结果表或缺陷材料为英文，可以保留原文字段和证据片段；用户说明优先中文。不要把 sample test report 或模型推断写成真实测试结论。
 
-This Skill.md is guideline material only. It must use plugin workflow and must call the Python engine. Skill.md does not replace artifact contract, schema validation, source index, evidence trace, review, verify, HITL trace, or candidate update state control.
+This Skill.md is guideline material only. Agent workers use it within the plugin workflow, while the current Python layer supplies Phase 0 scaffold and orchestration-metadata builders/validators. Skill.md does not replace the artifact contract, metadata validation, source index, evidence trace, review, verification, HITL trace, or candidate-update state control.
 
 ## Document Type Purpose
 
@@ -23,7 +23,7 @@ It must not invent test results, pass/fail status, coverage, defect status, or r
 
 ## Supported Level And Positioning
 
-`test_report` is an official L3 built-in document type backed by built-in `DocumentTypeRules`, fixtures, regression tests, and this domain guideline.
+`test_report` is an official L3 product/domain asset label backed in the current tree by fixtures and this domain guideline. Current Python has no document-type registry, executable type rules, or end-to-end content test.
 
 The command layer remains generic. There is no test_report-specific pipeline.
 

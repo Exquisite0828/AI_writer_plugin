@@ -1,4 +1,4 @@
-# TSC 子 skill · Step 14 · 运行总结
+# TSC 子 skill · Step 12 · 运行总结
 
 骨架：`skills/workflow-steps/step-run-summary/SKILL.md`。领域规则：`skills/document-types/TechnicalSafetyConcept/SKILL.md`。
 
@@ -18,12 +18,12 @@
 | 阶段 0：启动与范围对齐 | Step 1 | scope_gaps |
 | 阶段 1：输入清点与来源分级 | Step 2 | tier_compliance |
 | 阶段 2：架构与安全元素识别 | Step 3–4 | arch_element_gaps |
-| 阶段 3：FSR→TSR 派生 | Step 5–6、9 | tsr_derivation_gaps |
-| 阶段 4：安全机制与故障处理 | Step 5–6、9 | mech_fault_gaps |
-| 阶段 5：接口与 ASIL 分解 | Step 5–6、9 | iface_asil_gaps |
-| 阶段 6：追溯矩阵与验证计划 | Step 6、9 | trace_verif_gaps |
-| 阶段 7：评审与独立审查 | Step 10–11 | review_findings |
-| 阶段 8：定稿与下游交接 | Step 12–13 | handoff_notes |
+| 阶段 3：FSR→TSR 派生 | Step 5–7 | tsr_derivation_gaps |
+| 阶段 4：安全机制与故障处理 | Step 5–7 | mech_fault_gaps |
+| 阶段 5：接口与 ASIL 分解 | Step 5–7 | iface_asil_gaps |
+| 阶段 6：追溯矩阵与验证计划 | Step 6–7 | trace_verif_gaps |
+| 阶段 7：评审与独立审查 | Step 8–9 | review_findings |
+| 阶段 8：定稿与下游交接 | Step 10–11 | handoff_notes |
 
 ### 完整过程回顾（本 run 映射）
 
@@ -34,10 +34,10 @@
 | 阶段 2：定大纲 | Step 4 | outline |
 | 阶段 3：写作计划 | Step 5 | evidence_planning |
 | 阶段 4：证据·引用·任务 | Step 6 | evidence_planning |
-| 阶段 5：成稿 | Step 9 | draft |
-| 阶段 6：审查与验证 | Step 10–11 | review |
-| 阶段 7：修订与交付 | Step 12–13 | finalize |
-| 学习 | Step 14–15 | learning |
+| 阶段 5：成稿 | Step 7 | draft |
+| 阶段 6：审查与验证 | Step 8–9 | review |
+| 阶段 7：修订与交付 | Step 10–11 | finalize |
+| 学习 | Step 12–13 | learning |
 
 ### 过程总览（叙事）
 
@@ -81,7 +81,7 @@
 
 ### 本步 Checklist
 
-- [ ] Step 10/11 结论摘要已记录
+- [ ] Step 8/9 结论摘要已记录
 - [ ] gap 按 **SEC-FSR / SEC-ARCH / SEC-TSR / SEC-MECH / SEC-FAULT** 分类
 - [ ] 可复用模式**不含** TSR/机制/ASIL 事实
 - [ ] `document_status` 保守

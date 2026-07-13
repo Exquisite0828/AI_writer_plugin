@@ -1,4 +1,4 @@
-# SyRS 子 skill · Step 13 · 最终报告
+# SyRS 子 skill · Step 11 · 最终报告
 
 骨架：`skills/workflow-steps/step-final-report/SKILL.md`。领域规则：`skills/document-types/SystemRequirement/SKILL.md`。
 
@@ -62,7 +62,7 @@ Item Definition / 系统架构（SYS.3）/ FSR 链 / SwRS …
 - [ ] **§4 SyRS 正文**：SEC-STAKE / SEC-FUNC / SEC-IF / SEC-PERF / SEC-ENV / SEC-DIAG / SEC-SAFE（若有）/ SEC-TRACE / SEC-VERIF / SEC-ASSUMP / SEC-DIFF（仅 With-Reference）
 - [ ] **§5 追溯矩阵摘要**：上游↔SyRS 双向；下游预留列说明
 - [ ] **§6 Open Items Registry**：所有 NEEDS_USER_CONFIRMATION 汇总
-- [ ] **§7 审查/验证摘要**：Step 10 / Step 11 结论摘要；**非** sign-off
+- [ ] **§7 审查/验证摘要**：Step 8 / Step 9 结论摘要；**非** sign-off
 - [ ] **§8 状态声明与下游交接说明**
 
 ### delivery_summary.md Checklist

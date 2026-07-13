@@ -4,7 +4,7 @@
 
 ## 本步目的要点
 
-- 确认本步 run 元数据与 `task_type: SystemArchitecture` 边界；共享 run 起点与 manifest / task_brief ownership 由通用 Step 1 / deterministic engine 负责。
+- 确认本步 run 元数据与 `task_type: SystemArchitecture` 边界；`init-run` 只负责 Phase 0 scaffold，本 overlay 的专业内容由明确选中它的 agent worker 负责。
 - 登记 task.yaml 每份输入：`file_id`、path、title、format、`role`。
 - **source**：SyRS、系统上下文、接口规范、平台约束、诊断说明、既有 FSR/TSC 摘要（若有）→ `is_fact_source=true`。
 - **template**：架构模板 → T2。

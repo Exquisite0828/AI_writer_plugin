@@ -1,4 +1,4 @@
-# TSC 子 skill · Step 9 · 保守草稿
+# TSC 子 skill · Step 7 · 保守草稿
 
 骨架：`skills/workflow-steps/step-conservative-draft/SKILL.md`。领域规则：`skills/document-types/TechnicalSafetyConcept/SKILL.md`。
 

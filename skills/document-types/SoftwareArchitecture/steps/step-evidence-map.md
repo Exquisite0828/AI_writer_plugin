@@ -8,7 +8,7 @@
 
 1. **Phase A evidence map**：L1→L2→L3→原文 → EVD。每条 EVD 支撑一个可审查 architecture claim；critical claim 仅 T0/T1。
 2. **Phase B citation plan**：建立 `claim_support_matrix.json`，将 claim type 绑定 EVD/tier；缺证据写 `NEEDS_USER_CONFIRMATION` 和 `unresolved_questions.md`。
-3. **Phase C section tasks**：生成 `section_tasks.json` / `writing_plan.md`；每个 TASK 声明 `allowed_evidence`，Step 9 只能用这些 EVD。
+3. **Phase C section tasks**：生成 `section_tasks.json` / `writing_plan.md`；每个 TASK 声明 `allowed_evidence`，Step 7 只能用这些 EVD。
 
 ## Claim Types
 
@@ -47,4 +47,4 @@ P1: EVD excerpt mismatches L3; matrix missing claim type; section task IDs drift
 
 **A1**：三 phase 产物齐全，EVD↔matrix↔TASK 一致，tier 合规。
 **A2**：失败 phase 局部重跑；修正 tier/open，而不是补事实。
-**B**：Step 9 必须可仅凭 TASK `allowed_evidence` 成稿。
+**B**：Step 7 必须可仅凭 TASK `allowed_evidence` 成稿。

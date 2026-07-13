@@ -21,7 +21,7 @@ It does not automatically approve architecture decisions.
 
 ## Supported Level And Positioning
 
-`technical_solution` is an official L3 built-in document type backed by built-in `DocumentTypeRules`, fixtures, regression tests, and this domain guideline.
+`technical_solution` is an official L3 product/domain asset label backed in the current tree by fixtures and this domain guideline. Current Python has no document-type registry, executable type rules, or end-to-end content test.
 
 The command layer remains generic. There is no technical_solution-specific pipeline.
 

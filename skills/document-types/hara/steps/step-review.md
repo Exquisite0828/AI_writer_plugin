@@ -1,10 +1,10 @@
-# HARA 子 skill · Step 10 · 审查 (Review)
+# HARA 子 skill · Step 8 · 审查 (Review)
 
 通用骨架：`skills/workflow-steps/step-review/SKILL.md`。HARA 根规则：`skills/document-types/hara/SKILL.md`。
 
 ## Purpose
 
-对 HARA 草稿做结构化审查并输出 issue，不直接改稿，不给专业批准。问题按 P0/P1/P2/info 分级并定位到章节、行、表格或 claim id；P0/P1 供 Step 12 修订。
+对 HARA 草稿做结构化审查并输出 issue，不直接改稿，不给专业批准。问题按 P0/P1/P2/info 分级并定位到章节、行、表格或 claim id；P0/P1 供 Step 10 修订。
 
 ## Required Review Dimensions
 
@@ -35,4 +35,4 @@ Review findings 自身也要合规：每个维度有 pass/fail/N/A，issue 有 s
 
 **A1**：核对 RD-1~RD-6 覆盖、P0/P1 显式、issue 定位具体、无批准语义、HITL 未确认项可见。
 **A2**：仅当 P0/P1 已明确时进入局部修订；不在 review step 直接重写草稿。
-**B**：subagent 逐项核对 HARA template/checklist/evidence/final review 关注点：hazard、HE、S/E/C、ASIL、SG、sample/reference 边界。
+**B**：Stage review worker 逐项核对 HARA template/checklist/evidence/final review 关注点：hazard、HE、S/E/C、ASIL、SG、sample/reference 边界。

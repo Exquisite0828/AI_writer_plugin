@@ -5,7 +5,7 @@ description: 中文优先指导汽车控制器产品 Software Architecture（SwA
 
 # Software Architecture Document Type Skill
 
-Use this skill for `task_type: SoftwareArchitecture`. This runtime dir is present but is not made official by Round 3. Default communication is Chinese; keep Software Architecture、SwAD、SWE.2、ISO 26262-6、SwRS、System Architecture、SWA-COMP-xx、SWA-IF-xx、RTE、BSW、HITL、NEEDS_USER_CONFIRMATION.
+Use this skill for `task_type: SoftwareArchitecture` only when the agent workflow explicitly selects this guidance. This is a non-official L3 Skill/overlay asset. The metadata builder may place its paths/hashes in StepContextPackage for that exact task type, but Python has no Software Architecture rules registry or end-to-end content engine. Default communication is Chinese; keep Software Architecture、SwAD、SWE.2、ISO 26262-6、SwRS、System Architecture、SWA-COMP-xx、SWA-IF-xx、RTE、BSW、HITL、NEEDS_USER_CONFIRMATION.
 
 ## Purpose
 

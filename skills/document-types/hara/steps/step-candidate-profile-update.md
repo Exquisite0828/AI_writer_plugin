@@ -1,4 +1,4 @@
-# HARA 子 skill · Step 15 · 候选 Profile 更新 (Candidate Profile Update)
+# HARA 子 skill · Step 13 · 候选 Profile 更新 (Candidate Profile Update)
 
 本文件是通用骨架 `skills/workflow-steps/step-candidate-profile-update/SKILL.md` 在 `task_type: hara` 下加载的任务专属子 skill。通用流程、artifact 契约与角色边界以骨架为准；HARA 领域规则以根 skill `skills/document-types/hara/SKILL.md` 为准。
 
@@ -29,7 +29,7 @@ HARA 流程结束后的候选 profile 更新**只基于流程 / 结构信号**�
 
 ## 本步将被审查的关键点（Review / Verification 自检清单）
 
-本步输出（`candidate_profile_update.yaml`、`candidate_skill_patch.md`）将在 Step 11 验证中被以下检查点定位。subagent 交付前应自检：
+本步输出（`candidate_profile_update.yaml`、`candidate_skill_patch.md`）应沿用 Step 9 验证的检查边界。Stage review worker 交付前应自检：
 
 | 关联检查 | 检查项 | 自检方法 |
 |---|---|---|
@@ -173,33 +173,6 @@ notes: |
 3. 标注候选物证据（来自哪次 run、哪个 pattern）与适用范围（仅 HARA task_type）。
 4. 校验未自动启用、未覆盖稳定 HARA profile/skill，promotion_report 未被写成批准。
 
-## state.json 示例（HARA）
-
-```json
-{
-  "step": "candidate-profile-update",
-  "review_state": {
-    "chosen_plan": "<选定审核方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rv-1", "desc": "核对候选物保持 proposed/inactive", "status": "done"},
-      {"id": "rv-2", "desc": "核对未自动覆盖稳定 HARA Skill 或启用 profile", "status": "running"},
-      {"id": "rv-3", "desc": "核对 promotion_report 未被写成 HARA 批准", "status": "not_run"}
-    ]
-  },
-  "revision_state": {
-    "chosen_plan": "<选定修订方案>",
-    "rejected_plans": ["<方案及放弃理由>"],
-    "subtasks": [
-      {"id": "rt-1", "desc": "收集本次 HARA run 可复用信号（排除事实结论）", "status": "done"},
-      {"id": "rt-2", "desc": "逐条生成候选物（固定 proposed/inactive，target 指向 HARA Skill）", "status": "running"},
-      {"id": "rt-3", "desc": "标注证据与适用范围（仅 HARA task_type）", "status": "not_run"},
-      {"id": "rt-4", "desc": "校验未自动启用、未覆盖稳定 HARA profile/skill", "status": "not_run"}
-    ]
-  }
-}
-```
-
 ## B 审核检查项（HARA）
 
-subagent 逐项核对：候选物是否保持 proposed/inactive（status: proposed / active: false / auto_applied: false / requires_user_approval: true）；是否未自动覆盖稳定 HARA Skill 文件（`skills/document-types/hara/SKILL.md`）或自动启用 profile；`promotion_report.md` 是否未被写成 HARA 批准或合规认证；candidate_skill_patch target 是否正确指向 HARA；候选内容是否仅来自流程/结构模式而不掺入 HARA 事实结论。
+Stage review worker 逐项核对：候选物是否保持 proposed/inactive（status: proposed / active: false / auto_applied: false / requires_user_approval: true）；是否未自动覆盖稳定 HARA Skill 文件（`skills/document-types/hara/SKILL.md`）或自动启用 profile；`promotion_report.md` 是否未被写成 HARA 批准或合规认证；candidate_skill_patch target 是否正确指向 HARA；候选内容是否仅来自流程/结构模式而不掺入 HARA 事实结论。

@@ -1,4 +1,4 @@
-# IDD 子 skill · Step 13 · 最终报告
+# IDD 子 skill · Step 11 · 最终报告
 
 骨架：`skills/workflow-steps/step-final-report/SKILL.md`。领域规则：`skills/document-types/ItemDefinitionDocument/SKILL.md`。
 
@@ -60,7 +60,7 @@ Item Definition 报告
 
 ## 本步 Review / Checklist 要点
 
-本步打包最终交付物；须体现 Step 10/11 审查结论，并遵守审查边界声明。
+本步打包最终交付物；须体现 Step 8/9 审查与验证结论，并遵守审查边界声明。
 
 ### 交付前 Checklist
 
@@ -91,7 +91,7 @@ IDD 交付状态**只能**是：
 | 缺口完整 | open 项全部列出 | P0 |
 | HARA 交接 | 七类交接物 + open 项明示 | P1 |
 | 证据摘要 | matrix 摘要与正文一致 | P1 |
-| 审查追溯 | 含 Step 10/11 结论摘要 | P1 |
+| 审查追溯 | 含 Step 8/9 结论摘要 | P1 |
 
 ### 一句话归纳
 

@@ -5,7 +5,7 @@ description: 中文优先指导 Technical Safety Concept（TSC，技术安全概
 
 # Technical Safety Concept Document Type Skill
 
-Use this skill for `task_type: TechnicalSafetyConcept`. This runtime dir is present but is not made official by Round 3. Communicate in Chinese by default; keep TSC、TSR、FSR、Safety Goal、ASIL、safe state、FTTI/FDTI/FHTI、HSC deferred、SSC deferred、HITL、NEEDS_USER_CONFIRMATION.
+Use this skill for `task_type: TechnicalSafetyConcept` only when the agent workflow explicitly selects this guidance. TSC currently consists of Skill/step-overlay guidance and fixture/design assets; it is not an official L3 built-in. The metadata builder may place its paths/hashes in StepContextPackage for that exact task type, but Python has no TSC rules registry, complete content tests, or end-to-end content engine; HSC and SSC remain deferred. Communicate in Chinese by default; keep TSC、TSR、FSR、Safety Goal、ASIL、safe state、FTTI/FDTI/FHTI、HSC deferred、SSC deferred、HITL、NEEDS_USER_CONFIRMATION.
 
 ## Purpose
 

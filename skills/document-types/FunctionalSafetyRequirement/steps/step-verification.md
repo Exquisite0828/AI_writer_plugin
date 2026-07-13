@@ -1,4 +1,4 @@
-# FSR 子 skill · Step 11 · 验证
+# FSR 子 skill · Step 9 · 验证
 
 骨架：`skills/workflow-steps/step-verification/SKILL.md`。领域规则：`skills/document-types/FunctionalSafetyRequirement/SKILL.md`。
 
@@ -43,7 +43,7 @@
 - 不得用 `VC-001`、`VC-002` 等泛化编号替代 `FSR-VC-1`～`FSR-VC-5`。
 - 不得只证明“内部一致性”，而漏掉 FSR 专属的 forbidden claims、TSC drift、HARA reclassification、candidate inactive 与 open confirmation 检查。
 
-出现以上任一情况时，subagent 必须判定 P0、`revision_required=true`，并通过 A2 局部重写 `verify_report.json` / `failures.md`；如果无法修复，stage review `issues.json` 必须记录 P0 且 `requires_revision=true`，不得 accepted。
+出现以上任一情况时，Stage review worker 必须记录 `severity=P0` 的issue，并在对应ReviewResult返回 `status=needs_revision` 及非零 `blocking_issues_count`；重新派发的原step worker再通过 A2 局部重写 `verify_report.json` / `failures.md`。如果无法修复，issue保持P0，ReviewResult保持 `needs_revision` 或 `blocked`，不得accepted。
 
 ### failures.md 格式要求
 

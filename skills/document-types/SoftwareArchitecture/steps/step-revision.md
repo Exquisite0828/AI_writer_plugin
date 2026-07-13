@@ -1,22 +1,22 @@
-# Software Architecture 子 skill · Step 12 · 修订
+# Software Architecture 子 skill · Step 10 · 修订
 
 骨架：`skills/workflow-steps/step-revision/SKILL.md`。领域规则：`skills/document-types/SoftwareArchitecture/SKILL.md`。
 
 ## 本步目的要点
 
-- 依 Step 10/11 findings 修订 → `revised/full_draft.md`、`change_log.md`。
+- 依 Step 8/9 findings 修订 → `revised/full_draft.md`、`change_log.md`。
 - 不新增无 EVD 支撑的组件/接口/分配结论。
 - 修订后须满足：P0 已关闭 **或** 显式保留 open 并记录原因。
 
 ## Software Architecture 方法论（本步定位）
 
-### 12.1 本步在八阶段方法链中的位置
+### 10.1 本步在八阶段方法链中的位置
 
 本步对应 **阶段 7：修订与交付** 的 **修订** 环节。
 
 **方法原则**：修订是 **纠错与收敛**，不是 **补全幻想**。无新 EVD 则只能：删除违规内容、改为 open、或降级 confirmed→NEEDS_USER_CONFIRMATION。
 
-### 12.2 阶段 7 · 修订方法
+### 10.2 阶段 7 · 修订方法
 
 #### 修订优先级矩阵
 
@@ -74,7 +74,7 @@
 
 ### 通用 Checklist（10 项）
 
-- [ ] 每条修订有 Step 10/11 `issue_id` 来源
+- [ ] 每条修订有 Step 8/9 `issue_id` 来源
 - [ ] **未新增**无 EVD 的组件/接口/分配事实
 - [ ] 必须新增架构元素时，先有 HITL 记录
 - [ ] **未删除**应保留的 open（除非 T0/T1 + change_log 记录）
@@ -125,5 +125,5 @@
 ## A1 / A2 / B
 
 **A1**：P0 已关闭或显式 open；change_log 完整。  
-**A2**：重跑未关闭项；二次过 Step 10/11。  
+**A2**：重跑未关闭项；二次过 Step 8/9。
 **B**：修订不引入新违规。

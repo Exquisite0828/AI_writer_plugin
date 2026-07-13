@@ -29,11 +29,11 @@ Item Definition Document（IDD，Item 定义文档）支撑 **ISO 26262-3:2018 C
 
 ## 总过程概览
 
-经 **13 个** workflow step skill 驱动（逻辑 Step 1–6、9–15；Step 6 含证据·引用·章节计划三阶段）。每步子 skill：`skills/document-types/ItemDefinitionDocument/steps/step-*.md`。
+本目录按 **13 个** workflow step（Step 1–13；Step 6 含证据·引用·章节计划三阶段）提供 IDD worker overlay guidance。每步子 skill：`skills/document-types/ItemDefinitionDocument/steps/step-*.md`。
 
 ## Supported Level And Positioning
 
-`ItemDefinitionDocument` 为 **document-type skill 层**交付类型；通过 `task.yaml` 的 `task_type: ItemDefinitionDocument` 加载本子 skill 与各 step 子 skill。须遵守通用 `writing-core` 与 artifact 契约。
+`ItemDefinitionDocument` 是非 official L3 的 Skill/overlay 指导资产。当前 metadata builder 可在同名 `task_type` 被明确选择时把本目录的路径/hash 放入 StepContextPackage；Python 不把它解释为 IDD rules registry，也不执行端到端内容引擎。
 
 ## Typical Inputs
 

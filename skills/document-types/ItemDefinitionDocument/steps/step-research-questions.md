@@ -60,7 +60,7 @@
 
 ## 本步 Review / Checklist 要点
 
-本步产出 `section_writing_plans.json` 将在 Step 10「证据匹配」与 Step 11 VC-1 artifact 链检查时被回溯。
+本步产出 `section_writing_plans.json` 将在 Step 8「证据匹配」与 Step 9 VC-1 artifact 链检查时被回溯。
 
 ### 与本步相关的写作计划检查
 

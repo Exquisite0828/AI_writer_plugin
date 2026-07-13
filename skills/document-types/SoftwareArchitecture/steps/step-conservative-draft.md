@@ -1,4 +1,4 @@
-# Software Architecture 子 skill · Step 9 · 保守草稿
+# Software Architecture 子 skill · Step 7 · 保守草稿
 
 骨架：`skills/workflow-steps/step-conservative-draft/SKILL.md`。领域规则：`skills/document-types/SoftwareArchitecture/SKILL.md`。
 
@@ -10,7 +10,7 @@
 
 ## Software Architecture 方法论（本步定位）
 
-### 9.1 本步在八阶段方法链中的位置
+### 7.1 本步在八阶段方法链中的位置
 
 本步对应 **阶段 5：保守成稿**。把 EVD 转化为可审查的 SwAD 正文，是 ASPICE SWE.2 文档化的核心产出步骤。
 
@@ -20,7 +20,7 @@
 2. **写架构，不写实现**：描述组件、接口、任务、资源预算，不写类/函数/算法/代码。
 3. **逐表逐行可追溯**：每个 SWA-COMP / SWA-IF / 分配行可指回 EVD 或 open。
 
-### 9.2 阶段 5 · 撰写方法（按章节）
+### 7.2 阶段 5 · 撰写方法（按章节）
 
 #### SEC-SWCTX · 软件上下文
 
@@ -88,7 +88,7 @@
 - 每行必须有：参考 ID、本项目 ID、Δ Type、差异描述、**本项目 evidence**。
 - **禁止**只写「与参考相同」。
 
-### 9.3 两种情景成稿策略
+### 7.3 两种情景成稿策略
 
 #### From-Scratch
 
@@ -107,7 +107,7 @@
 | 措辞隔离 | 可参考写章节引导语，事实表只含本项目 EVD |
 | 沿用须 EVD | 「沿用参考」须有 T0 HITL 或本项目 source EVD |
 
-### 9.4 写作语言规范
+### 7.4 写作语言规范
 
 - 用「应描述」「定义为」「分配给」，不用「已实现」「已验证」。
 - 避免模糊词：「高效」「合理」「足够」。

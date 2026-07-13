@@ -1,4 +1,4 @@
-# IDD 子 skill · Step 9 · 保守草稿
+# IDD 子 skill · Step 7 · 保守草稿
 
 骨架：`skills/workflow-steps/step-conservative-draft/SKILL.md`。领域规则：`skills/document-types/ItemDefinitionDocument/SKILL.md`。
 
@@ -55,7 +55,7 @@
 
 ## 本步 Review / Checklist 要点
 
-本步产出 `draft/full_draft.md` 是 Step 10 内容审查与 Step 11 VC-3/VC-4 的直接对象。
+本步产出 `draft/full_draft.md` 是 Step 8 内容审查与 Step 9 VC-3/VC-4 的直接对象。
 
 ### Clause 5 内容 Checklist（成稿自检）
 

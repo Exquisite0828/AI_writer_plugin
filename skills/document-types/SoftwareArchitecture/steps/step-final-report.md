@@ -1,4 +1,4 @@
-# Software Architecture 子 skill · Step 13 · 最终报告
+# Software Architecture 子 skill · Step 11 · 最终报告
 
 骨架：`skills/workflow-steps/step-final-report/SKILL.md`。领域规则：`skills/document-types/SoftwareArchitecture/SKILL.md`。
 
@@ -10,13 +10,13 @@
 
 ## Software Architecture 方法论（本步定位）
 
-### 13.1 本步在八阶段方法链中的位置
+### 11.1 本步在八阶段方法链中的位置
 
 本步对应 **阶段 7 交付** 与 **阶段 8 下游交接** 的 **正式打包**。
 
 **方法原则**：final 包是 **可交接的 review-ready 产物**，不是 sign-off。下游（详细设计、测试）可据此启动，但 **不得**悄悄闭合 open。
 
-### 13.2 阶段 7–8 · 交付与下游交接方法
+### 11.2 阶段 7–8 · 交付与下游交接方法
 
 #### 交付包组成
 
@@ -67,7 +67,7 @@ delivery_summary.md
 - SEC-DIFF 纳入正文。
 - 下游说明加：「Δ-Analysis 中标注 Removed/Modified 的项须单独验证」。
 
-### 13.3 状态选择指南
+### 11.3 状态选择指南
 
 | 状态 | 适用 |
 |---|---|
@@ -91,8 +91,8 @@ delivery_summary.md
 | 8 | SEC-VERIF | 验证候选存在 |
 | 9 | 追溯摘要 | SwRS↔SWA-COMP 摘要可读 |
 | 10 | Open Items Registry | 按 SEC 分类，条数与 verify 一致 |
-| 11 | 审查摘要 | 来自 Step 10，**非 sign-off** |
-| 12 | 验证摘要 | 来自 Step 11，状态保守 |
+| 11 | 审查摘要 | 来自 Step 8，**非 sign-off** |
+| 12 | 验证摘要 | 来自 Step 9，状态保守 |
 | 13 | 下游交接说明 | 列明详细设计/测试/静态分析接收规则 |
 | 14 | Forbidden claims | 全文无批准/合规/量产措辞 |
 

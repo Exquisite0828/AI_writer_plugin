@@ -47,23 +47,30 @@ L3 leaf fields: `l3_id`, `l3_title`, `brief`, `location` (`section`, `anchor`, p
 - missing/unsupported/failed materials cannot be silently treated as indexed.
 - Every L3 or L2 leaf must trace to file_id and location; empty provenance is a P1 defect.
 
-## Load Document-Type Overlay
+## 当前 worker 与 document-type guidance
 
-Before execution, load only the current task type overlay:
+当前 step worker 只能通过 StepContextPackage.instruction_refs[] 中的 path/hash 读取已纳入 package 的 instructions。wrapper 与本 canonical workflow Skill 是必需引用；document-type root Skill 与 per-step overlay 都按文件存在性懒加载，未出现时不加入 package。root Skill 存在但 per-step overlay 缺失是合法的 root-only 模式；可选 document-type root Skill 或 overlay 未出现不得判为 `metadata_invalid`。所有实际出现在 `instruction_refs[]` 中的引用都必须通过 path/hash 校验；已包含的引用缺失或 hash 无效时返回 `metadata_invalid` 并停止。不得由 controller 直接加载这些正文，不得读取 sibling document types。
 
-```text
-skills/document-types/<task_type>/steps/step-source-index.md
-skills/document-types/<task_type>/SKILL.md
-```
+## StepResult 与 stage review交接
 
-If missing, report and stop for confirmation. Do not load sibling document types.
+当前 step worker 读取允许的refs，生成本步声明的专业artifacts，写入并自行校验StepResult，然后返回并结束。它不得继续派发其他worker，也不得创建独立审核状态或stage gate。
 
-## Subagent Review
+Stage review worker 在本stage所有StepResult完成后由controller统一调度，只接收ReviewContextPackage路径。它按 `steps[]` 顺序沿 `context_package_refs[]` 读取本canonical与当前document-type guidance；overlay存在时叠加其领域检查。
 
-Open a fresh review worker after this step. Pass explicit paths: `project_root`, `run_dir`, `input_inventory_path`, `step_output_dir`. Review worker may inspect only the inventory, `source_index.json`, `provenance_index.json`, `document_tocs/`, and `knowledge_gaps.md`; original text may be sampled only through inventory paths.
+### A1/B 通用审核检查
 
-No P0/P1: write `runs/<run_id>/subagent/step-source-index/state.json` and do not rewrite artifacts. P0/P1: perform local repair tied to issue/artifact; do not regenerate all directories or guess input roots. P2/P3 become user-visible issues, not automatic rewrites.
+- 本步声明的必需artifact均存在，StepResult path/hash与最终文件一致。
+- 产出满足本canonical的输入、输出、顺序和边界约束。
+- sample/reference未被当作项目事实，critical claim缺T0/T1时仍为pending或 `NEEDS_USER_CONFIRMATION`。
+- 未生成批准、合规、风险接受或生产就绪结论。
+- 当前document-type guidance存在时，其A1/B领域检查全部执行。
 
-Review checks: path anchoring, parsed files covered, L1/L2/L3 usefulness, location completeness, topic index consistency, source tier preservation, sample not fact source, no professional judgments.
+### A2 局部修订
 
-Next: Step 4 template outline. Step 4 and later must use this index for original input access.
+Stage review worker只记录问题，不修改专业artifact或StepResult。它必须先汇总写入 `stage_reviews/<stage>/issues.json`，再对该stage一次性调用 `build-stage-review-issues` 与 `validate-stage-review-issues`，由builder原子生成并校验固定路径的index/details。本step存在P0/P1或明确返工项时，其ReviewResult返回 `needs_revision`；P2/P3只进入review/open items。A2由重新派发的原step worker执行，并绑定 `issue_id`、`target_artifact`、`changed_paths`；A2 worker不得自行派发其他step。若目标不是最后一步，controller按自动依赖协议重跑被失效的后续step。
+
+Stage review worker为本step写入并校验一个ReviewResult，不创建第二套持久化编排状态。
+
+## 交接到下一步
+
+进入 **Step 4 · 模板大纲**。Step 4及后续步骤必须通过本步索引定位原始输入。

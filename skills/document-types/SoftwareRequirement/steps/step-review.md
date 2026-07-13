@@ -1,4 +1,4 @@
-# SwRS 子 skill · Step 10 · 审查
+# SwRS 子 skill · Step 8 · 审查
 
 骨架：`skills/workflow-steps/step-review/SKILL.md`。领域规则：`skills/document-types/SoftwareRequirement/SKILL.md`。
 
@@ -62,5 +62,5 @@
 ## A1 / A2 / B
 
 **A1**：审查项均有结论，P0 已识别。  
-**A2**：把 findings 交给 Step 12 修订。  
+**A2**：把 findings 交给 Step 10 修订。
 **B**：Review 重点是找错和找风险，不是替用户补事实。

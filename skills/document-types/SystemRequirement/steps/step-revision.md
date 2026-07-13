@@ -1,10 +1,10 @@
-# SyRS 子 skill · Step 12 · 修订
+# SyRS 子 skill · Step 10 · 修订
 
 骨架：`skills/workflow-steps/step-revision/SKILL.md`。领域规则：`skills/document-types/SystemRequirement/SKILL.md`。
 
 ## 本步目的要点
 
-- 依 Step 10/11 findings 修订 → `revised/full_draft.md`、`change_log.md`。
+- 依 Step 8/9 findings 修订 → `revised/full_draft.md`、`change_log.md`。
 - 不新增无 EVD 支撑的 SYS-xx 或限值结论。
 
 ## SyRS 方法论（本步定位）
@@ -45,7 +45,7 @@
 
 ### 修订原则 Checklist
 
-- [ ] 每条修订**有 Step 10 / Step 11 issue ID 来源**；无 issue 不修订
+- [ ] 每条修订**有 Step 8 / Step 9 issue ID 来源**；无 issue 不修订
 - [ ] **未新增**无 EVD 的 SYS-xx；如必须新增，必须先经 HITL（生成 hitl_decisions.jsonl 条目）
 - [ ] 修订**不删除** open 项；除非提供 T0/T1 证据并记录 hitl 决策
 - [ ] 修订**不引入** HARA / TSR / TSC / SwRS 内容
@@ -85,14 +85,14 @@
 
 | 字段 | 通过条件 |
 |---|---|
-| issue_id | 对应 Step 10/11 findings |
+| issue_id | 对应 Step 8/9 findings |
 | section_id | 唯一定位 |
 | change_type | added / removed / modified / status_changed / open_added |
 | before / after | 摘要可对比 |
 | decision_basis | EVD ID / HITL ID / checklist 项 |
 | risk | 修订潜在风险（如「Direction 从 In 改 Bidirectional 是否影响集成」） |
 
-### 修订后回归 Checklist（须二次过 Step 10/11）
+### 修订后回归 Checklist（须二次过 Step 8/9）
 
 - [ ] 14 项 SYS.2 内容 checklist 全部通过或转 open
 - [ ] VC-1 ~ VC-5 全部通过
@@ -118,5 +118,5 @@
 ## A1 / A2 / B
 
 **A1**：P0 已关闭或显式 open；无 HARA/TSR；无 forbidden claims；change_log 可追溯。  
-**A2**：重跑未关闭项；二次过 Step 10/11。  
+**A2**：重跑未关闭项；二次过 Step 8/9。
 **B**：修订可追溯到 issue_id 与 decision_basis；With-Reference 未用参考 SyRS 关 P0。
