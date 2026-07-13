@@ -19,7 +19,7 @@ Testing uses deterministic manual execution records captured in `test_results.cs
 
 - Demo task file is available.
 - Source, template, checklist, reference, and sample inputs are present.
-- The CLI can execute `write-run` without network access.
+- The Python CLI can execute `init-run` for this task without network access; this verifies only Phase 0 scaffold creation.
 
 ## Exit Criteria Candidate
 
